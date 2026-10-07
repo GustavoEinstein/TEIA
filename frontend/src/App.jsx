@@ -23,6 +23,7 @@ import MainContent from "./components/MainContent"
 import DetalharProducao from "./pages/DetalharProducao"
 import VisualizarMinhaProducao from "./pages/VisualizarMinhaProducao"
 import FormularioManual from "./pages/formularios/FormularioManual"
+import CatalogarAssistido from "./pages/formularios/FormularioAssistido"
 import SelecionarMetodo from "./pages/SelecionarMetodo"
 import BuscarBase from "./pages/BuscarBase"
 import MinhasProducoes from "./pages/MinhasProducoes"
@@ -74,6 +75,7 @@ function App() {
             <Route path="catalogar" element={<SelecionarMetodo />} />
             <Route path="catalogar/base" element={<BuscarBase />} />
             <Route path="catalogar/manual" element={<FormularioManual />} />
+            <Route path="/dashboard/catalogar/assistido" element={<CatalogarAssistido />} /> 
             <Route path="minhas-producoes" element={<MinhasProducoes />} />
             <Route path="revisao" element={<RevisaoDuploCego />} />
             <Route path="revisao/:id" element={<Revisao />} />

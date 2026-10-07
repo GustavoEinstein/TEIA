@@ -5,7 +5,7 @@ import Swal from "sweetalert2"
 import {
   ArrowLeft, UploadCloud, Lock, BookOpen, Wrench, Clock,
   Package, Lightbulb, Target, FileText, CheckCircle2, Layers,
-  X, Send, Check, Search, Link as LinkIcon, Cpu, GitMerge, UserCheck, EyeOff, Plus, Save
+  X, Send, Check, Search, Link as LinkIcon, Cpu, GitMerge, UserCheck, EyeOff, Plus, Save, Sparkles
 } from "lucide-react"
 
 import bnccMat from "../../data/bncc_mat.json"
@@ -21,8 +21,10 @@ const FormularioManual = () => {
 
   const storedDisc = localStorage.getItem("user_disciplina") || "Geral"
   const baseDataInfo = location.state?.baseData || null
+  const initialDataInfo = location.state?.initialData || null // Dados vindos do CatalogarAssistido (IA)
 
   const [formData, setFormData] = useState(() => {
+    // 1. Caso seja uma Releitura de colega
     if (baseDataInfo) {
       return {
         ...baseDataInfo,
@@ -36,6 +38,34 @@ const FormularioManual = () => {
       }
     }
 
+    // 2. Caso venha do preenchimento assistido por IA
+    if (initialDataInfo) {
+      return {
+        titulo: initialDataInfo.titulo || "",
+        disciplina: storedDisc !== "Outra" ? storedDisc : "Geral",
+        nivel: initialDataInfo.nivel || "",
+        categoria: initialDataInfo.categoria || "",
+        modelo_ia: initialDataInfo.modelo_ia || "",
+        prompts_ia: initialDataInfo.prompts_ia || "",
+        bncc: initialDataInfo.bncc || "",
+        bncc_computacao: initialDataInfo.bncc_computacao || "",
+        metodologia: initialDataInfo.metodologia || "",
+        duracao: initialDataInfo.duracao || "",
+        recursos: Array.isArray(initialDataInfo.recursos)
+          ? initialDataInfo.recursos
+          : typeof initialDataInfo.recursos === "string"
+          ? initialDataInfo.recursos.split(",").map((r) => r.trim())
+          : [],
+        experiencia: initialDataInfo.experiencia || "",
+        resultados: initialDataInfo.resultados || "",
+        arquivo: null,
+        producao_base: "",
+        link_material: initialDataInfo.link_material || "",
+        anonimo: true,
+      }
+    }
+
+    // 3. Caso Padrão (Formulário do Zero)
     return {
       titulo: "", disciplina: storedDisc !== "Outra" ? storedDisc : "Geral", nivel: "", modelo_ia: "",
       prompts_ia: "", categoria: "", bncc: "", bncc_computacao: "", metodologia: "", duracao: "",
@@ -89,7 +119,8 @@ const FormularioManual = () => {
   }
 
   useEffect(() => {
-    if (!baseDataInfo) {
+    // Só restaura rascunho se NÃO vier de uma releitura E NÃO vier da IA
+    if (!baseDataInfo && !initialDataInfo) {
       const savedDraft = localStorage.getItem("producao_autosave_draft")
       if (savedDraft) {
         Swal.fire({
@@ -113,7 +144,7 @@ const FormularioManual = () => {
         })
       }
     }
-  }, [baseDataInfo])
+  }, [baseDataInfo, initialDataInfo])
 
   useEffect(() => {
     const { arquivo, ...dataToSave } = formData
@@ -189,7 +220,6 @@ const FormularioManual = () => {
     }
   }
 
-  // --- ESTILOS RESTAURADOS PARA O DESIGN ORIGINAL (BRANCO) ---
   const inputClass = "w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-4 py-3 text-sm focus:border-[#1565C0] dark:focus:border-blue-500 outline-none transition-all dark:text-white placeholder-slate-400"
   const labelClass = "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 mt-4"
 
@@ -197,9 +227,9 @@ const FormularioManual = () => {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-200 p-4 md:p-8 pb-20">
       <div className="max-w-[1300px] mx-auto">
         
-        {/* Cabeçalho Restaurado */}
+        {/* Cabeçalho */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-          <button onClick={() => navigate("/dashboard/catalogar")} className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-[#1565C0] dark:hover:text-blue-400 font-bold text-sm transition-colors bg-transparent border-none">
+          <button onClick={() => navigate("/dashboard/catalogar")} className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-[#1565C0] dark:hover:text-blue-400 font-bold text-sm transition-colors bg-transparent border-none cursor-pointer">
             <ArrowLeft size={16} /> Voltar
           </button>
           <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight m-0">
@@ -222,6 +252,21 @@ const FormularioManual = () => {
                   <a href={`/dashboard/producao/${baseDataInfo.id}`} target="_blank" rel="noreferrer" className="font-bold text-[#1565C0] dark:text-blue-400 hover:underline inline-flex items-center gap-1 mt-1">
                     "{baseDataInfo.titulo}" <LinkIcon size={12} />
                   </a>
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* BANNER ASSISTIDO POR IA */}
+          {initialDataInfo && (
+            <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800/50 p-5 rounded-lg mb-8 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <div className="bg-white dark:bg-slate-800 p-3 rounded-full shrink-0 shadow-sm">
+                <Sparkles size={24} className="text-purple-600 dark:text-purple-400" />
+              </div>
+              <div className="flex-1">
+                <p className="text-xs font-bold text-purple-600 dark:text-purple-400 uppercase mb-1">Preenchimento Assistido por IA</p>
+                <p className="text-sm text-slate-700 dark:text-slate-300 m-0">
+                  Os campos foram pré-preenchidos automaticamente a partir do seu rascunho. Revise as informações antes de finalizar o envio.
                 </p>
               </div>
             </div>
@@ -281,7 +326,6 @@ const FormularioManual = () => {
               <label className={labelClass}>Prompts Utilizados</label>
               <textarea name="prompts_ia" value={formData.prompts_ia} onChange={handleChange} rows="4" className={inputClass} placeholder="Ex: 'Atue como um professor do ensino médio e crie...'" />
 
-              {/* Upload Restaurado ao original */}
               <label className={labelClass}><UploadCloud size={14} className="inline mr-1"/> Anexar Material</label>
               <div className="border border-dashed border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/10 rounded-lg p-6 text-center hover:bg-blue-100/50 dark:hover:bg-blue-900/20 transition-colors cursor-pointer mt-1">
                 <input type="file" id="file-upload" onChange={handleFileChange} className="hidden" />
@@ -409,7 +453,7 @@ const FormularioManual = () => {
               <label className={labelClass}><Target size={14} className="inline mr-1"/> Resultados</label>
               <textarea name="resultados" value={formData.resultados} onChange={handleChange} rows="3" className={inputClass} placeholder="Quais foram as evidências de aprendizagem? O que os alunos produziram ou demonstraram?" />
 
-              {/* AUTORIA BUTTON RESTAURADO */}
+              {/* AUTORIA BUTTON */}
               <div className="mt-6 flex flex-col md:flex-row items-center justify-between bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 p-4 rounded-lg gap-4">
                 <div>
                   <h4 className="font-bold text-sm text-slate-800 dark:text-slate-200 m-0">Créditos de Autoria</h4>
@@ -434,7 +478,7 @@ const FormularioManual = () => {
                 <button type="button" disabled={isSubmitting} onClick={() => handleSubmit(true)} className="flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 transition-colors">
                   <Save size={16} /> Salvar como Rascunho
                 </button>
-                <button type="button" disabled={isSubmitting} onClick={() => handleSubmit(false)} className="flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg font-bold text-white bg-[#1565C0] hover:bg-blue-700 transition-colors border-none">
+                <button type="button" disabled={isSubmitting} onClick={() => handleSubmit(false)} className="flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg font-bold text-white bg-[#1565C0] hover:bg-blue-700 transition-colors border-none cursor-pointer">
                   <Send size={16} /> {isSubmitting ? "Enviando..." : "Enviar Prática"}
                 </button>
               </div>

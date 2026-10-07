@@ -14,9 +14,11 @@ import {
   FileText,
   User,
   ExternalLink,
+  Printer,
+  Loader2,
+  X,
 } from "lucide-react"
 
-// Endereço base do seu backend Django
 const API_BASE_URL = "http://localhost:8000"
 
 const VisualizarMinhaProducao = () => {
@@ -24,14 +26,21 @@ const VisualizarMinhaProducao = () => {
   const navigate = useNavigate()
   const context = useOutletContext()
   const isMobile = context ? context.isMobile : false
+
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [downloadingPDF, setDownloadingPDF] = useState(false)
+
+  // Estados para o Modal de Exportação do PDF
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [docenteName, setDocenteName] = useState("")
 
   useEffect(() => {
     const fetchDetails = async () => {
       try {
         const response = await api.get(`api/production/${id}/`)
         setData(response.data)
+        if (response.data.autor) setDocenteName(response.data.autor)
       } catch (error) {
         console.error("Erro ao carregar detalhes:", error)
       } finally {
@@ -40,6 +49,39 @@ const VisualizarMinhaProducao = () => {
     }
     if (id) fetchDetails()
   }, [id])
+
+  // Lógica de download do PDF com o nome do docente informado no Modal
+  const handleConfirmExportPDF = async () => {
+    if (!docenteName.trim()) {
+      alert("Por favor, preencha o nome do(a) docente.")
+      return
+    }
+
+    setDownloadingPDF(true)
+    setIsModalOpen(false)
+
+    try {
+      const response = await api.get(
+        `api/production/${id}/export-pdf/?docente=${encodeURIComponent(docenteName)}`,
+        { responseType: "blob" }
+      )
+
+      const blob = new Blob([response.data], { type: "application/pdf" })
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      link.href = url
+      link.setAttribute("download", `plano_de_aula_${id}_IFB.pdf`)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error("Erro ao gerar PDF:", error)
+      alert("Não foi possível gerar o Plano de Aula em PDF.")
+    } finally {
+      setDownloadingPDF(false)
+    }
+  }
 
   if (loading)
     return (
@@ -55,6 +97,7 @@ const VisualizarMinhaProducao = () => {
     )
   if (!data) return null
 
+  // Cálculo dos status da produção
   const statusLower = data.status ? data.status.toLowerCase() : ""
   const isApproved =
     statusLower.includes("aprovado") ||
@@ -70,12 +113,15 @@ const VisualizarMinhaProducao = () => {
         <button onClick={() => navigate(-1)} style={styles.backButton}>
           <ArrowLeft size={18} /> Voltar
         </button>
+
         <div
           style={{ ...styles.grid, flexDirection: isMobile ? "column" : "row" }}
         >
           {/* ================= COLUNA PRINCIPAL DA ESQUERDA ================= */}
           <div style={styles.columnContent}>
             <div style={styles.materialCard}>
+              
+              {/* Cabeçalho do Material com Badges e Título */}
               <div style={styles.headerSection}>
                 <div>
                   <div style={styles.badgesRow}>
@@ -105,6 +151,7 @@ const VisualizarMinhaProducao = () => {
                 </div>
               </div>
 
+              {/* Ficha Técnica (Metodologia, Duração, Recursos) */}
               <div style={styles.techSheet}>
                 <div style={styles.techItem}>
                   <div style={styles.iconCircle}>
@@ -141,6 +188,7 @@ const VisualizarMinhaProducao = () => {
                 </div>
               </div>
 
+              {/* Seção 1: BNCC */}
               <div style={styles.section}>
                 <h3 style={styles.sectionTitle}>
                   <BookOpen size={18} /> Intencionalidade (BNCC)
@@ -150,6 +198,7 @@ const VisualizarMinhaProducao = () => {
                 </div>
               </div>
 
+              {/* Seção 2: Relato de Experiência */}
               <div style={styles.section}>
                 <h3 style={styles.sectionTitle}>
                   <Lightbulb size={18} /> Relato de Experiência
@@ -159,6 +208,7 @@ const VisualizarMinhaProducao = () => {
                 </p>
               </div>
 
+              {/* Seção 3: Resultados */}
               <div style={styles.section}>
                 <h3 style={styles.sectionTitle}>
                   <Target size={18} /> Resultados
@@ -167,11 +217,13 @@ const VisualizarMinhaProducao = () => {
                   {data.resultados || "Sem resultados registrados."}
                 </div>
               </div>
+
             </div>
           </div>
 
           {/* ================= COLUNA DA DIREITA (SIDEBAR) ================= */}
           <div style={styles.columnSidebar}>
+            
             {/* 1. Status da Avaliação */}
             <div style={styles.sidebarCard}>
               <h3 style={styles.sidebarTitle}>Status da Avaliação</h3>
@@ -205,7 +257,42 @@ const VisualizarMinhaProducao = () => {
               )}
             </div>
 
-            {/* 2. Botões de Material de Apoio (Abaixo da avaliação) */}
+            {/* 2. Exportação de Plano de Aula em PDF */}
+            <div style={{ ...styles.sidebarCard, marginTop: "20px" }}>
+              <h3 style={styles.sidebarTitle}>
+                <Printer
+                  size={16}
+                  style={{ marginRight: "6px", verticalAlign: "bottom" }}
+                />
+                Plano de Aula (IFB / MEC)
+              </h3>
+              <p style={styles.statusDesc}>
+                Gere o documento oficial padronizado no formato de Plano de Aula para registro pedagógico.
+              </p>
+              <div style={{ ...styles.buttonsSidebarContainer, marginTop: "12px" }}>
+                <button
+                  onClick={() => setIsModalOpen(true)}
+                  disabled={downloadingPDF}
+                  style={{
+                    ...styles.btnExportGdfSidebar,
+                    opacity: downloadingPDF ? 0.7 : 1,
+                    cursor: downloadingPDF ? "not-allowed" : "pointer",
+                  }}
+                >
+                  {downloadingPDF ? (
+                    <>
+                      <Loader2 size={18} className="animate-spin" /> Gerando PDF...
+                    </>
+                  ) : (
+                    <>
+                      <FileText size={18} /> Baixar Plano de Aula (PDF)
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* 3. Botões de Material de Apoio (Anexo e Link Externo) */}
             {(data.arquivo || data.link_material) && (
               <div style={{ ...styles.sidebarCard, marginTop: "20px" }}>
                 <h3 style={styles.sidebarTitle}>
@@ -243,9 +330,61 @@ const VisualizarMinhaProducao = () => {
                 </div>
               </div>
             )}
+
           </div>
         </div>
       </div>
+
+      {/* ================= MODAL SOLICITANDO O NOME DO DOCENTE ================= */}
+      {isModalOpen && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modalContent}>
+            <div style={styles.modalHeader}>
+              <h3 style={{ margin: 0, fontSize: "16px", color: "var(--text-primary)" }}>
+                Exportar Plano de Aula
+              </h3>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                style={styles.closeBtn}
+              >
+                <X size={18} />
+              </button>
+            </div>
+            
+            <div style={{ marginTop: "15px" }}>
+              <label style={styles.labelInput}>
+                Nome do(a) Docente / Professor(a):
+              </label>
+              <input
+                type="text"
+                value={docenteName}
+                onChange={(e) => setDocenteName(e.target.value)}
+                placeholder="Ex: Prof. Gustavo Einstein"
+                style={styles.inputStyle}
+                autoFocus
+              />
+              <p style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "8px", lineHeight: "1.4" }}>
+                Este nome será inserido diretamente no cabeçalho do documento oficial de Plano de Aula.
+              </p>
+            </div>
+
+            <div style={styles.modalActions}>
+              <button
+                onClick={() => setIsModalOpen(false)}
+                style={styles.btnCancel}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleConfirmExportPDF}
+                style={styles.btnConfirm}
+              >
+                Confirmar e Baixar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -476,11 +615,26 @@ const styles = {
     lineHeight: "1.4",
   },
 
-  /* ESTILOS NOVOS PARA OS BOTÕES DA SIDEBAR */
   buttonsSidebarContainer: {
     display: "flex",
     flexDirection: "column",
     gap: "10px",
+  },
+  btnExportGdfSidebar: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "8px",
+    backgroundColor: "#1b5e20", // Verde institucional IFB/MEC
+    color: "#ffffff",
+    padding: "12px",
+    borderRadius: "8px",
+    border: "none",
+    fontWeight: "bold",
+    fontSize: "14px",
+    transition: "background 0.2s",
+    width: "100%",
+    boxSizing: "border-box",
   },
   btnDownloadSidebar: {
     display: "flex",
@@ -513,6 +667,89 @@ const styles = {
     fontSize: "14px",
     width: "100%",
     boxSizing: "border-box",
+  },
+
+  /* MODAL */
+modalOverlay: {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.65)", // Escurece o fundo
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 9999, // Garante que fique sobre todos os elementos
+  },
+  modalContent: {
+    backgroundColor: "var(--bg-card, #ffffff)", // Fallback para #ffffff evita transparência
+    color: "var(--text-primary, #212121)",
+    width: "100%",
+    maxWidth: "420px",
+    padding: "24px",
+    borderRadius: "12px",
+    border: "1px solid var(--border-color, #e0e0e0)",
+    boxShadow: "0 10px 30px rgba(0, 0, 0, 0.3)",
+    boxSizing: "border-box",
+  },
+  modalHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderBottom: "1px solid var(--border-color, #eee)",
+    paddingBottom: "12px",
+  },
+  closeBtn: {
+    background: "none",
+    border: "none",
+    color: "var(--text-secondary, #666)",
+    cursor: "pointer",
+    padding: "4px",
+    display: "flex",
+    alignItems: "center",
+  },
+  labelInput: {
+    fontSize: "13px",
+    fontWeight: "700",
+    color: "var(--text-primary, #333)",
+    display: "block",
+    marginBottom: "6px",
+  },
+  inputStyle: {
+    width: "100%",
+    padding: "10px 12px",
+    borderRadius: "6px",
+    border: "1px solid var(--border-color, #ccc)",
+    backgroundColor: "var(--bg-main, #f9f9f9)", // Fallback opaco para o campo de texto
+    color: "var(--text-primary, #111)",
+    fontSize: "14px",
+    boxSizing: "border-box",
+    outline: "none",
+  },
+  modalActions: {
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: "10px",
+    marginTop: "20px",
+  },
+  btnCancel: {
+    padding: "8px 16px",
+    border: "1px solid var(--border-color, #ccc)",
+    background: "transparent",
+    color: "var(--text-secondary, #555)",
+    borderRadius: "6px",
+    cursor: "pointer",
+    fontWeight: "600",
+  },
+  btnConfirm: {
+    padding: "8px 16px",
+    border: "none",
+    background: "#1b5e20",
+    color: "#ffffff",
+    borderRadius: "6px",
+    fontWeight: "700",
+    cursor: "pointer",
   },
 }
 

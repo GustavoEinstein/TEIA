@@ -129,7 +129,7 @@ export default function Sidebar({ isOpen, isMobile, onClose }) {
       <div className="p-5 border-t border-slate-200 dark:border-slate-800 shrink-0">
         <div className="w-full bg-gradient-to-br from-[#1565C0] to-blue-500 dark:from-blue-700 dark:to-blue-900 rounded-xl p-4 shadow-md shadow-blue-500/20 text-center relative overflow-hidden">
           <div className="absolute top-[-20%] right-[-10%] w-16 h-16 rounded-full bg-white/10 blur-xl pointer-events-none"></div>
-          <h4 className="text-white font-black text-sm tracking-wide mb-1">PROJETO T.E.I.A</h4>
+          <h4 className="text-white font-black text-sm tracking-wide mb-1">T.E.I.A</h4>
           <p className="text-blue-100/80 text-[11px] font-medium leading-tight">Tecendo a Educação com Inteligência Artificial</p>
         </div>
       </div>

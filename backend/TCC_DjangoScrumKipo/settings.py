@@ -16,6 +16,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-substitua-esta-chave-em-producao')
 
+LLM_PROVIDER = os.getenv('LLM_PROVIDER', 'gemini')
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
+
 # SECURITY WARNING: don't run with debug turned on in production!
 # Puxa o valor do .env (Se não achar, o padrão é True para dev local)
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'

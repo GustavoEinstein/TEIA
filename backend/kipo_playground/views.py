@@ -17,6 +17,7 @@ import shutil
 import json 
 import sys 
 import re 
+import traceback
 from random import randint
 
 # --- IMPORTS DO REST FRAMEWORK ---
@@ -42,6 +43,15 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.throttling import ScopedRateThrottle 
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from django.http import HttpResponse
+from django.template.loader import render_to_string
+from weasyprint import HTML
+
+from .services.llm import get_llm_provider
+from .models import Producao
 
 # Importação dos modelos (Incluindo ConfiguracaoXP, Escola, Disciplina e Notificacao)
 from .models import (
@@ -1480,3 +1490,80 @@ def api_mark_notifications_read(request):
     """Marca todas as notificações não lidas como lidas."""
     request.user.notificacoes.filter(lida=False).update(lida=True)
     return Response({'mensagem': 'Notificações marcadas como lidas.'})
+
+# ============================================================================
+# Sistema de integração com IA para catalogação automática
+# ============================================================================
+
+class AutoCatalogAIView(APIView):
+    # Se estiver testando sem enviar o token JWT no header, altere temporariamente para [AllowAny]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        raw_text = request.data.get('raw_text', '')
+        
+        if not raw_text or not raw_text.strip():
+            return Response({'error': 'Por favor, informe um rascunho ou descrição da aula.'}, status=400)
+
+        try:
+            provider = get_llm_provider()
+            cataloged_data = provider.catalog_production(raw_text)
+            return Response(cataloged_data, status=200)
+            
+        except Exception as e:
+            # Imprime o erro detalhado no terminal onde o server/docker está rodando
+            print("\n❌ ERRO NA AUTO-CATALOGAÇÃO COM IA:")
+            traceback.print_exc()
+            print("="*50 + "\n")
+            
+            # Retorna a mensagem de erro específica para o frontend exibir no SweetAlert
+            return Response(
+                {'error': f'Falha no processamento da IA: {str(e)}'}, 
+                status=500
+            )
+
+# ============================================================================
+# Sistema de exportação de produções para PDF
+# ============================================================================
+
+class ExportProducaoPDFView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        try:
+            producao = Producao.objects.get(pk=pk)
+        except Producao.DoesNotExist:
+            return HttpResponse("Produção não encontrada.", status=404)
+
+        try:
+            # Captura o nome do docente passado pelo Modal via Query Param (?docente=...)
+            docente_param = request.GET.get('docente', '').strip()
+            
+            autor_nome = docente_param or getattr(producao, 'autor', None)
+            if not autor_nome and hasattr(producao, 'usuario') and producao.usuario:
+                autor_nome = producao.usuario.get_full_name() or producao.usuario.username
+            
+            context = {
+                'producao': producao,
+                'docente': autor_nome or 'Não informado',
+                'nivel_ensino': getattr(producao, 'nivel_ensino', None) or getattr(producao, 'nivel', '-'),
+                'relato': getattr(producao, 'experiencia', None) or getattr(producao, 'relato', 'Não informado.'),
+                'recursos_str': ", ".join(producao.recursos) if isinstance(getattr(producao, 'recursos', None), list) else str(getattr(producao, 'recursos', '-')),
+            }
+
+            # Renderiza o template fiel ao modelo do IFB / MEC
+            html_string = render_to_string('relatorio_gdf.html', context)
+
+            pdf_bytes = HTML(
+                string=html_string, 
+                base_url=request.build_absolute_uri('/')
+            ).write_pdf()
+
+            response = HttpResponse(pdf_bytes, content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="plano_de_aula_{pk}_IFB.pdf"'
+            return response
+
+        except Exception as e:
+            print("\n❌ ERRO NA GERAÇÃO DO PDF:")
+            traceback.print_exc()
+            return HttpResponse(f"Erro ao gerar PDF: {str(e)}", status=500)

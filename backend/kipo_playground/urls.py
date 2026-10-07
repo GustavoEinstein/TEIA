@@ -5,6 +5,7 @@ from . import views
 from rest_framework_simplejwt.views import TokenRefreshView
 from django.conf import settings
 from django.conf.urls.static import static
+from .views import AutoCatalogAIView, ExportProducaoPDFView
 
 urlpatterns = [
     
@@ -38,6 +39,10 @@ urlpatterns = [
     
     # --- NOVA ROTA AQUI: Controle de visibilidade do autor ---
     path('api/production/<int:pk>/toggle-author/', views.api_toggle_author_visibility, name='toggle_author'),
+
+    # --- (IA E EXPORTAÇÃO EM PDF) ---
+    path('api/production/auto-catalog-ai/', views.AutoCatalogAIView.as_view(), name='auto_catalog_ai'),
+    path('api/production/<int:pk>/export-pdf/', views.ExportProducaoPDFView.as_view(), name='export_production_pdf'),
 
     # ============================================================================
     # 4. SISTEMA DE REVISÃO (DUPLO-CEGO E XP)

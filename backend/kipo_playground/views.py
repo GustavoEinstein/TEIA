@@ -43,7 +43,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.throttling import ScopedRateThrottle 
 
-# Importação dos modelos
+# Importação dos modelos (Incluindo ConfiguracaoXP, Escola, Disciplina e Notificacao)
 from .models import (
     Profile, Producao, Avaliacao, Topico, Comentario, RegistroXP, 
     Conquista, ConquistaUsuario, DiarioOperacao, NotaDiario, ConfiguracaoXP, Escola, Disciplina, Notificacao
@@ -58,7 +58,7 @@ ALLOWED_EXTENSIONS = [
 ]
 
 # ============================================================================
-# FUNÇÃO AUXILIAR DE GAMIFICAÇÃO
+# FUNÇÃO AUXILIAR DE GAMIFICAÇÃO (ATUALIZADA COM NOTIFICAÇÕES)
 # ============================================================================
 def adicionar_xp(perfil, quantidade, descricao):
     """Adiciona XP ao perfil, gera histórico e dispara notificações"""
@@ -73,6 +73,7 @@ def adicionar_xp(perfil, quantidade, descricao):
         descricao=descricao
     )
 
+    # 1. Notifica o ganho de XP
     Notificacao.objects.create(
         user=perfil.user,
         titulo=f"+{quantidade} XP",
@@ -80,6 +81,7 @@ def adicionar_xp(perfil, quantidade, descricao):
         tipo='XP'
     )
 
+    # 2. Verifica se subiu de Nível e notifica!
     nivel_atual = perfil.get_nivel()
     if nivel_anterior != nivel_atual:
         Notificacao.objects.create(
@@ -150,15 +152,17 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
 
 # ============================================================================
-# OPÇÕES PARA O FORMULÁRIO DE REGISTRO
+# NOVO: OPÇÕES PARA O FORMULÁRIO DE REGISTRO (PÚBLICO)
 # ============================================================================
 @api_view(['GET'])
 @authentication_classes([]) 
 @permission_classes([AllowAny])
 def api_get_register_options(request):
+    """Devolve as escolas e disciplinas do banco de dados para a página de Registro."""
     escolas = list(Escola.objects.values_list('nome', flat=True).order_by('nome'))
     disciplinas = list(Disciplina.objects.values_list('nome', flat=True).order_by('nome'))
     
+    # Adicionamos "Outra" caso não tenha sido cadastrada, para o professor não ficar travado
     if "Outra" not in disciplinas:
         disciplinas.append("Outra")
 
@@ -168,9 +172,7 @@ def api_get_register_options(request):
     })
 
 
-# ============================================================================
-# AUTENTICAÇÃO E PERFIL
-# ============================================================================
+#views de autenticação e perfil 
 @csrf_exempt
 @api_view(['POST'])
 @authentication_classes([])
@@ -232,8 +234,11 @@ def api_user_profile(request):
             pass
 
         nome_exibicao = user.first_name if user.first_name else user.username
+
+        # Dados de progresso de nível
         progresso = profile.get_progresso_proximo_nivel()
 
+        # Busca as conquistas (badges) do usuário
         conquistas_usuario = profile.conquistas.all().select_related('conquista')
         lista_conquistas = [{
             'id': c.conquista.id,
@@ -264,7 +269,7 @@ def api_user_profile(request):
             profile.disciplina = data['disciplina']
             
         if 'escola' in data:
-            profile.escola = data['escola']
+            profile.escola = profile.escola
 
         file = request.FILES.get('avatar')
         if file:
@@ -291,9 +296,7 @@ def api_user_profile(request):
         })
 
 
-# ============================================================================
-# PRODUÇÃO DIDÁTICA E RASCUNHO (ATUALIZADO FASE 1)
-# ============================================================================
+#produção didatica e rascunho 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def api_create_production(request):
@@ -314,24 +317,13 @@ def api_create_production(request):
         is_draft = str(is_draft_val).strip().lower() in ['true', '1', 't', 'y', 'yes']
         status_inicial = 'Rascunho' if is_draft else 'Em revisão'
 
-        # --- LÓGICA DE AUTORIA (ANONIMATO) ---
-        exibir_autor_val = data.get('exibir_autor', True)
-        exibir_autor = str(exibir_autor_val).strip().lower() not in ['false', '0', 'f', 'n']
-
-        # --- LÓGICA DE RELEITURA (HERANÇA) ---
-        producao_base_id = data.get('producao_base')
-        producao_base = None
-        if producao_base_id:
-            try:
-                producao_base = Producao.objects.get(id=producao_base_id)
-            except Producao.DoesNotExist:
-                pass
+        # --- RECUPERANDO A FLAG ANONIMO ---
+        anonimo_val = data.get('anonimo')
+        anonimo = str(anonimo_val).strip().lower() in ['true', '1', 't', 'y', 'yes'] if anonimo_val is not None else True
 
         nova_producao = Producao.objects.create(
             user=user, 
             titulo=data.get('titulo', ''),
-            exibir_autor=exibir_autor,     # Salva a escolha do anonimato
-            producao_base=producao_base,   # Associa à prática que serviu de base
             disciplina=data.get('disciplina', ''),
             nivel=data.get('nivel_ensino', ''), 
             modelo_ia=data.get('modelo_ia', ''),
@@ -346,6 +338,7 @@ def api_create_production(request):
             resultados=data.get('resultados', ''),
             arquivo=arquivo,
             link_material=data.get('link_material', ''),
+            anonimo=anonimo, # <--- ADICIONADO AQUI
             status=status_inicial 
         )
         return Response({'mensagem': 'Produção criada com sucesso!', 'id': nova_producao.id}, status=201)
@@ -375,7 +368,8 @@ def api_list_my_productions(request):
             'status': p.status,
             'modelo_ia': p.modelo_ia,
             'feedback_revisor': feedback,
-            'total_aprovacoes': total_aprovacoes 
+            'total_aprovacoes': total_aprovacoes,
+            'anonimo': getattr(p, 'anonimo', True) # Envia pro frontend
         })
     
     return Response(lista)
@@ -439,14 +433,12 @@ def api_get_production_details(request, pk):
 
         dados_referencia = None
         if p.producao_base:
-            # Pega o autor original respeitando o anonimato dele também!
-            autor_original = p.producao_base.user.first_name or p.producao_base.user.username
-            autor_exibicao_original = autor_original if p.producao_base.exibir_autor else "Professor(a) Anônimo(a)"
-            
+            # Garante anonimato se a base for anônima
+            autor_base = "Professor(a) Anônimo(a)" if getattr(p.producao_base, 'anonimo', True) else (p.producao_base.user.first_name or p.producao_base.user.username)
             dados_referencia = {
                 'id': p.producao_base.id,
                 'titulo': p.producao_base.titulo,
-                'autor': autor_exibicao_original 
+                'autor': autor_base 
             }
 
         total_aprovacoes = avaliacoes.filter(aprovado=True).count()
@@ -458,6 +450,9 @@ def api_get_production_details(request, pk):
             avaliacoes_filtradas = [a for a in avaliacoes_detalhadas if a['revisor_id'] == request.user.id]
 
         notas = avaliacoes_filtradas[-1]['notas'] if avaliacoes_filtradas else None
+
+        # --- LOGICA DE EXIBIÇÃO DE AUTOR ---
+        autor_nome = "Professor(a) Anônimo(a)" if getattr(p, 'anonimo', True) else (p.user.first_name or p.user.username)
 
         data = {
             'id': p.id,
@@ -478,11 +473,8 @@ def api_get_production_details(request, pk):
             'link_material': p.link_material,
             'data': p.data_criacao.strftime('%d/%m/%Y'),
             'status': p.status,
-            
-            # --- NOVA LÓGICA DE AUTORIA ---
-            # Se for o dono ou admin, vê o nome verdadeiro. Senão, respeita o check de anonimato
-            'autor': p.user.first_name or p.user.username if (p.exibir_autor or is_dono or is_admin) else "Professor(a) Anônimo(a)",
-            'exibir_autor': p.exibir_autor, # Passado para o front renderizar o checkbox/toggle
+            'autor': autor_nome, # <--- AQUI ELE VERIFICA SE DEVE MOSTRAR
+            'anonimo': getattr(p, 'anonimo', True), # Flag caso o front precise
             
             'is_dono': is_dono,
             'is_admin': is_admin,
@@ -528,10 +520,10 @@ def api_update_production(request, pk):
         p.resultados = data.get('resultados', p.resultados)
         p.link_material = data.get('link_material', p.link_material)
 
-        # Atualiza a preferência de anonimato se enviado no rascunho
-        if 'exibir_autor' in data:
-            exibir_autor_val = data.get('exibir_autor')
-            p.exibir_autor = str(exibir_autor_val).strip().lower() not in ['false', '0', 'f', 'n']
+        # --- ATUALIZANDO ANONIMATO ---
+        anonimo_val = data.get('anonimo')
+        if anonimo_val is not None:
+            p.anonimo = str(anonimo_val).strip().lower() in ['true', '1', 't', 'y', 'yes']
 
         recursos_input = data.getlist('recursos') if hasattr(data, 'getlist') else data.get('recursos')
         if recursos_input:
@@ -541,6 +533,7 @@ def api_update_production(request, pk):
         if novo_arquivo:
             p.arquivo = novo_arquivo
 
+  
         is_draft_val = data.get('is_draft')
         is_draft = str(is_draft_val).strip().lower() in ['true', '1', 't', 'y', 'yes']
         
@@ -560,29 +553,39 @@ def api_update_production(request, pk):
         return Response({'erro': 'Erro interno ao atualizar.'}, status=500)
 
 
-# ============================================================================
-# NOVO: CONTROLE DE VISIBILIDADE DO AUTOR (LIGA/DESLIGA)
-# ============================================================================
-@api_view(['PUT'])
+@api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def api_toggle_author_visibility(request, pk):
-    """Permite que apenas o dono da prática ligue/desligue seu nome a qualquer momento"""
+    """
+    Alterna a visibilidade do autor (anônimo ou público) de uma produção específica.
+    Apenas o dono da produção pode fazer essa alteração.
+    """
     try:
-        p = Producao.objects.get(id=pk, user=request.user)
-        p.exibir_autor = not p.exibir_autor
-        p.save()
-        status_msg = "visível" if p.exibir_autor else "oculto"
+        # Busca a produção garantindo que pertence ao usuário logado
+        producao = Producao.objects.get(id=pk, user=request.user)
+        
+        # Inverte o valor atual do campo 'anonimo' (se for True vira False, e vice-versa)
+        producao.anonimo = not producao.anonimo
+        producao.save()
+        
+        estado_atual = "anônimo" if producao.anonimo else "público"
+        
         return Response({
-            'mensagem': f'Seu nome agora está {status_msg} na comunidade.', 
-            'exibir_autor': p.exibir_autor
-        })
+            'mensagem': f'Visibilidade alterada! Agora o autor está {estado_atual}.',
+            'anonimo': producao.anonimo
+        }, status=200)
+        
     except Producao.DoesNotExist:
-        return Response({'erro': 'Acesso negado ou prática não encontrada.'}, status=404)
+        return Response({
+            'erro': 'Produção não encontrada ou você não tem permissão para alterá-la.'
+        }, status=404)
+    except Exception as e:
+        return Response({
+            'erro': 'Erro interno ao alterar a visibilidade.'
+        }, status=500)
 
 
-# ============================================================================
-# SISTEMA DE REVISÃO E GAMIFICAÇÃO DO SISTEMA
-# ============================================================================
+#sistema de revisão e gamificação do sistema
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def api_list_review_queue(request):
@@ -712,13 +715,10 @@ def api_review_history(request):
     return Response(lista)
 
 
-# ============================================================================
-# FEED DA COMUNIDADE (ATUALIZADO FASE 1)
-# ============================================================================
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def api_list_public_feed(request):
-    producoes = Producao.objects.filter(status='Aprovado').select_related('producao_base').order_by('-data_criacao')
+    producoes = Producao.objects.filter(status='Aprovado').order_by('-data_criacao')
     
     busca = request.GET.get('search', '')
     
@@ -732,17 +732,8 @@ def api_list_public_feed(request):
     
     lista = []
     for p in producoes:
-        # --- LÓGICA DE ANONIMATO NO FEED ---
-        nome_autor = p.user.first_name or p.user.username
-        autor_exibicao = nome_autor if p.exibir_autor else "Professor(a) Anônimo(a)"
-
-        # --- LÓGICA DE RELEITURA (HERANÇA) ---
-        base_info = None
-        if p.producao_base:
-            base_info = {
-                'id': p.producao_base.id, 
-                'titulo': p.producao_base.titulo
-            }
+        # --- LOGICA DE EXIBIÇÃO DE AUTOR ---
+        autor_nome = "Professor(a) Anônimo(a)" if getattr(p, 'anonimo', True) else (p.user.first_name or p.user.username)
 
         lista.append({
             'id': p.id,
@@ -751,8 +742,7 @@ def api_list_public_feed(request):
             'nivel': p.nivel,
             'modelo_ia': p.modelo_ia,
             'categoria': p.categoria,
-            'autor': autor_exibicao,
-            'producao_base': base_info,
+            'autor': autor_nome, 
             'resumo': p.experiencia[:150] + '...' if p.experiencia else '', 
             'likes': 0 
         })
@@ -766,52 +756,57 @@ def api_list_public_feed(request):
 @authentication_classes([]) 
 @permission_classes([AllowAny])
 def api_password_reset_request(request):
-    email = request.data.get('email')
+    email = request.data.get('email', '').strip().lower()
     if not email:
         return Response({'erro': 'E-mail é obrigatório.'}, status=400)
 
     try:
         user = User.objects.get(email=email)
     except User.DoesNotExist:
-        # Por segurança, sempre dizemos que foi enviado mesmo se não existir
         return Response({'mensagem': 'Se o e-mail existir, um link foi enviado.'})
 
-    # Gera o Token seguro do Django
     token = default_token_generator.make_token(user)
     uid = urlsafe_base64_encode(force_bytes(user.pk))
+    
+    # DICA: Quando for colocar no servidor oficial, troque esse localhost pelo domínio final (ex: teia.cic.unb.br)
     reset_link = f"http://localhost:5173/reset-password/{uid}/{token}"
 
     subject = "Redefinição de Senha - T.E.I.A"
     from_email = settings.DEFAULT_FROM_EMAIL
     to = [email]
+    
+    nome_usuario = user.first_name.split()[0].title() if user.first_name else "Professor(a)"
+    texto_puro = (
+        f"Olá, {nome_usuario}.\n\n"
+        f"Recebemos um pedido para redefinir a senha da sua conta no Portal T.E.I.A.\n\n"
+        f"Copie e cole o link abaixo no seu navegador para cadastrar uma nova senha:\n"
+        f"{reset_link}\n\n"
+        f"Se você não fez essa solicitação, pode ignorar este e-mail."
+    )
 
     try:
-        # Pega a URL base dinamicamente apontando para a pasta assets
         logo_url = request.build_absolute_uri(settings.STATIC_URL + 'assets/unb.png')
-        
-        # 1. Prepara as variáveis para o seu template HTML
-        nome_usuario = user.first_name if user.first_name else user.username
         context = {
-            'nome': nome_usuario.split()[0].title(), # Pega só o primeiro nome
+            'nome': nome_usuario,
             'link': reset_link,
             'logo_url': logo_url
         }
-
-        # 2. Renderiza o HTML que você criou
         html_content = render_to_string('emails/password_reset_email.html', context)
         
-        # 3. Cria uma versão em texto puro caso o provedor de e-mail bloqueie HTML
-        text_content = strip_tags(html_content)
-
-        # 4. Monta a mensagem e envia
-        msg = EmailMultiAlternatives(subject, text_content, from_email, to)
-        msg.attach_alternative(html_content, "text/html")
+        msg = EmailMultiAlternatives(subject, texto_puro, from_email, to)
+        
+        # Adicionamos o @unb.br e outros domínios institucionais na lista de restrição
+        dominios_rigidos = ['@hotmail.', '@outlook.', '@live.', '@msn.', '@unb.br', '@aluno.unb.br']
+        
+        if not any(dominio in email for dominio in dominios_rigidos):
+            msg.attach_alternative(html_content, "text/html")
+            
         msg.send(fail_silently=False)
 
-        return Response({'mensagem': 'E-mail enviado com sucesso!'})
+        return Response({'mensagem': 'E-mail enviado! Se não achar, verifique a pasta Spam ou Quarentena.'})
         
     except Exception as e:
-        print(f"ERRO AO ENVIAR E-MAIL: {e}") # Isso vai aparecer no seu terminal do backend para ajudar a debugar!
+        print(f"ERRO AO ENVIAR E-MAIL: {e}") 
         return Response({'erro': 'Erro ao enviar e-mail. Verifique o console.'}, status=500)
 
 @csrf_exempt
@@ -905,13 +900,15 @@ def api_forum_detalhe_comentarios(request, pk):
 
         arquivo_url = request.build_absolute_uri(topico.arquivo.url) if topico.arquivo else None
         
+        # --- LÓGICA DE PRODUÇÃO BASE (Respeitando o anonimato da base) ---
         dados_base = None
         if topico.producao_base:
+            autor_base = "Professor(a) Anônimo(a)" if getattr(topico.producao_base, 'anonimo', True) else (topico.producao_base.user.first_name or topico.producao_base.user.username)
             dados_base = {
                 'id': topico.producao_base.id,
                 'titulo': topico.producao_base.titulo,
                 'disciplina': topico.producao_base.disciplina,
-                'autor': topico.producao_base.user.first_name or topico.producao_base.user.username
+                'autor': autor_base
             }
 
         dados_topico = {
@@ -1013,7 +1010,7 @@ def api_forum_topicos(request):
             categoria=categoria,
             autor=request.user,
             arquivo=arquivo_enviado,
-            producao_base=producao_base 
+            producao_base=producao_base
         )
 
         config_xp, _ = ConfiguracaoXP.objects.get_or_create(pk=1)
@@ -1291,6 +1288,7 @@ class DiarioOperacaoView(APIView):
         if not all([titulo, tipo, data_evento, descricao]):
             return Response({'erro': 'Campos obrigatórios faltando.'}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Buscar o usuário caso um ID tenha sido selecionado
         docente = None
         if docente_id:
             try:
@@ -1347,6 +1345,7 @@ class DiarioNotaView(APIView):
         except DiarioOperacao.DoesNotExist:
             return Response({'erro': 'Registro não encontrado'}, status=status.HTTP_404_NOT_FOUND)
         
+        # Puxa todas as anotações feitas neste atendimento
         notas = diario.notas.all()
         lista_notas = [{
             'id': n.id,
@@ -1355,6 +1354,7 @@ class DiarioNotaView(APIView):
             'criado_em': timezone.localtime(n.criado_em).strftime('%d/%m/%Y %H:%M')
         } for n in notas]
 
+        # Puxa os dados completos do chamado
         dados_diario = {
             'id': diario.id,
             'titulo': diario.titulo,
@@ -1380,10 +1380,12 @@ class DiarioNotaView(APIView):
         texto = request.data.get('texto')
         novo_status = request.data.get('status') 
 
+        # Atualiza o status do chamado se for alterado
         if novo_status and novo_status != diario.status:
             diario.status = novo_status
             diario.save()
 
+        # Cria a nova anotação/comentário
         if texto:
             NotaDiario.objects.create(
                 diario=diario,

@@ -20,28 +20,14 @@ export default function ThemeToggle() {
   return (
     <button
       onClick={() => setIsDark(!isDark)}
-      style={{
-        background: "none",
-        border: "1px solid var(--border-color)",
-        borderRadius: "8px",
-        padding: "8px 12px",
-        cursor: "pointer",
-        display: "flex",
-        alignItems: "center",
-        gap: "8px",
-        color: "var(--text-primary)",
-        backgroundColor: "var(--bg-card)",
-        fontWeight: "600",
-        fontSize: "13px",
-        transition: "all 0.2s ease",
-      }}
+      className="flex items-center gap-2 px-3 py-2 rounded-lg font-bold text-sm border transition-colors bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
     >
       {isDark ? (
-        <Sun size={16} color="#F59E0B" />
+        <Sun size={16} className="text-amber-500" />
       ) : (
-        <Moon size={16} color="#2563EB" />
+        <Moon size={16} className="text-[#1565C0]" />
       )}
-      {isDark ? "Modo Claro" : "Modo Escuro"}
+      <span className="hidden sm:inline">{isDark ? "Modo Claro" : "Modo Escuro"}</span>
     </button>
   )
 }

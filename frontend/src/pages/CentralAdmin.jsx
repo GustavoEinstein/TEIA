@@ -1,15 +1,8 @@
 import React from "react"
 import { useNavigate, useOutletContext } from "react-router-dom"
 import {
-  ShieldAlert,
-  UserCheck,
-  Settings,
-  ChevronRight,
-  Database,
-  Trophy,
-  ExternalLink,
-  Book,
-  FileText,
+  ShieldAlert, UserCheck, Settings, ChevronRight, Database, 
+  Trophy, ExternalLink, Book, FileText
 } from "lucide-react"
 
 export default function CentralAdmin() {
@@ -18,300 +11,95 @@ export default function CentralAdmin() {
   const isMobile = context ? context.isMobile : false
 
   return (
-    <div
-      style={{
-        ...styles.wrapper,
-        padding: isMobile ? "20px 15px" : "40px 20px",
-      }}
-    >
-      <div style={styles.container}>
-        <div
-          style={{ ...styles.header, marginBottom: isMobile ? "25px" : "40px" }}
-        >
-          <div
-            style={{
-              ...styles.titleGroup,
-              flexDirection: isMobile ? "column" : "row",
-              alignItems: isMobile ? "flex-start" : "center",
-            }}
-          >
-            <div style={styles.iconCircleBlue}>
-              <Settings size={28} color="var(--text-info)" />
-            </div>
-            <div style={{ flex: 1 }}>
-              <h1
-                style={{
-                  ...styles.pageTitle,
-                  fontSize: isMobile ? "22px" : "26px",
-                }}
-              >
-                Central de Administração
-              </h1>
-              <p style={styles.pageSubtitle}>
-                Selecione a ferramenta de gestão que deseja acessar.
-              </p>
-            </div>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 md:p-8 transition-colors duration-200 pb-20">
+      <div className="max-w-[1000px] mx-auto">
+        
+        {/* Cabeçalho */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-10 pb-6 border-b border-slate-200 dark:border-slate-800">
+          <div className="w-14 h-14 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-xl flex items-center justify-center shrink-0 border border-indigo-200 dark:border-indigo-800/50">
+            <Settings size={28} />
+          </div>
+          <div>
+            <h1 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight mb-1">
+              Central de Administração
+            </h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Gerencie usuários, configurações e recursos globais da plataforma.
+            </p>
           </div>
         </div>
 
-        <div
-          style={{
-            ...styles.grid,
-            gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
-          }}
-        >
-          <div
-            style={styles.card}
-            onClick={() => navigate("/dashboard/aprovacoes")}
-          >
-            <div
-              style={{
-                ...styles.cardIcon,
-                backgroundColor: "var(--bg-success)",
-              }}
-            >
-              <UserCheck size={32} color="var(--text-success)" />
+        {/* Grid de Ferramentas */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          
+          <div onClick={() => navigate("/dashboard/aprovacoes")} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 flex items-center gap-5 cursor-pointer hover:shadow-lg hover:-translate-y-1 hover:border-emerald-300 dark:hover:border-emerald-700 transition-all group">
+            <div className="w-16 h-16 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-100 dark:border-emerald-800/50 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <UserCheck size={32} className="text-emerald-600 dark:text-emerald-400" />
             </div>
-            <div style={styles.cardContent}>
-              <h3
-                style={{
-                  ...styles.cardTitle,
-                  fontSize: isMobile ? "16px" : "18px",
-                }}
-              >
-                Aprovação de Contas
-              </h3>
-              <p style={styles.cardDesc}>
-                Analise e aprove novos professores que solicitaram acesso.
-              </p>
+            <div className="flex-1">
+              <h3 className="text-lg font-extrabold text-slate-900 dark:text-white mb-1 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">Aprovação de Contas</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 leading-snug">Analise e aprove novos professores que solicitaram acesso.</p>
             </div>
-            <ChevronRight
-              size={20}
-              color="var(--text-muted)"
-              style={styles.arrow}
-            />
+            <ChevronRight size={20} className="text-slate-300 dark:text-slate-600 group-hover:text-emerald-500 transition-colors" />
           </div>
 
-          <div
-            style={styles.card}
-            onClick={() => navigate("/dashboard/admin/gamificacao")}
-          >
-            <div
-              style={{
-                ...styles.cardIcon,
-                backgroundColor: "var(--bg-warning)",
-              }}
-            >
-              <Trophy size={32} color="var(--text-warning)" />
+          <div onClick={() => navigate("/dashboard/admin/gamificacao")} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 flex items-center gap-5 cursor-pointer hover:shadow-lg hover:-translate-y-1 hover:border-amber-300 dark:hover:border-amber-700 transition-all group">
+            <div className="w-16 h-16 rounded-xl bg-amber-50 dark:bg-amber-900/30 border border-amber-100 dark:border-amber-800/50 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <Trophy size={32} className="text-amber-500 dark:text-amber-400" />
             </div>
-            <div style={styles.cardContent}>
-              <h3
-                style={{
-                  ...styles.cardTitle,
-                  fontSize: isMobile ? "16px" : "18px",
-                }}
-              >
-                Gamificação e Hall
-              </h3>
-              <p style={styles.cardDesc}>
-                Gerencie conquistas, atribua XP manual e crie badges.
-              </p>
+            <div className="flex-1">
+              <h3 className="text-lg font-extrabold text-slate-900 dark:text-white mb-1 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">Gamificação e Hall</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 leading-snug">Gerencie conquistas, atribua XP manual e crie badges.</p>
             </div>
-            <ChevronRight
-              size={20}
-              color="var(--text-muted)"
-              style={styles.arrow}
-            />
+            <ChevronRight size={20} className="text-slate-300 dark:text-slate-600 group-hover:text-amber-500 transition-colors" />
           </div>
 
-          <div style={styles.card} onClick={() => navigate("/dashboard/admin")}>
-            <div
-              style={{
-                ...styles.cardIcon,
-                backgroundColor: "var(--bg-danger)",
-              }}
-            >
-              <ShieldAlert size={32} color="var(--text-danger)" />
+          <div onClick={() => navigate("/dashboard/admin")} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 flex items-center gap-5 cursor-pointer hover:shadow-lg hover:-translate-y-1 hover:border-red-300 dark:hover:border-red-700 transition-all group">
+            <div className="w-16 h-16 rounded-xl bg-red-50 dark:bg-red-900/30 border border-red-100 dark:border-red-800/50 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <ShieldAlert size={32} className="text-red-500 dark:text-red-400" />
             </div>
-            <div style={styles.cardContent}>
-              <h3
-                style={{
-                  ...styles.cardTitle,
-                  fontSize: isMobile ? "16px" : "18px",
-                }}
-              >
-                Auditoria de Dados
-              </h3>
-              <p style={styles.cardDesc}>
-                Exclua usuários, exporte relatórios e gerencie o fórum.
-              </p>
+            <div className="flex-1">
+              <h3 className="text-lg font-extrabold text-slate-900 dark:text-white mb-1 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">Auditoria de Dados</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 leading-snug">Exclua usuários, exporte relatórios e gerencie o fórum.</p>
             </div>
-            <ChevronRight
-              size={20}
-              color="var(--text-muted)"
-              style={styles.arrow}
-            />
+            <ChevronRight size={20} className="text-slate-300 dark:text-slate-600 group-hover:text-red-500 transition-colors" />
           </div>
 
-          <div
-            style={styles.card}
-            onClick={() => navigate("/dashboard/admin/diario")}
-          >
-            <div
-              style={{
-                ...styles.cardIcon,
-                backgroundColor: "var(--bg-warning)",
-              }}
-            >
-              <FileText size={32} color="var(--text-warning)" />
+          <div onClick={() => navigate("/dashboard/admin/diario")} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 flex items-center gap-5 cursor-pointer hover:shadow-lg hover:-translate-y-1 hover:border-orange-300 dark:hover:border-orange-700 transition-all group">
+            <div className="w-16 h-16 rounded-xl bg-orange-50 dark:bg-orange-900/30 border border-orange-100 dark:border-orange-800/50 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <FileText size={32} className="text-orange-500 dark:text-orange-400" />
             </div>
-            <div style={styles.cardContent}>
-              <h3
-                style={{
-                  ...styles.cardTitle,
-                  fontSize: isMobile ? "16px" : "18px",
-                }}
-              >
-                Diário de Operações
-              </h3>
-              <p style={styles.cardDesc}>
-                Registre reuniões, visitas às escolas e treinamentos.
-              </p>
+            <div className="flex-1">
+              <h3 className="text-lg font-extrabold text-slate-900 dark:text-white mb-1 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">Diário de Operações</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 leading-snug">Registre reuniões, visitas às escolas e treinamentos.</p>
             </div>
-            <ChevronRight
-              size={20}
-              color="var(--text-muted)"
-              style={styles.arrow}
-            />
+            <ChevronRight size={20} className="text-slate-300 dark:text-slate-600 group-hover:text-orange-500 transition-colors" />
           </div>
 
-          <div
-            style={styles.card}
-            onClick={() =>
-              window.open(
-                "https://docs.google.com/document/d/SEU_LINK_AQUI",
-                "_blank",
-              )
-            }
-          >
-            <div
-              style={{ ...styles.cardIcon, backgroundColor: "var(--bg-info)" }}
-            >
-              <Book size={32} color="var(--text-info)" />
+          <div onClick={() => window.open("https://docs.google.com/document/d/SEU_LINK_AQUI", "_blank")} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 flex items-center gap-5 cursor-pointer hover:shadow-lg hover:-translate-y-1 hover:border-blue-300 dark:hover:border-blue-700 transition-all group">
+            <div className="w-16 h-16 rounded-xl bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800/50 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <Book size={32} className="text-[#1565C0] dark:text-blue-400" />
             </div>
-            <div style={styles.cardContent}>
-              <h3
-                style={{
-                  ...styles.cardTitle,
-                  fontSize: isMobile ? "16px" : "18px",
-                }}
-              >
-                Documentação Técnica
-              </h3>
-              <p style={styles.cardDesc}>
-                Requisitos funcionais, regras de negócio e arquitetura.
-              </p>
+            <div className="flex-1">
+              <h3 className="text-lg font-extrabold text-slate-900 dark:text-white mb-1 group-hover:text-[#1565C0] dark:group-hover:text-blue-400 transition-colors">Documentação Técnica</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 leading-snug">Requisitos funcionais, regras de negócio e arquitetura.</p>
             </div>
-            <ExternalLink
-              size={20}
-              color="var(--text-muted)"
-              style={styles.arrow}
-            />
+            <ExternalLink size={20} className="text-slate-300 dark:text-slate-600 group-hover:text-[#1565C0] transition-colors" />
           </div>
 
-          <div
-            style={styles.card}
-            onClick={() => navigate("/dashboard/admin/configuracoes")}
-          >
-            <div
-              style={{ ...styles.cardIcon, backgroundColor: "var(--bg-info)" }}
-            >
-              <Database size={32} color="var(--text-info)" />
+          <div onClick={() => navigate("/dashboard/admin/configuracoes")} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 flex items-center gap-5 cursor-pointer hover:shadow-lg hover:-translate-y-1 hover:border-purple-300 dark:hover:border-purple-700 transition-all group">
+            <div className="w-16 h-16 rounded-xl bg-purple-50 dark:bg-purple-900/30 border border-purple-100 dark:border-purple-800/50 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <Database size={32} className="text-purple-600 dark:text-purple-400" />
             </div>
-            <div style={styles.cardContent}>
-              <h3
-                style={{
-                  ...styles.cardTitle,
-                  fontSize: isMobile ? "16px" : "18px",
-                }}
-              >
-                Configurações Gerais
-              </h3>
-              <p style={styles.cardDesc}>
-                Ajuste parâmetros globais e pesos da IA do sistema.
-              </p>
+            <div className="flex-1">
+              <h3 className="text-lg font-extrabold text-slate-900 dark:text-white mb-1 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">Configurações Gerais</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 leading-snug">Ajuste parâmetros globais e pesos da IA do sistema.</p>
             </div>
-            <ChevronRight
-              size={20}
-              color="var(--text-muted)"
-              style={styles.arrow}
-            />
+            <ChevronRight size={20} className="text-slate-300 dark:text-slate-600 group-hover:text-purple-500 transition-colors" />
           </div>
+
         </div>
       </div>
     </div>
   )
-}
-
-const styles = {
-  wrapper: {
-    backgroundColor: "var(--bg-main)",
-    minHeight: "100vh",
-    fontFamily: "Inter, sans-serif",
-  },
-  container: { maxWidth: "1000px", margin: "0 auto" },
-  header: {},
-  titleGroup: { display: "flex", gap: "15px", width: "100%" },
-  iconCircleBlue: {
-    width: "50px",
-    height: "50px",
-    backgroundColor: "var(--bg-info)",
-    borderRadius: "12px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-  },
-  pageTitle: { margin: 0, fontWeight: "900", color: "var(--text-primary)" },
-  pageSubtitle: {
-    margin: 0,
-    color: "var(--text-muted)",
-    marginTop: "5px",
-    fontSize: "14px",
-  },
-  grid: { display: "grid", gap: "20px" },
-  card: {
-    backgroundColor: "var(--bg-card)",
-    borderRadius: "16px",
-    padding: "20px",
-    display: "flex",
-    alignItems: "center",
-    gap: "15px",
-    boxShadow: "0 4px 6px rgba(0,0,0,0.02)",
-    border: "1px solid var(--border-color)",
-    cursor: "pointer",
-    transition: "all 0.2s ease",
-  },
-  cardIcon: {
-    width: "60px",
-    height: "60px",
-    borderRadius: "14px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-  },
-  cardContent: { flex: 1 },
-  cardTitle: {
-    margin: "0 0 6px 0",
-    fontWeight: "800",
-    color: "var(--text-primary)",
-  },
-  cardDesc: {
-    margin: 0,
-    fontSize: "13px",
-    color: "var(--text-secondary)",
-    lineHeight: "1.5",
-  },
-  arrow: { flexShrink: 0 },
 }

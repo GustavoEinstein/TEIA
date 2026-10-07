@@ -1,19 +1,12 @@
 import React, { useState, useEffect, useRef } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 import {
-  Menu,
-  Trophy,
-  LogOut,
-  Bell,
-  Star,
-  ArrowUpCircle,
-  Medal,
-  CheckCircle2,
-  AlertCircle,
+  Menu, Trophy, LogOut, Bell, Star, ArrowUpCircle, 
+  Medal, CheckCircle2, AlertCircle
 } from "lucide-react"
 import api from "../services/api"
 import ThemeToggle from "./ThemeToggle"
-import Swal from "sweetalert2" // <-- IMPORTANTE PARA OS POP-UPS!
+import Swal from "sweetalert2"
 
 function Header({ onToggleMenu, showMenuButton }) {
   const navigate = useNavigate()
@@ -37,15 +30,9 @@ function Header({ onToggleMenu, showMenuButton }) {
 
   const currentTitle = pageTitles[location.pathname] || "Página do Sistema"
 
-  const [userPontos, setUserPontos] = useState(
-    localStorage.getItem("user_pontos") || "0",
-  )
-  const [userNivel, setUserNivel] = useState(
-    localStorage.getItem("user_nivel") || "Prof. Conectado(a)",
-  )
-  const [userAvatar, setUserAvatar] = useState(
-    localStorage.getItem("user_avatar"),
-  )
+  const [userPontos, setUserPontos] = useState(localStorage.getItem("user_pontos") || "0")
+  const [userNivel, setUserNivel] = useState(localStorage.getItem("user_nivel") || "Prof. Conectado(a)")
+  const [userAvatar, setUserAvatar] = useState(localStorage.getItem("user_avatar"))
 
   const [notifications, setNotifications] = useState([])
   const [showNotifications, setShowNotifications] = useState(false)
@@ -54,7 +41,6 @@ function Header({ onToggleMenu, showMenuButton }) {
   const isInitialMount = useRef(true)
   const knownNotifIds = useRef(new Set())
 
-  // --- O "RADAR" DE NOTIFICAÇÕES E XP ---
   useEffect(() => {
     let isMounted = true
 
@@ -70,14 +56,12 @@ function Header({ onToggleMenu, showMenuButton }) {
 
         if (!isMounted) return
 
-        // Atualiza os pontos no topo da tela silenciosamente
         const data = resPerfil.data
         localStorage.setItem("user_pontos", data.pontos)
         localStorage.setItem("user_nivel", data.nivel)
         setUserPontos(data.pontos)
         setUserNivel(data.nivel)
 
-        // Atualiza Notificações e dispara o "Pop-up de Videogame"
         const fetchedNotifs = resNotif.data
         setNotifications(fetchedNotifs)
 
@@ -86,7 +70,6 @@ function Header({ onToggleMenu, showMenuButton }) {
           isInitialMount.current = false
         } else {
           fetchedNotifs.forEach((n) => {
-            // Se tem notificação nova que ele ainda não viu, pula na tela!
             if (!n.lida && !knownNotifIds.current.has(n.id)) {
               knownNotifIds.current.add(n.id)
               dispararToastNotificacao(n)
@@ -100,13 +83,8 @@ function Header({ onToggleMenu, showMenuButton }) {
 
     buscarDadosEnotificacoes()
 
-    // Escuta quando as telas de baixo (Revisão, Fórum) avisam que a ação foi feita
-    const atualizarHeader = () => {
-      buscarDadosEnotificacoes()
-    }
+    const atualizarHeader = () => buscarDadosEnotificacoes()
     window.addEventListener("perfilAtualizado", atualizarHeader)
-
-    // Checa de fininho a cada 30 segundos se alguém revisou as práticas dele
     const interval = setInterval(buscarDadosEnotificacoes, 30000)
 
     return () => {
@@ -116,23 +94,13 @@ function Header({ onToggleMenu, showMenuButton }) {
     }
   }, [])
 
-  // --- FUNÇÃO VISUAL DO POP-UP (TOAST) ---
   const dispararToastNotificacao = (n) => {
     let iconHtml = "🔔"
-    let borderColor = "var(--border-color)"
+    let borderColor = "#cbd5e1" // slate-300
 
-    if (n.tipo === "XP") {
-      iconHtml = "⭐"
-      borderColor = "#F59E0B"
-    }
-    if (n.tipo === "NIVEL") {
-      iconHtml = "🚀"
-      borderColor = "#10B981"
-    }
-    if (n.tipo === "MEDALHA") {
-      iconHtml = "🏅"
-      borderColor = "#8B5CF6"
-    }
+    if (n.tipo === "XP") { iconHtml = "⭐"; borderColor = "#F59E0B" }
+    if (n.tipo === "NIVEL") { iconHtml = "🚀"; borderColor = "#10B981" }
+    if (n.tipo === "MEDALHA") { iconHtml = "🏅"; borderColor = "#8B5CF6" }
 
     Swal.fire({
       toast: true,
@@ -140,17 +108,17 @@ function Header({ onToggleMenu, showMenuButton }) {
       showConfirmButton: false,
       timer: 6000,
       timerProgressBar: true,
-      background: "var(--bg-card)",
-      color: "var(--text-primary)",
+      background: document.documentElement.classList.contains("dark") ? "#0f172a" : "#ffffff",
+      color: document.documentElement.classList.contains("dark") ? "#f8fafc" : "#0f172a",
       html: `
-              <div style="display: flex; align-items: center; gap: 15px; text-align: left;">
-                  <div style="font-size: 28px;">${iconHtml}</div>
-                  <div>
-                      <strong style="display: block; font-size: 15px; margin-bottom: 2px;">${n.titulo}</strong>
-                      <span style="font-size: 13px; color: var(--text-secondary);">${n.mensagem}</span>
-                  </div>
-              </div>
-          `,
+        <div style="display: flex; align-items: center; gap: 15px; text-align: left;">
+            <div style="font-size: 28px;">${iconHtml}</div>
+            <div>
+                <strong style="display: block; font-size: 15px; margin-bottom: 2px;">${n.titulo}</strong>
+                <span style="font-size: 13px; opacity: 0.8;">${n.mensagem}</span>
+            </div>
+        </div>
+      `,
       didOpen: (toast) => {
         toast.style.borderLeft = `5px solid ${borderColor}`
         toast.addEventListener("mouseenter", Swal.stopTimer)
@@ -198,77 +166,70 @@ function Header({ onToggleMenu, showMenuButton }) {
 
   const getNotifIcon = (tipo) => {
     switch (tipo) {
-      case "XP":
-        return <Star size={16} color="#F59E0B" />
-      case "NIVEL":
-        return <ArrowUpCircle size={16} color="#10B981" />
-      case "MEDALHA":
-        return <Medal size={16} color="#8B5CF6" />
-      case "AVALIACAO":
-        return <CheckCircle2 size={16} color="#2563EB" />
-      default:
-        return <AlertCircle size={16} color="var(--text-muted)" />
+      case "XP": return <Star size={18} className="text-amber-500" />
+      case "NIVEL": return <ArrowUpCircle size={18} className="text-emerald-500" />
+      case "MEDALHA": return <Medal size={18} className="text-violet-500" />
+      case "AVALIACAO": return <CheckCircle2 size={18} className="text-blue-500" />
+      default: return <AlertCircle size={18} className="text-slate-400" />
     }
   }
 
   return (
-    <header style={styles.header}>
-      <div style={styles.leftSection}>
+    <header className="sticky top-0 z-[900] w-full h-[75px] bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 md:px-8 transition-colors duration-200 shadow-sm">
+      
+      <div className="flex items-center gap-4">
         {showMenuButton && (
-          <button onClick={onToggleMenu} style={styles.menuButton}>
-            <Menu size={24} color="var(--text-info)" />
+          <button onClick={onToggleMenu} className="p-2 text-slate-500 hover:text-[#1565C0] dark:text-slate-400 dark:hover:text-blue-400 transition-colors">
+            <Menu size={24} />
           </button>
         )}
-        <div style={styles.breadcrumb}>
-          {!showMenuButton && (
-            <span style={{ color: "var(--text-muted)", marginRight: "8px" }}>
-              Dashboard /
-            </span>
-          )}
-          <span style={{ color: "var(--text-info)" }}>{currentTitle}</span>
+        <div className="hidden sm:flex items-center text-sm font-semibold whitespace-nowrap">
+          {!showMenuButton && <span className="text-slate-400 dark:text-slate-500 mr-2">Dashboard /</span>}
+          <span className="text-[#1565C0] dark:text-blue-400">{currentTitle}</span>
         </div>
       </div>
 
-      <div style={styles.userArea}>
-        <div style={{ display: showMenuButton ? "none" : "block" }}>
+      <div className="flex items-center gap-4 md:gap-6">
+        <div className={showMenuButton ? "hidden" : "block"}>
           <ThemeToggle />
         </div>
 
-        <div style={styles.notifContainer} ref={dropdownRef}>
-          <button onClick={handleToggleNotifications} style={styles.bellButton}>
-            <Bell size={20} color="var(--text-secondary)" />
+        {/* Notificações */}
+        <div className="relative" ref={dropdownRef}>
+          <button 
+            onClick={handleToggleNotifications} 
+            className="relative p-2.5 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+          >
+            <Bell size={20} />
             {unreadCount > 0 && (
-              <span style={styles.badgeCount}>{unreadCount}</span>
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-950">
+                {unreadCount}
+              </span>
             )}
           </button>
+          
           {showNotifications && (
-            <div style={styles.dropdown}>
-              <div style={styles.dropHeader}>Notificações</div>
-              <div style={styles.dropList}>
+            <div className="absolute top-14 right-0 w-80 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl overflow-hidden z-50 origin-top-right animate-in fade-in zoom-in-95 duration-200">
+              <div className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-5 py-4">
+                <h3 className="font-extrabold text-sm text-slate-800 dark:text-white uppercase tracking-wider">Notificações</h3>
+              </div>
+              <div className="max-h-[350px] overflow-y-auto scrollbar-thin">
                 {notifications.length === 0 ? (
-                  <div style={styles.emptyNotif}>
+                  <div className="p-8 text-center text-sm text-slate-500 dark:text-slate-400 font-medium">
                     Você não tem novas notificações.
                   </div>
                 ) : (
                   notifications.map((n) => (
-                    <div
-                      key={n.id}
-                      style={{
-                        ...styles.notifItem,
-                        backgroundColor: n.lida
-                          ? "var(--bg-card)"
-                          : "var(--bg-alt)",
-                      }}
-                    >
-                      <div style={styles.notifIconBox}>
+                    <div key={n.id} className={`flex gap-4 p-4 border-b border-slate-100 dark:border-slate-800 transition-colors ${n.lida ? 'bg-white dark:bg-slate-900' : 'bg-blue-50/50 dark:bg-slate-800/50'}`}>
+                      <div className="shrink-0 w-10 h-10 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center shadow-sm">
                         {getNotifIcon(n.tipo)}
                       </div>
-                      <div style={{ flex: 1 }}>
-                        <div style={styles.notifTitle}>{n.titulo}</div>
-                        <div style={styles.notifMessage}>{n.mensagem}</div>
-                        <div style={styles.notifDate}>{n.data}</div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-slate-900 dark:text-white leading-tight mb-1">{n.titulo}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 leading-snug mb-2">{n.mensagem}</p>
+                        <span className="text-[10px] text-slate-400 font-semibold">{n.data}</span>
                       </div>
-                      {!n.lida && <div style={styles.unreadDot}></div>}
+                      {!n.lida && <div className="w-2 h-2 rounded-full bg-[#1565C0] dark:bg-blue-500 shrink-0 mt-1.5"></div>}
                     </div>
                   ))
                 )}
@@ -277,236 +238,38 @@ function Header({ onToggleMenu, showMenuButton }) {
           )}
         </div>
 
-        <div
-          style={styles.profile}
+        {/* Perfil */}
+        <div 
           onClick={() => navigate("/perfil")}
+          className="flex items-center gap-3 pl-4 md:pl-6 border-l border-slate-200 dark:border-slate-800 cursor-pointer group"
           title="Ir para meu perfil"
         >
-          <div
-            style={{
-              ...styles.userInfo,
-              display: showMenuButton ? "none" : "flex",
-            }}
-          >
-            <div style={styles.nameRow}>
-              <span style={styles.userName}>Prof. {displayName}</span>
-              <span style={styles.separator}>|</span>
-              <span onClick={handleLogout} style={styles.logoutLink}>
-                Sair <LogOut size={12} style={{ marginLeft: "4px" }} />
+          <div className={`hidden md:flex flex-col items-end justify-center ${showMenuButton ? 'hidden' : ''}`}>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-extrabold text-slate-800 dark:text-white group-hover:text-[#1565C0] dark:group-hover:text-blue-400 transition-colors">Prof. {displayName}</span>
+              <span className="text-slate-300 dark:text-slate-700">|</span>
+              <span onClick={handleLogout} className="flex items-center text-xs font-bold text-slate-400 hover:text-red-500 transition-colors">
+                Sair <LogOut size={12} className="ml-1" />
               </span>
             </div>
-            <div style={styles.xpBadgeHeader}>
-              <Trophy size={11} color="#B45309" />
-              <span>
-                {userNivel}{" "}
-                <span style={{ opacity: 0.6, margin: "0 2px" }}>•</span>{" "}
-                {userPontos} XP
-              </span>
+            <div className="flex items-center gap-1.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider mt-1">
+              <Trophy size={10} />
+              <span>{userNivel} • {userPontos} XP</span>
             </div>
           </div>
 
-          <div style={styles.avatar}>
+          <div className="w-11 h-11 bg-[#1565C0] dark:bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-lg overflow-hidden border-2 border-slate-100 dark:border-slate-800 shadow-sm group-hover:scale-105 transition-transform shrink-0">
             {userAvatar && userAvatar !== "null" ? (
-              <img src={userAvatar} alt="Perfil" style={styles.avatarImg} />
+              <img src={userAvatar} alt="Perfil" className="w-full h-full object-cover" />
             ) : (
               <span>{userInitial}</span>
             )}
           </div>
         </div>
+
       </div>
     </header>
   )
-}
-
-const styles = {
-  header: {
-    height: "70px",
-    backgroundColor: "var(--bg-card)",
-    borderBottom: "1px solid var(--border-color)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: "0 25px",
-    position: "sticky",
-    top: 0,
-    left: 0,
-    zIndex: 900,
-    width: "100%",
-    boxSizing: "border-box",
-    flexShrink: 0,
-    transition: "background-color 0.3s ease, border-color 0.3s ease",
-  },
-  leftSection: { display: "flex", alignItems: "center", gap: "15px" },
-  menuButton: {
-    background: "none",
-    border: "none",
-    cursor: "pointer",
-    padding: "4px",
-  },
-  breadcrumb: {
-    fontSize: "15px",
-    fontWeight: "600",
-    display: "flex",
-    alignItems: "center",
-    whiteSpace: "nowrap",
-  },
-  userArea: { display: "flex", alignItems: "center", gap: "20px" },
-  notifContainer: { position: "relative" },
-  bellButton: {
-    background: "var(--bg-alt)",
-    border: "1px solid var(--border-color)",
-    borderRadius: "50%",
-    width: "40px",
-    height: "40px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    cursor: "pointer",
-    position: "relative",
-    transition: "background-color 0.2s",
-  },
-  badgeCount: {
-    position: "absolute",
-    top: "-4px",
-    right: "-4px",
-    backgroundColor: "#EF4444",
-    color: "white",
-    fontSize: "10px",
-    fontWeight: "bold",
-    width: "18px",
-    height: "18px",
-    borderRadius: "50%",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    border: "2px solid var(--bg-card)",
-  },
-  dropdown: {
-    position: "absolute",
-    top: "50px",
-    right: "-50px",
-    width: "320px",
-    backgroundColor: "var(--bg-card)",
-    border: "1px solid var(--border-color)",
-    borderRadius: "12px",
-    boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
-    overflow: "hidden",
-    zIndex: 1000,
-  },
-  dropHeader: {
-    padding: "15px",
-    fontWeight: "800",
-    borderBottom: "1px solid var(--border-color)",
-    color: "var(--text-primary)",
-    backgroundColor: "var(--bg-main)",
-  },
-  dropList: { maxHeight: "350px", overflowY: "auto" },
-  emptyNotif: {
-    padding: "30px",
-    textAlign: "center",
-    color: "var(--text-muted)",
-    fontSize: "13px",
-  },
-  notifItem: {
-    display: "flex",
-    gap: "12px",
-    padding: "15px",
-    borderBottom: "1px solid var(--border-color)",
-    transition: "background-color 0.2s",
-    alignItems: "center",
-  },
-  notifIconBox: {
-    width: "32px",
-    height: "32px",
-    borderRadius: "50%",
-    backgroundColor: "var(--bg-card)",
-    border: "1px solid var(--border-color)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-  },
-  notifTitle: {
-    fontSize: "13px",
-    fontWeight: "700",
-    color: "var(--text-primary)",
-    marginBottom: "2px",
-  },
-  notifMessage: {
-    fontSize: "12px",
-    color: "var(--text-secondary)",
-    lineHeight: "1.4",
-    marginBottom: "6px",
-  },
-  notifDate: { fontSize: "10px", color: "var(--text-muted)" },
-  unreadDot: {
-    width: "8px",
-    height: "8px",
-    borderRadius: "50%",
-    backgroundColor: "#3B82F6",
-    flexShrink: 0,
-  },
-  profile: {
-    display: "flex",
-    alignItems: "center",
-    gap: "14px",
-    cursor: "pointer",
-    paddingLeft: "10px",
-    borderLeft: "1px solid var(--border-color)",
-  },
-  userInfo: {
-    flexDirection: "column",
-    alignItems: "flex-end",
-    justifyContent: "center",
-    gap: "5px",
-  },
-  nameRow: { display: "flex", alignItems: "center", gap: "8px" },
-  userName: {
-    fontSize: "14px",
-    fontWeight: "800",
-    color: "var(--text-primary)",
-  },
-  separator: { color: "var(--border-color)", fontSize: "12px" },
-  logoutLink: {
-    display: "flex",
-    alignItems: "center",
-    fontSize: "12px",
-    color: "var(--text-muted)",
-    fontWeight: "600",
-    cursor: "pointer",
-    transition: "color 0.2s",
-  },
-  xpBadgeHeader: {
-    display: "flex",
-    alignItems: "center",
-    gap: "6px",
-    backgroundColor: "#FFFBEB",
-    color: "#B45309",
-    border: "1px solid #FDE68A",
-    padding: "3px 10px",
-    borderRadius: "12px",
-    fontSize: "11px",
-    fontWeight: "700",
-    textTransform: "uppercase",
-    letterSpacing: "0.3px",
-  },
-  avatar: {
-    width: "44px",
-    height: "44px",
-    backgroundColor: "var(--text-info)",
-    color: "white",
-    borderRadius: "50%",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    fontWeight: "bold",
-    fontSize: "18px",
-    overflow: "hidden",
-    border: "3px solid var(--bg-main)",
-    flexShrink: 0,
-    boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
-  },
-  avatarImg: { width: "100%", height: "100%", objectFit: "cover" },
 }
 
 export default Header

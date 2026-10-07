@@ -732,7 +732,7 @@ export default function PoliticaDePrivacidade() {
                 <div className="flex items-center gap-2 mb-2">
                   <Mail size={16} className="text-emerald-600 dark:text-emerald-400" />
                   <h4 className="text-xs font-black text-emerald-800 dark:text-emerald-300 uppercase tracking-widest">
-                    Encarregado de Proteção de Dados4
+                    Encarregado de Proteção de Dados
                   </h4>
                 </div>
                 <p className="text-xs text-emerald-700 dark:text-emerald-400 mb-2">

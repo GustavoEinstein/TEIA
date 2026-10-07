@@ -10,6 +10,8 @@ import {
 import LandingPage from "./pages/LandingPage"
 import Login from "./Login"
 import Register from "./Register"
+import TermosDeUso from "./pages/TermosDeUso"
+import PoliticaDePrivacidade from "./pages/PaginaDePrivacidade"
 
 // --- PÁGINAS DE RECUPERAÇÃO DE SENHA ---
 import EsqueceuSenha from "./pages/EsqueceuSenha"
@@ -18,7 +20,7 @@ import NovaSenha from "./pages/NovaSenha"
 // --- PÁGINAS DO DASHBOARD (PRIVADAS) ---
 import Dashboard from "./Dashboard"
 import MainContent from "./components/MainContent"
-import DetalheProducao from "./pages/DetalharProducao"
+import DetalharProducao from "./pages/DetalharProducao"
 import VisualizarMinhaProducao from "./pages/VisualizarMinhaProducao"
 import FormularioManual from "./pages/formularios/FormularioManual"
 import SelecionarMetodo from "./pages/SelecionarMetodo"
@@ -39,7 +41,7 @@ import CentralAdmin from "./pages/CentralAdmin"
 import GamificacaoAdmin from "./pages/GamificacaoAdmin"
 import DiarioOperacoes from "./pages/DiarioOperacoes"
 import DiarioDetalhes from "./pages/DiarioDetalhes"
-import ConfiguracoesGerais from "./pages/ConfiguracoesGerais" // <--- Importado corretamente
+import ConfiguracoesGerais from "./pages/ConfiguracoesGerais"
 
 // --- PÁGINA DE EDIÇÃO ---
 import EditarProducao from "./EditarProducao"
@@ -55,23 +57,20 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        
+        {/* === ROTAS LEGAIS AQUI === */}
+        <Route path="/termos" element={<TermosDeUso />} />
+        <Route path="/privacidade" element={<PoliticaDePrivacidade />} />
 
         <Route path="/esqueceu-senha" element={<EsqueceuSenha />} />
         <Route path="/reset-password/:uid/:token" element={<NovaSenha />} />
 
         {/* === ROTAS PRIVADAS (Só acessa com login) === */}
         <Route element={<PrivateRoute />}>
-          {/* O Dashboard contém a barra lateral e o topo */}
           <Route path="/dashboard" element={<Dashboard />}>
-            {/* Rota padrão do dashboard (Feed) */}
             <Route index element={<MainContent />} />
-            {/* Visualizações */}
-            <Route path="producao/:id" element={<DetalheProducao />} />
-            <Route
-              path="minha-producao/:id"
-              element={<VisualizarMinhaProducao />}
-            />
-            {/* Funcionalidades de Produção */}
+            <Route path="producao/:id" element={<DetalharProducao />} />
+            <Route path="minha-producao/:id" element={<VisualizarMinhaProducao />} />
             <Route path="catalogar" element={<SelecionarMetodo />} />
             <Route path="catalogar/base" element={<BuscarBase />} />
             <Route path="catalogar/manual" element={<FormularioManual />} />
@@ -79,36 +78,24 @@ function App() {
             <Route path="revisao" element={<RevisaoDuploCego />} />
             <Route path="revisao/:id" element={<Revisao />} />
             <Route path="ajuda" element={<Ajuda />} />
-            {/* --- ROTA DE GAMIFICAÇÃO (USUÁRIO) --- */}
             <Route path="ranking" element={<Ranking />} />
-            {/* --- ROTAS DO FÓRUM --- */}
             <Route path="forum" element={<Forum />} />
             <Route path="forum/:id" element={<TopicoDetalhe />} />
-            {/* --- ROTA DE EDIÇÃO --- */}
             <Route path="editar-producao/:id" element={<EditarProducao />} />
 
-            {/* --- ROTAS DE ADMINISTRAÇÃO --- */}
             <Route path="central-admin" element={<CentralAdmin />} />
             <Route path="aprovacoes" element={<AprovacaoContas />} />
             <Route path="admin" element={<Admin />} />
             <Route path="admin/gamificacao" element={<GamificacaoAdmin />} />
-
-            {/* Diário de Operações */}
             <Route path="admin/diario" element={<DiarioOperacoes />} />
             <Route path="admin/diario/:id" element={<DiarioDetalhes />} />
-
-            {/* Configurações Gerais (ROTA ADICIONADA AQUI) */}
-            <Route
-              path="admin/configuracoes"
-              element={<ConfiguracoesGerais />}
-            />
+            <Route path="admin/configuracoes" element={<ConfiguracoesGerais />} />
           </Route>
 
-          {/* Perfil fica fora do layout do Dashboard */}
           <Route path="/perfil" element={<Profile />} />
         </Route>
 
-        {/* Rota de segurança (Catch-all) */}
+        {/* Rota de fallback (Erro 404) */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>

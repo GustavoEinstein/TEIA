@@ -3,25 +3,9 @@ import { useNavigate, useOutletContext } from "react-router-dom"
 import api from "../services/api"
 import Swal from "sweetalert2"
 import {
-  ArrowLeft,
-  BookOpen,
-  Calendar,
-  Users,
-  FileText,
-  Save,
-  Plus,
-  Trash2,
-  Loader2,
-  MapPin,
-  MessageCircle,
-  Camera,
-  CheckCircle2,
-  Eye,
-  Search,
-  Tag,
-  Filter,
-  Check,
-  ListChecks,
+  ArrowLeft, BookOpen, Calendar, Users, FileText, Save, Plus,
+  Trash2, Loader2, MapPin, MessageCircle, Camera, CheckCircle2,
+  Eye, Search, Tag, Filter, Check, ListChecks,
 } from "lucide-react"
 
 const TAGS_DISPONIVEIS = [
@@ -70,9 +54,8 @@ export default function DiarioOperacoes() {
       const perfilRes = await api.get("api/user/me/")
       if (!perfilRes.data.is_superuser) {
         Swal.fire({
-          icon: "error",
-          title: "Acesso Negado",
-          text: "Você não tem permissão de administrador.",
+          icon: "error", title: "Acesso Negado", text: "Você não tem permissão de administrador.",
+          confirmButtonColor: "#1565C0"
         })
         navigate("/dashboard")
         return
@@ -89,11 +72,7 @@ export default function DiarioOperacoes() {
       const response = await api.get("api/admin/diario/")
       setLogs(response.data)
     } catch (error) {
-      Swal.fire(
-        "Erro de Conexão",
-        "Não foi possível carregar os registros.",
-        "error",
-      )
+      Swal.fire("Erro de Conexão", "Não foi possível carregar os registros.", "error")
     } finally {
       setLoading(false)
     }
@@ -108,14 +87,15 @@ export default function DiarioOperacoes() {
     }
   }
 
-  const handleChange = (e) =>
-    setFormData({ ...formData, [e.target.name]: e.target.value })
+  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value })
+  
   const toggleTag = (tag) => {
     const novasTags = formData.tags.includes(tag)
       ? formData.tags.filter((t) => t !== tag)
       : [...formData.tags, tag]
     setFormData({ ...formData, tags: novasTags })
   }
+  
   const handleFileChange = (e) => {
     if (e.target.files[0]) setFoto(e.target.files[0])
   }
@@ -123,19 +103,14 @@ export default function DiarioOperacoes() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!formData.titulo || !formData.descricao || !formData.contato)
-      return Swal.fire(
-        "Campos Incompletos",
-        "Preencha título, contato e descrição.",
-        "warning",
-      )
+      return Swal.fire("Campos Incompletos", "Preencha título, contato e descrição.", "warning")
 
     setIsSubmitting(true)
     try {
       const dataToSend = new FormData()
       Object.keys(formData).forEach((key) => {
         if (key === "tags") {
-          if (formData.tags.length > 0)
-            dataToSend.append("tags", formData.tags.join(", "))
+          if (formData.tags.length > 0) dataToSend.append("tags", formData.tags.join(", "))
         } else {
           dataToSend.append(key, formData[key])
         }
@@ -146,33 +121,15 @@ export default function DiarioOperacoes() {
         headers: { "Content-Type": "multipart/form-data" },
       })
       setLogs([response.data, ...logs])
-      Swal.fire({
-        icon: "success",
-        title: "Registrado!",
-        text: "Atividade salva com sucesso.",
-        timer: 2000,
-        showConfirmButton: false,
-      })
+      Swal.fire({ icon: "success", title: "Registrado!", text: "Atividade salva com sucesso.", timer: 2000, showConfirmButton: false })
       setFormData({
-        titulo: "",
-        tipo: "Reunião",
-        status: "Resolvido",
-        docente_id: "",
-        contato: "",
-        data_evento: new Date().toISOString().split("T")[0],
-        descricao: "",
-        proximos_passos: "",
-        tags: [],
-        participantes: 1,
+        titulo: "", tipo: "Reunião", status: "Resolvido", docente_id: "", contato: "",
+        data_evento: new Date().toISOString().split("T")[0], descricao: "", proximos_passos: "", tags: [], participantes: 1,
       })
       setBuscaUsuario("")
       setFoto(null)
     } catch (error) {
-      Swal.fire(
-        "Erro",
-        "Não foi possível salvar o registro no servidor.",
-        "error",
-      )
+      Swal.fire("Erro", "Não foi possível salvar o registro no servidor.", "error")
     } finally {
       setIsSubmitting(false)
     }
@@ -180,11 +137,8 @@ export default function DiarioOperacoes() {
 
   const handleDelete = async (id) => {
     const confirm = await Swal.fire({
-      title: "Excluir registro?",
-      text: "Essa ação apagará os dados permanentemente.",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#DC2626",
+      title: "Excluir registro?", text: "Essa ação apagará os dados permanentemente.",
+      icon: "warning", showCancelButton: true, confirmButtonColor: "#DC2626",
     })
     if (!confirm.isConfirmed) return
     try {
@@ -198,167 +152,79 @@ export default function DiarioOperacoes() {
 
   const getTipoMeta = (tipo) => {
     switch (tipo) {
-      case "Treinamento":
-        return {
-          cor: "var(--text-success)",
-          bg: "var(--bg-success)",
-          icone: <BookOpen size={16} />,
-        }
-      case "Reunião":
-        return {
-          cor: "var(--text-info)",
-          bg: "var(--bg-info)",
-          icone: <Users size={16} />,
-        }
-      case "Visita Escolar":
-        return {
-          cor: "#A78BFA",
-          bg: "rgba(139, 92, 246, 0.1)",
-          icone: <MapPin size={16} />,
-        }
-      case "Suporte":
-        return {
-          cor: "var(--text-warning)",
-          bg: "var(--bg-warning)",
-          icone: <MessageCircle size={16} />,
-        }
-      default:
-        return {
-          cor: "var(--text-secondary)",
-          bg: "var(--bg-alt)",
-          icone: <FileText size={16} />,
-        }
+      case "Treinamento": return { classes: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800", icone: <BookOpen size={14} /> }
+      case "Reunião": return { classes: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200 dark:border-blue-800", icone: <Users size={14} /> }
+      case "Visita Escolar": return { classes: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 border-purple-200 dark:border-purple-800", icone: <MapPin size={14} /> }
+      case "Suporte": return { classes: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 dark:border-amber-800", icone: <MessageCircle size={14} /> }
+      default: return { classes: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-700", icone: <FileText size={14} /> }
     }
   }
 
   const getStatusMeta = (status) => {
     switch (status) {
-      case "Pendente":
-        return {
-          cor: "var(--text-danger)",
-          bg: "var(--bg-danger)",
-          label: "Pendente",
-        }
-      case "Em andamento":
-        return {
-          cor: "var(--text-warning)",
-          bg: "var(--bg-warning)",
-          label: "Em andamento",
-        }
-      default:
-        return {
-          cor: "var(--text-success)",
-          bg: "var(--bg-success)",
-          label: "Resolvido",
-        }
+      case "Pendente": return { classes: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-red-200 dark:border-red-800", label: "Pendente" }
+      case "Em andamento": return { classes: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 dark:border-amber-800", label: "Em andamento" }
+      default: return { classes: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800", label: "Resolvido" }
     }
   }
 
   const usuariosFiltrados = usuarios
-    .filter(
-      (u) =>
-        u.username.toLowerCase().includes(buscaUsuario.toLowerCase()) ||
-        u.email.toLowerCase().includes(buscaUsuario.toLowerCase()),
-    )
+    .filter((u) => u.username.toLowerCase().includes(buscaUsuario.toLowerCase()) || u.email.toLowerCase().includes(buscaUsuario.toLowerCase()))
     .slice(0, 5)
+
   const logsFiltrados = logs.filter((log) => {
-    const matchBusca =
-      (log.titulo || "").toLowerCase().includes(buscaTimeline.toLowerCase()) ||
-      (log.contato || "").toLowerCase().includes(buscaTimeline.toLowerCase())
+    const matchBusca = (log.titulo || "").toLowerCase().includes(buscaTimeline.toLowerCase()) || (log.contato || "").toLowerCase().includes(buscaTimeline.toLowerCase())
     const matchStatus = filtroStatus === "Todos" || log.status === filtroStatus
     return matchBusca && matchStatus
   })
 
-  if (loading)
-    return (
-      <div style={styles.loadingContainer}>
-        <Loader2 className="spin" size={32} color="#CA8A04" />
-        <p style={{ marginTop: "10px", color: "var(--text-muted)" }}>
-          Conectando ao CRM...
-        </p>
-        <style>{`@keyframes spin { 100% { transform: rotate(360deg); } } .spin { animation: spin 1s linear infinite; }`}</style>
-      </div>
-    )
+  if (loading) return (
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center transition-colors duration-200">
+      <Loader2 size={32} className="animate-spin text-amber-500 mb-4" />
+      <p className="text-slate-500 dark:text-slate-400 font-bold">Conectando ao CRM...</p>
+    </div>
+  )
+
+  const inputClass = "w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-3 text-sm focus:border-amber-500 outline-none transition-all dark:text-white placeholder-slate-400"
+  const labelClass = "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wide"
 
   return (
-    <div
-      style={{
-        ...styles.wrapper,
-        padding: isMobile ? "20px 10px" : "40px 20px",
-      }}
-    >
-      <style>{`
-        input::placeholder, textarea::placeholder { color: var(--text-muted) !important; opacity: 1 !important; }
-        ::-webkit-input-placeholder { color: var(--text-muted) !important; opacity: 1 !important; }
-        :-moz-placeholder { color: var(--text-muted) !important; opacity: 1 !important; }
-        .timeline-line::before { content: ''; position: absolute; top: 15px; bottom: 0; left: 20px; width: 2px; background-color: var(--border-color); z-index: 1; }
-        .autocomplete-item:hover { background-color: var(--bg-alt) !important; }
-        .tag-chip:hover { border-color: var(--border-hover) !important; }
-      `}</style>
-
-      <div style={styles.container}>
-        <div style={styles.header}>
-          <button
-            onClick={() => navigate("/dashboard/central-admin")}
-            style={styles.backButton}
-          >
+    <div className="w-full min-h-screen bg-slate-50 dark:bg-slate-950 p-4 md:p-8 pb-20 transition-colors duration-200">
+      <div className="max-w-[1300px] mx-auto">
+        
+        <header className="mb-8">
+          <button onClick={() => navigate("/dashboard/central-admin")} className="flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-[#1565C0] dark:hover:text-blue-400 font-bold text-sm mb-6 transition-colors">
             <ArrowLeft size={16} /> Voltar à Central
           </button>
-          <div style={styles.titleGroup}>
-            <div style={styles.iconCircleYellow}>
-              <FileText size={28} color="#CA8A04" />
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center shrink-0 border border-amber-200 dark:border-amber-800/50">
+              <FileText size={28} className="text-amber-600 dark:text-amber-500" />
             </div>
             <div>
-              <h1
-                style={{
-                  ...styles.pageTitle,
-                  fontSize: isMobile ? "22px" : "26px",
-                }}
-              >
-                CRM & Diário de Operações
-              </h1>
-              <p style={styles.pageSubtitle}>
-                Documente treinamentos, suporte e relacionamentos com os
-                docentes.
-              </p>
+              <h1 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight">CRM & Diário de Operações</h1>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Documente treinamentos, suporte e relacionamentos com os docentes.</p>
             </div>
           </div>
-        </div>
+        </header>
 
-        <div
-          style={{
-            ...styles.splitLayout,
-            flexDirection: isMobile ? "column" : "row",
-          }}
-        >
-          <div style={{ flex: 1, width: "100%" }}>
-            <div style={styles.formCard}>
-              <h3 style={styles.cardTitle}>
-                <Plus size={18} /> Novo Registro de Atendimento
+        <div className="flex flex-col lg:flex-row gap-8 items-start">
+          
+          {/* COLUNA ESQUERDA (FORMULÁRIO) */}
+          <div className="flex-[1.2] w-full">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 md:p-8">
+              <h3 className="flex items-center gap-2 text-lg font-extrabold text-slate-900 dark:text-white mb-6 pb-4 border-b border-slate-100 dark:border-slate-800">
+                <Plus size={20} className="text-amber-500" /> Novo Registro de Atendimento
               </h3>
 
-              <form onSubmit={handleSubmit} style={styles.form}>
-                <div style={styles.row}>
-                  <div style={{ ...styles.inputGroup, flex: 2 }}>
-                    <label style={styles.label}>Título da Interação</label>
-                    <input
-                      type="text"
-                      name="titulo"
-                      value={formData.titulo}
-                      onChange={handleChange}
-                      style={styles.input}
-                      placeholder="Ex: Oficina sobre Prompts Básicos"
-                      required
-                    />
+              <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+                <div className="flex flex-col sm:flex-row gap-5">
+                  <div className="flex-[2]">
+                    <label className={labelClass}>Título da Interação</label>
+                    <input type="text" name="titulo" value={formData.titulo} onChange={handleChange} required placeholder="Ex: Oficina sobre Prompts Básicos" className={inputClass} />
                   </div>
-                  <div style={{ ...styles.inputGroup, flex: 1 }}>
-                    <label style={styles.label}>Status</label>
-                    <select
-                      name="status"
-                      value={formData.status}
-                      onChange={handleChange}
-                      style={styles.select}
-                    >
+                  <div className="flex-1">
+                    <label className={labelClass}>Status</label>
+                    <select name="status" value={formData.status} onChange={handleChange} className={`${inputClass} cursor-pointer`}>
                       <option value="Resolvido">Resolvido ✅</option>
                       <option value="Em andamento">Em andamento ⏳</option>
                       <option value="Pendente">Pendente 🚨</option>
@@ -366,15 +232,10 @@ export default function DiarioOperacoes() {
                   </div>
                 </div>
 
-                <div style={styles.row}>
-                  <div style={styles.inputGroup}>
-                    <label style={styles.label}>Tipo de Evento</label>
-                    <select
-                      name="tipo"
-                      value={formData.tipo}
-                      onChange={handleChange}
-                      style={styles.select}
-                    >
+                <div className="flex flex-col sm:flex-row gap-5">
+                  <div className="flex-1">
+                    <label className={labelClass}>Tipo de Evento</label>
+                    <select name="tipo" value={formData.tipo} onChange={handleChange} className={`${inputClass} cursor-pointer`}>
                       <option value="Reunião">Reunião</option>
                       <option value="Treinamento">Treinamento</option>
                       <option value="Visita Escolar">Visita Escolar</option>
@@ -382,299 +243,130 @@ export default function DiarioOperacoes() {
                       <option value="Outros">Outros</option>
                     </select>
                   </div>
-                  <div style={styles.inputGroup}>
-                    <label style={styles.label}>Data</label>
-                    <input
-                      type="date"
-                      name="data_evento"
-                      value={formData.data_evento}
-                      onChange={handleChange}
-                      style={styles.input}
-                      required
-                    />
+                  <div className="flex-1">
+                    <label className={labelClass}>Data</label>
+                    <input type="date" name="data_evento" value={formData.data_evento} onChange={handleChange} required className={inputClass} />
                   </div>
-                  {(formData.tipo === "Treinamento" ||
-                    formData.tipo === "Visita Escolar") && (
-                    <div style={{ ...styles.inputGroup, maxWidth: "100px" }}>
-                      <label style={styles.label}>Nº Pessoas</label>
-                      <input
-                        type="number"
-                        name="participantes"
-                        min="1"
-                        value={formData.participantes}
-                        onChange={handleChange}
-                        style={styles.input}
-                      />
+                  {(formData.tipo === "Treinamento" || formData.tipo === "Visita Escolar") && (
+                    <div className="w-24 shrink-0">
+                      <label className={labelClass}>Pessoas</label>
+                      <input type="number" name="participantes" min="1" value={formData.participantes} onChange={handleChange} className={inputClass} />
                     </div>
                   )}
                 </div>
 
-                <div style={styles.inputGroup}>
-                  <label style={styles.label}>
-                    Professor(a) ou Contato Livre
-                  </label>
-                  <div style={{ position: "relative" }}>
-                    <div style={styles.inputWrapper}>
-                      <Search size={16} color="var(--text-muted)" />
-                      <input
-                        type="text"
-                        value={buscaUsuario}
-                        onChange={(e) => {
-                          setBuscaUsuario(e.target.value)
-                          setFormData({
-                            ...formData,
-                            contato: e.target.value,
-                            docente_id: "",
-                          })
-                          setMostrarAutocomplete(true)
-                        }}
-                        onBlur={() =>
-                          setTimeout(() => setMostrarAutocomplete(false), 200)
-                        }
-                        style={styles.inputNoBorder}
-                        placeholder="Busque um usuário ou digite livremente..."
-                        required
-                      />
-                    </div>
-                    {mostrarAutocomplete && buscaUsuario && (
-                      <div style={styles.autocompleteDropdown}>
-                        {usuariosFiltrados.length > 0 ? (
-                          usuariosFiltrados.map((u) => (
-                            <div
-                              key={u.id}
-                              className="autocomplete-item"
-                              style={styles.autocompleteItem}
-                              onClick={() => {
-                                setBuscaUsuario(u.username)
-                                setFormData({
-                                  ...formData,
-                                  contato: u.username,
-                                  docente_id: u.id,
-                                })
-                                setMostrarAutocomplete(false)
-                              }}
-                            >
-                              <strong>{u.username}</strong>{" "}
-                              <span
-                                style={{
-                                  color: "var(--text-muted)",
-                                  fontSize: "12px",
-                                }}
-                              >
-                                - {u.disciplina}
-                              </span>
-                            </div>
-                          ))
-                        ) : (
+                <div className="relative">
+                  <label className={labelClass}>Professor(a) ou Contato Livre</label>
+                  <div className={`relative flex items-center gap-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 focus-within:border-amber-500 transition-colors`}>
+                    <Search size={16} className="text-slate-400 shrink-0" />
+                    <input
+                      type="text" value={buscaUsuario}
+                      onChange={(e) => {
+                        setBuscaUsuario(e.target.value)
+                        setFormData({ ...formData, contato: e.target.value, docente_id: "" })
+                        setMostrarAutocomplete(true)
+                      }}
+                      onFocus={() => setMostrarAutocomplete(true)}
+                      onBlur={() => setTimeout(() => setMostrarAutocomplete(false), 200)}
+                      placeholder="Busque um usuário ou digite livremente..."
+                      required
+                      className="w-full bg-transparent py-3 text-sm outline-none dark:text-white placeholder-slate-400"
+                    />
+                  </div>
+                  
+                  {mostrarAutocomplete && buscaUsuario && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl z-50 overflow-hidden max-h-60 overflow-y-auto">
+                      {usuariosFiltrados.length > 0 ? (
+                        usuariosFiltrados.map((u) => (
                           <div
-                            style={{
-                              padding: "10px",
-                              fontSize: "13px",
-                              color: "var(--text-muted)",
+                            key={u.id}
+                            className="p-3 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer border-b border-slate-100 dark:border-slate-700/50 transition-colors"
+                            onClick={() => {
+                              setBuscaUsuario(u.username)
+                              setFormData({ ...formData, contato: u.username, docente_id: u.id })
+                              setMostrarAutocomplete(false)
                             }}
                           >
-                            Nenhum usuário encontrado. Será salvo como contato
-                            livre.
+                            <strong>{u.username}</strong> <span className="text-slate-400 text-xs">- {u.disciplina}</span>
                           </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                        ))
+                      ) : (
+                        <div className="p-3 text-xs text-slate-500 text-center">Nenhum usuário encontrado. Será salvo como contato livre.</div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
-                <div style={styles.inputGroup}>
-                  <label style={styles.label}>
-                    <Tag
-                      size={14}
-                      style={{
-                        display: "inline",
-                        verticalAlign: "middle",
-                        marginRight: "4px",
-                      }}
-                    />{" "}
-                    Tags de Categorização
-                  </label>
-                  <div
-                    style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}
-                  >
+                <div>
+                  <label className={labelClass}><Tag size={14} className="inline mr-1"/> Tags de Categorização</label>
+                  <div className="flex flex-wrap gap-2">
                     {TAGS_DISPONIVEIS.map((tag) => {
                       const isSelected = formData.tags.includes(tag)
                       return (
                         <div
-                          key={tag}
-                          className="tag-chip"
-                          onClick={() => toggleTag(tag)}
-                          style={{
-                            ...styles.tagChip,
-                            backgroundColor: isSelected
-                              ? "var(--bg-info)"
-                              : "var(--bg-card)",
-                            borderColor: isSelected
-                              ? "var(--text-info)"
-                              : "var(--border-color)",
-                            color: isSelected
-                              ? "var(--text-info)"
-                              : "var(--text-secondary)",
-                          }}
+                          key={tag} onClick={() => toggleTag(tag)}
+                          className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors cursor-pointer flex items-center gap-1.5 select-none ${
+                            isSelected 
+                            ? "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-700" 
+                            : "bg-white dark:bg-slate-900 text-slate-500 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600"
+                          }`}
                         >
-                          {isSelected && (
-                            <Check size={12} style={{ marginRight: "4px" }} />
-                          )}{" "}
-                          {tag}
+                          {isSelected && <Check size={12} />} {tag}
                         </div>
                       )
                     })}
                   </div>
                 </div>
 
-                <div style={styles.inputGroup}>
-                  <label style={styles.label}>Relato da Interação</label>
-                  <textarea
-                    name="descricao"
-                    value={formData.descricao}
-                    onChange={handleChange}
-                    style={styles.textarea}
-                    placeholder="Descreva qual foi a dúvida, o que foi discutido no treinamento ou a dor apontada..."
-                    required
-                  />
+                <div>
+                  <label className={labelClass}>Relato da Interação</label>
+                  <textarea name="descricao" value={formData.descricao} onChange={handleChange} required rows="4" placeholder="Descreva qual foi a dúvida, o que foi discutido no treinamento ou a dor apontada..." className={inputClass} />
                 </div>
 
                 {formData.status !== "Resolvido" && (
-                  <div style={styles.inputGroup}>
-                    <label
-                      style={{ ...styles.label, color: "var(--text-warning)" }}
-                    >
-                      <ListChecks
-                        size={14}
-                        style={{ display: "inline", marginRight: "4px" }}
-                      />{" "}
-                      Próximos Passos / Pendências
-                    </label>
-                    <textarea
-                      name="proximos_passos"
-                      value={formData.proximos_passos}
-                      onChange={handleChange}
-                      style={{
-                        ...styles.textarea,
-                        minHeight: "60px",
-                        borderColor: "var(--border-warning)",
-                      }}
-                      placeholder="Ex: Ligar na próxima semana para verificar se conseguiu o acesso."
-                    />
+                  <div>
+                    <label className={`${labelClass} !text-amber-600 dark:!text-amber-500`}><ListChecks size={14} className="inline mr-1"/> Próximos Passos / Pendências</label>
+                    <textarea name="proximos_passos" value={formData.proximos_passos} onChange={handleChange} rows="2" placeholder="Ex: Ligar na próxima semana para verificar se conseguiu o acesso." className={`${inputClass} border-amber-300 dark:border-amber-700/50 focus:border-amber-500`} />
                   </div>
                 )}
 
-                <div style={styles.inputGroup}>
-                  <label style={styles.label}>Foto / Anexo (Opcional)</label>
-                  <input
-                    type="file"
-                    id="foto-diario"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    style={{ display: "none" }}
-                  />
-                  <label htmlFor="foto-diario" style={styles.uploadBtn}>
+                <div>
+                  <label className={labelClass}>Foto / Anexo (Opcional)</label>
+                  <input type="file" id="foto-diario" accept="image/*" onChange={handleFileChange} className="hidden" />
+                  <label htmlFor="foto-diario" className="flex items-center justify-center gap-2 p-4 border border-dashed border-slate-300 dark:border-slate-700 rounded-lg bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-sm font-bold cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                     {foto ? (
-                      <>
-                        <CheckCircle2 size={18} color="var(--text-success)" />{" "}
-                        <span
-                          style={{
-                            color: "var(--text-success)",
-                            fontWeight: "bold",
-                          }}
-                        >
-                          {foto.name}
-                        </span>
-                      </>
+                      <><CheckCircle2 size={18} className="text-emerald-500" /> <span className="text-emerald-600 dark:text-emerald-400">{foto.name}</span></>
                     ) : (
-                      <>
-                        <Camera size={18} /> Anexar Evidência / Print
-                      </>
+                      <><Camera size={18} /> Anexar Evidência / Print</>
                     )}
                   </label>
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  style={styles.submitBtn}
-                >
-                  {isSubmitting ? (
-                    <Loader2 size={18} className="spin" />
-                  ) : (
-                    <Save size={18} />
-                  )}{" "}
-                  {isSubmitting ? "Salvando..." : "Salvar Registro"}
+                <button type="submit" disabled={isSubmitting} className="w-full flex items-center justify-center gap-2 bg-[#1565C0] hover:bg-blue-700 text-white p-3.5 rounded-xl font-bold text-sm transition-colors shadow-md shadow-blue-500/20 mt-2 disabled:opacity-50">
+                  {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />} {isSubmitting ? "Salvando..." : "Salvar Registro"}
                 </button>
               </form>
             </div>
           </div>
 
-          <div style={{ flex: 1.2, width: "100%" }}>
-            <div style={styles.timelineContainer}>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: "20px",
-                  flexWrap: "wrap",
-                  gap: "10px",
-                }}
-              >
-                <h3
-                  style={{
-                    ...styles.cardTitle,
-                    borderBottom: "none",
-                    margin: 0,
-                  }}
-                >
-                  <Calendar size={18} /> Histórico de Atendimentos
+          {/* COLUNA DIREITA (TIMELINE) */}
+          <div className="flex-[1.5] w-full">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 md:p-8 h-full">
+              
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
+                <h3 className="flex items-center gap-2 text-lg font-extrabold text-slate-900 dark:text-white m-0">
+                  <Calendar size={20} className="text-[#1565C0] dark:text-blue-400" /> Histórico de Atendimentos
                 </h3>
               </div>
 
-              <div
-                style={{
-                  display: "flex",
-                  gap: "10px",
-                  marginBottom: "25px",
-                  flexWrap: "wrap",
-                }}
-              >
-                <div
-                  style={{
-                    ...styles.inputWrapper,
-                    flex: 1,
-                    backgroundColor: "var(--bg-main)",
-                  }}
-                >
-                  <Search size={16} color="var(--text-muted)" />
-                  <input
-                    type="text"
-                    value={buscaTimeline}
-                    onChange={(e) => setBuscaTimeline(e.target.value)}
-                    placeholder="Buscar assunto ou docente..."
-                    style={{ ...styles.inputNoBorder, fontSize: "13px" }}
-                  />
+              <div className="flex flex-col sm:flex-row gap-3 mb-8">
+                <div className="flex-1 relative">
+                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input type="text" value={buscaTimeline} onChange={(e) => setBuscaTimeline(e.target.value)} placeholder="Buscar assunto ou docente..." className={`${inputClass} pl-10`} />
                 </div>
-                <div
-                  style={{
-                    ...styles.inputWrapper,
-                    width: "auto",
-                    backgroundColor: "var(--bg-main)",
-                  }}
-                >
-                  <Filter size={16} color="var(--text-muted)" />
-                  <select
-                    value={filtroStatus}
-                    onChange={(e) => setFiltroStatus(e.target.value)}
-                    style={{
-                      ...styles.inputNoBorder,
-                      width: "auto",
-                      fontSize: "13px",
-                      cursor: "pointer",
-                    }}
-                  >
+                <div className="relative shrink-0 w-full sm:w-[180px]">
+                  <Filter size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <select value={filtroStatus} onChange={(e) => setFiltroStatus(e.target.value)} className={`${inputClass} pl-10 cursor-pointer appearance-none`}>
                     <option value="Todos">Todos os Status</option>
                     <option value="Pendente">Pendentes</option>
                     <option value="Em andamento">Em andamento</option>
@@ -684,181 +376,86 @@ export default function DiarioOperacoes() {
               </div>
 
               {logsFiltrados.length === 0 ? (
-                <p style={styles.emptyText}>
-                  Nenhum registro encontrado com estes filtros.
-                </p>
+                <p className="text-slate-500 dark:text-slate-400 text-sm text-center py-10 border border-dashed border-slate-200 dark:border-slate-800 rounded-xl">Nenhum registro encontrado com estes filtros.</p>
               ) : (
-                <div className="timeline-line" style={styles.timeline}>
+                <div className="relative ml-4 mt-6 border-l-2 border-slate-200 dark:border-slate-700">
                   {logsFiltrados.map((log) => {
                     const meta = getTipoMeta(log.tipo)
                     const statusMeta = getStatusMeta(log.status)
-                    const isLongText =
-                      log.descricao && log.descricao.length > 120
-                    const descResumo = isLongText
-                      ? log.descricao.substring(0, 120) + "..."
-                      : log.descricao
+                    const isLongText = log.descricao && log.descricao.length > 120
+                    const descResumo = isLongText ? log.descricao.substring(0, 120) + "..." : log.descricao
 
                     return (
-                      <div key={log.id} style={styles.timelineItem}>
-                        <div
-                          style={{
-                            ...styles.timelineIcon,
-                            backgroundColor: meta.bg,
-                            color: meta.cor,
-                          }}
-                        >
+                      <div key={log.id} className="relative pl-6 pb-8 last:pb-0">
+                        <div className={`absolute -left-[17px] top-0 w-8 h-8 rounded-full flex items-center justify-center border-[3px] border-white dark:border-slate-900 ${meta.classes} shadow-sm`}>
                           {meta.icone}
                         </div>
 
-                        <div style={styles.timelineContent}>
-                          <div style={styles.logHeader}>
-                            <div style={{ flex: 1 }}>
-                              <div style={styles.logMetaRow}>
-                                <span
-                                  style={{
-                                    ...styles.badge,
-                                    backgroundColor: meta.bg,
-                                    color: meta.cor,
-                                  }}
-                                >
+                        <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-5 border border-slate-100 dark:border-slate-800 shadow-sm transition-all hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700">
+                          
+                          <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-3">
+                            <div className="flex-1">
+                              <div className="flex flex-wrap items-center gap-2 mb-2">
+                                <span className={`px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-widest border ${meta.classes}`}>
                                   {log.tipo}
                                 </span>
-                                <span
-                                  style={{
-                                    ...styles.badge,
-                                    backgroundColor: statusMeta.bg,
-                                    color: statusMeta.cor,
-                                  }}
-                                >
+                                <span className={`px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-widest border ${statusMeta.classes}`}>
                                   {statusMeta.label}
                                 </span>
-                                <span style={styles.logDate}>
-                                  {log.data_evento}
-                                </span>
+                                <span className="text-[11px] font-bold text-slate-400">{log.data_evento}</span>
                               </div>
-                              <h4 style={styles.logTitle}>{log.titulo}</h4>
-                              <div
-                                style={{
-                                  display: "flex",
-                                  gap: "15px",
-                                  flexWrap: "wrap",
-                                }}
-                              >
-                                <div style={styles.logContact}>
-                                  <Users size={12} /> {log.contato}{" "}
-                                  {log.docente_id ? "(Cadastrado)" : ""}
-                                </div>
+                              <h4 className="text-[15px] font-black text-slate-900 dark:text-white leading-tight mb-2">{log.titulo}</h4>
+                              
+                              <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-slate-500">
+                                <div className="flex items-center gap-1.5"><Users size={12} /> {log.contato} {log.docente_id ? "(Cadastrado)" : ""}</div>
                                 {log.participantes > 1 && (
-                                  <div style={styles.logContact}>
-                                    <Users
-                                      size={12}
-                                      color="var(--text-success)"
-                                    />{" "}
-                                    {log.participantes} Participantes
-                                  </div>
+                                  <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-500"><Users size={12} /> {log.participantes} Participantes</div>
                                 )}
                               </div>
                             </div>
-
-                            <div style={styles.actionButtons}>
-                              <button
-                                onClick={() =>
-                                  navigate(
-                                    `/dashboard/admin/diario/${log.id}`,
-                                    { state: { logData: log } },
-                                  )
-                                }
-                                style={styles.viewBtn}
-                                title="Ver Detalhes"
-                              >
-                                <Eye size={18} />
+                            
+                            <div className="flex items-center gap-2 shrink-0">
+                              <button onClick={() => navigate(`/dashboard/admin/diario/${log.id}`, { state: { logData: log } })} className="p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50 rounded-lg transition-colors" title="Ver Detalhes">
+                                <Eye size={16} />
                               </button>
-                              <button
-                                onClick={() => handleDelete(log.id)}
-                                style={styles.deleteBtn}
-                                title="Excluir"
-                              >
-                                <Trash2 size={18} />
+                              <button onClick={() => handleDelete(log.id)} className="p-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 rounded-lg transition-colors" title="Excluir">
+                                <Trash2 size={16} />
                               </button>
                             </div>
                           </div>
 
-                          <p style={styles.logDesc}>{descResumo}</p>
+                          <p className="text-[13px] text-slate-600 dark:text-slate-400 leading-relaxed whitespace-pre-wrap m-0">{descResumo}</p>
 
                           {log.tags && (
-                            <div
-                              style={{
-                                marginTop: "10px",
-                                display: "flex",
-                                gap: "6px",
-                                flexWrap: "wrap",
-                              }}
-                            >
+                            <div className="flex flex-wrap gap-1.5 mt-3">
                               {log.tags.split(",").map((t, idx) => (
-                                <span
-                                  key={idx}
-                                  style={{
-                                    fontSize: "10px",
-                                    backgroundColor: "var(--bg-alt)",
-                                    color: "var(--text-secondary)",
-                                    padding: "3px 8px",
-                                    borderRadius: "4px",
-                                    fontWeight: "700",
-                                  }}
-                                >
+                                <span key={idx} className="text-[10px] font-bold uppercase tracking-wider text-slate-500 bg-slate-200 dark:bg-slate-700/50 px-2 py-0.5 rounded-md">
                                   #{t.trim()}
                                 </span>
                               ))}
                             </div>
                           )}
 
-                          {log.proximos_passos &&
-                            log.status !== "Resolvido" && (
-                              <div
-                                style={{
-                                  marginTop: "12px",
-                                  backgroundColor: "var(--bg-warning)",
-                                  padding: "10px",
-                                  borderRadius: "8px",
-                                  borderLeft: "3px solid var(--border-warning)",
-                                  fontSize: "13px",
-                                  color: "var(--text-warning)",
-                                }}
-                              >
-                                <strong>Próximos Passos:</strong>{" "}
-                                {log.proximos_passos}
-                              </div>
-                            )}
-
-                          {log.foto && (
-                            <div
-                              style={styles.fotoThumbContainer}
-                              onClick={() =>
-                                navigate(`/dashboard/admin/diario/${log.id}`, {
-                                  state: { logData: log },
-                                })
-                              }
-                            >
-                              <div style={styles.fotoOverlay}>
-                                <Eye size={24} color="white" />
-                                <span
-                                  style={{
-                                    color: "white",
-                                    fontSize: "13px",
-                                    fontWeight: "bold",
-                                    marginTop: "4px",
-                                  }}
-                                >
-                                  Ver Anexo
-                                </span>
-                              </div>
-                              <img
-                                src={log.foto}
-                                alt="Anexo"
-                                style={styles.fotoThumbTimeline}
-                              />
+                          {log.proximos_passos && log.status !== "Resolvido" && (
+                            <div className="mt-4 bg-amber-100/50 dark:bg-amber-900/20 p-3 rounded-lg border-l-4 border-amber-400 text-[12px] text-amber-800 dark:text-amber-400">
+                              <strong className="block mb-1">Próximos Passos:</strong>
+                              {log.proximos_passos}
                             </div>
                           )}
+
+                          {log.foto && (
+                            <div 
+                              onClick={() => navigate(`/dashboard/admin/diario/${log.id}`, { state: { logData: log } })}
+                              className="mt-4 relative group cursor-pointer rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 inline-block"
+                            >
+                              <img src={log.foto} alt="Anexo" className="block max-w-full h-auto max-h-[120px] object-cover opacity-90 transition-opacity" />
+                              <div className="absolute inset-0 bg-slate-900/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white backdrop-blur-[2px]">
+                                <Eye size={20} />
+                                <span className="text-[11px] font-bold mt-1">Ver Anexo</span>
+                              </div>
+                            </div>
+                          )}
+
                         </div>
                       </div>
                     )
@@ -868,349 +465,8 @@ export default function DiarioOperacoes() {
             </div>
           </div>
         </div>
+
       </div>
     </div>
   )
-}
-
-const styles = {
-  wrapper: {
-    backgroundColor: "var(--bg-main)",
-    minHeight: "100vh",
-    fontFamily: "Inter, sans-serif",
-  },
-  container: { maxWidth: "1100px", margin: "0 auto" },
-  loadingContainer: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    height: "80vh",
-  },
-  header: { marginBottom: "30px" },
-  backButton: {
-    display: "flex",
-    alignItems: "center",
-    gap: "6px",
-    background: "none",
-    border: "none",
-    cursor: "pointer",
-    fontSize: "14px",
-    color: "var(--text-secondary)",
-    fontWeight: "700",
-    padding: 0,
-    marginBottom: "15px",
-  },
-  titleGroup: { display: "flex", alignItems: "center", gap: "15px" },
-  iconCircleYellow: {
-    width: "50px",
-    height: "50px",
-    backgroundColor: "rgba(202, 138, 4, 0.1)",
-    borderRadius: "12px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-  },
-  pageTitle: { margin: 0, fontWeight: "900", color: "var(--text-primary)" },
-  pageSubtitle: {
-    margin: 0,
-    color: "var(--text-muted)",
-    marginTop: "5px",
-    fontSize: "14px",
-  },
-  splitLayout: { display: "flex", gap: "30px", alignItems: "flex-start" },
-  formCard: {
-    backgroundColor: "var(--bg-card)",
-    borderRadius: "16px",
-    padding: "25px",
-    boxShadow: "0 4px 6px rgba(0,0,0,0.02)",
-    border: "1px solid var(--border-color)",
-  },
-  cardTitle: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    margin: "0 0 20px 0",
-    fontSize: "16px",
-    fontWeight: "800",
-    color: "var(--text-primary)",
-    borderBottom: "1px solid var(--border-color)",
-    paddingBottom: "12px",
-  },
-  form: { display: "flex", flexDirection: "column", gap: "15px" },
-  row: { display: "flex", gap: "15px", flexWrap: "wrap" },
-  inputGroup: {
-    flex: 1,
-    display: "flex",
-    flexDirection: "column",
-    gap: "6px",
-    minWidth: "150px",
-  },
-  label: {
-    fontSize: "13px",
-    fontWeight: "600",
-    color: "var(--text-secondary)",
-  },
-  inputWrapper: {
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-    padding: "0 12px",
-    border: "1px solid var(--border-color)",
-    borderRadius: "8px",
-    backgroundColor: "var(--input-bg)",
-    height: "42px",
-    overflow: "hidden",
-  },
-  inputNoBorder: {
-    border: "none",
-    background: "transparent",
-    outline: "none",
-    width: "100%",
-    fontSize: "14px",
-    color: "var(--input-text)",
-  },
-  input: {
-    width: "100%",
-    padding: "10px 12px",
-    borderRadius: "8px",
-    border: "1px solid var(--border-color)",
-    fontSize: "14px",
-    outline: "none",
-    color: "var(--input-text)",
-    backgroundColor: "var(--input-bg)",
-    boxSizing: "border-box",
-  },
-  select: {
-    width: "100%",
-    padding: "10px 12px",
-    borderRadius: "8px",
-    border: "1px solid var(--border-color)",
-    fontSize: "14px",
-    outline: "none",
-    color: "var(--input-text)",
-    backgroundColor: "var(--input-bg)",
-    boxSizing: "border-box",
-    cursor: "pointer",
-  },
-  textarea: {
-    width: "100%",
-    padding: "12px",
-    borderRadius: "8px",
-    border: "1px solid var(--border-color)",
-    fontSize: "14px",
-    outline: "none",
-    color: "var(--input-text)",
-    backgroundColor: "var(--input-bg)",
-    minHeight: "90px",
-    resize: "vertical",
-    fontFamily: "inherit",
-    boxSizing: "border-box",
-  },
-  autocompleteDropdown: {
-    position: "absolute",
-    top: "100%",
-    left: 0,
-    right: 0,
-    backgroundColor: "var(--bg-card)",
-    border: "1px solid var(--border-color)",
-    borderRadius: "8px",
-    marginTop: "4px",
-    zIndex: 10,
-    boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)",
-    overflow: "hidden",
-  },
-  autocompleteItem: {
-    padding: "10px 15px",
-    cursor: "pointer",
-    fontSize: "14px",
-    color: "var(--text-primary)",
-    borderBottom: "1px solid var(--border-color)",
-    transition: "background 0.2s",
-  },
-  tagChip: {
-    padding: "6px 12px",
-    borderRadius: "20px",
-    fontSize: "12px",
-    fontWeight: "600",
-    cursor: "pointer",
-    border: "1px solid",
-    transition: "all 0.2s",
-    display: "flex",
-    alignItems: "center",
-  },
-  uploadBtn: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "8px",
-    padding: "12px",
-    border: "1px dashed var(--border-color)",
-    borderRadius: "8px",
-    backgroundColor: "var(--bg-main)",
-    color: "var(--text-secondary)",
-    fontSize: "14px",
-    fontWeight: "600",
-    cursor: "pointer",
-    transition: "all 0.2s",
-    width: "100%",
-    boxSizing: "border-box",
-  },
-  submitBtn: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "8px",
-    padding: "14px",
-    backgroundColor: "#1565C0",
-    color: "white",
-    border: "none",
-    borderRadius: "8px",
-    fontWeight: "bold",
-    fontSize: "15px",
-    cursor: "pointer",
-    marginTop: "10px",
-    transition: "background 0.2s",
-    width: "100%",
-    boxSizing: "border-box",
-  },
-  timelineContainer: {
-    backgroundColor: "var(--bg-card)",
-    borderRadius: "16px",
-    padding: "25px",
-    boxShadow: "0 4px 6px rgba(0,0,0,0.02)",
-    border: "1px solid var(--border-color)",
-    height: "100%",
-  },
-  emptyText: {
-    color: "var(--text-muted)",
-    fontSize: "14px",
-    textAlign: "center",
-    marginTop: "40px",
-  },
-  timeline: { position: "relative", marginTop: "10px" },
-  timelineItem: {
-    position: "relative",
-    paddingLeft: "45px",
-    paddingBottom: "30px",
-  },
-  timelineIcon: {
-    position: "absolute",
-    left: "4px",
-    top: "0",
-    width: "32px",
-    height: "32px",
-    borderRadius: "50%",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 2,
-    border: "4px solid var(--bg-card)",
-  },
-  timelineContent: {
-    backgroundColor: "var(--bg-main)",
-    padding: "20px",
-    borderRadius: "12px",
-    border: "1px solid var(--border-color)",
-    boxShadow: "0 1px 3px rgba(0,0,0,0.02)",
-  },
-  logHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: "10px",
-  },
-  logMetaRow: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    marginBottom: "8px",
-    flexWrap: "wrap",
-  },
-  badge: {
-    padding: "4px 10px",
-    borderRadius: "6px",
-    fontSize: "11px",
-    fontWeight: "800",
-    textTransform: "uppercase",
-  },
-  logDate: { fontSize: "12px", color: "var(--text-muted)", fontWeight: "600" },
-  logTitle: {
-    margin: "0 0 6px 0",
-    fontSize: "16px",
-    fontWeight: "800",
-    color: "var(--text-primary)",
-    wordBreak: "break-word",
-  },
-  logContact: {
-    display: "flex",
-    alignItems: "center",
-    gap: "4px",
-    fontSize: "12px",
-    color: "var(--text-secondary)",
-    fontWeight: "600",
-  },
-  logDesc: {
-    margin: 0,
-    fontSize: "14px",
-    color: "var(--text-secondary)",
-    lineHeight: "1.6",
-    whiteSpace: "pre-wrap",
-    wordBreak: "break-word",
-  },
-  actionButtons: { display: "flex", gap: "5px" },
-  viewBtn: {
-    background: "var(--bg-info)",
-    border: "none",
-    color: "var(--text-info)",
-    cursor: "pointer",
-    padding: "6px",
-    borderRadius: "6px",
-    display: "flex",
-    transition: "background 0.2s",
-  },
-  deleteBtn: {
-    background: "var(--bg-danger)",
-    border: "none",
-    color: "var(--text-danger)",
-    cursor: "pointer",
-    padding: "6px",
-    borderRadius: "6px",
-    display: "flex",
-    transition: "background 0.2s",
-  },
-  fotoThumbContainer: {
-    marginTop: "15px",
-    position: "relative",
-    display: "inline-block",
-    cursor: "pointer",
-    borderRadius: "8px",
-    overflow: "hidden",
-    border: "1px solid var(--border-color)",
-  },
-  fotoThumbTimeline: {
-    display: "block",
-    maxWidth: "100%",
-    maxHeight: "120px",
-    objectFit: "cover",
-    opacity: 0.85,
-    transition: "opacity 0.2s",
-  },
-  fotoOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(15, 23, 42, 0.4)",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 1,
-    opacity: 0,
-    transition: "opacity 0.2s",
-    ":hover": { opacity: 1 },
-  },
 }

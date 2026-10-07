@@ -3,21 +3,8 @@ import { useParams, useNavigate, useOutletContext } from "react-router-dom"
 import api from "../services/api"
 import Swal from "sweetalert2"
 import {
-  ArrowLeft,
-  CheckCircle,
-  Clock,
-  Save,
-  Trash2,
-  Loader2,
-  Users,
-  Tag,
-  ListChecks,
-  MapPin,
-  MessageCircle,
-  BookOpen,
-  FileText,
-  Send,
-  Paperclip,
+  ArrowLeft, CheckCircle, Clock, Save, Trash2, Loader2, Users,
+  Tag, ListChecks, MapPin, MessageCircle, BookOpen, FileText, Send, Paperclip, Eye
 } from "lucide-react"
 
 export default function DiarioDetalhes() {
@@ -43,11 +30,7 @@ export default function DiarioDetalhes() {
       setNotas(response.data.notas)
       setNovoStatus(response.data.diario.status)
     } catch (error) {
-      Swal.fire(
-        "Erro",
-        "Não foi possível carregar os detalhes do registro.",
-        "error",
-      )
+      Swal.fire("Erro", "Não foi possível carregar os detalhes do registro.", "error")
       navigate("/dashboard/admin/diario")
     } finally {
       setLoading(false)
@@ -58,18 +41,10 @@ export default function DiarioDetalhes() {
     e.preventDefault()
     setIsSubmitting(true)
     try {
-      await api.post(`api/admin/diario/${id}/notas/`, {
-        texto: novaNota,
-        status: novoStatus,
-      })
+      await api.post(`api/admin/diario/${id}/notas/`, { texto: novaNota, status: novoStatus })
       setNovaNota("")
       carregarDetalhes()
-      Swal.mixin({
-        toast: true,
-        position: "top-end",
-        showConfirmButton: false,
-        timer: 2000,
-      }).fire({ icon: "success", title: "Atendimento atualizado!" })
+      Swal.mixin({ toast: true, position: "top-end", showConfirmButton: false, timer: 2000 }).fire({ icon: "success", title: "Atendimento atualizado!" })
     } catch (error) {
       Swal.fire("Erro", "Falha ao adicionar evolução ao chamado.", "error")
     } finally {
@@ -79,11 +54,8 @@ export default function DiarioDetalhes() {
 
   const handleDelete = async () => {
     const confirm = await Swal.fire({
-      title: "Excluir permanentemente?",
-      text: "Isso apagará o registro e todo o histórico de anotações.",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#DC2626",
+      title: "Excluir permanentemente?", text: "Isso apagará o registro e todo o histórico.",
+      icon: "warning", showCancelButton: true, confirmButtonColor: "#DC2626",
     })
     if (confirm.isConfirmed) {
       try {
@@ -98,204 +70,109 @@ export default function DiarioDetalhes() {
 
   const getTipoMeta = (tipo) => {
     switch (tipo) {
-      case "Treinamento":
-        return {
-          bg: "var(--bg-success)",
-          cor: "var(--text-success)",
-          icone: <BookOpen size={16} />,
-        }
-      case "Reunião":
-        return {
-          bg: "var(--bg-info)",
-          cor: "var(--text-info)",
-          icone: <Users size={16} />,
-        }
-      case "Visita Escolar":
-        return {
-          bg: "rgba(139, 92, 246, 0.1)",
-          cor: "#A78BFA",
-          icone: <MapPin size={16} />,
-        }
-      case "Suporte":
-        return {
-          bg: "var(--bg-warning)",
-          cor: "var(--text-warning)",
-          icone: <MessageCircle size={16} />,
-        }
-      default:
-        return {
-          bg: "var(--bg-alt)",
-          cor: "var(--text-secondary)",
-          icone: <FileText size={16} />,
-        }
+      case "Treinamento": return { bg: "bg-emerald-100 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800", cor: "text-emerald-700 dark:text-emerald-400", icone: <BookOpen size={14} /> }
+      case "Reunião": return { bg: "bg-blue-100 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800", cor: "text-blue-700 dark:text-blue-400", icone: <Users size={14} /> }
+      case "Visita Escolar": return { bg: "bg-purple-100 dark:bg-purple-900/30 border-purple-200 dark:border-purple-800", cor: "text-purple-700 dark:text-purple-400", icone: <MapPin size={14} /> }
+      case "Suporte": return { bg: "bg-amber-100 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800", cor: "text-amber-700 dark:text-amber-400", icone: <MessageCircle size={14} /> }
+      default: return { bg: "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700", cor: "text-slate-700 dark:text-slate-300", icone: <FileText size={14} /> }
     }
   }
 
-  if (loading || !ticket)
-    return (
-      <div style={styles.loadingContainer}>
-        <Loader2 className="spin" size={32} color="#CA8A04" />
-        <p style={{ marginTop: "10px", color: "var(--text-muted)" }}>
-          Carregando histórico do atendimento...
-        </p>
-        <style>{`@keyframes spin { 100% { transform: rotate(360deg); } } .spin { animation: spin 1s linear infinite; }`}</style>
-      </div>
-    )
+  if (loading || !ticket) return (
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center transition-colors duration-200">
+      <Loader2 size={32} className="animate-spin text-amber-600 mb-4" />
+      <p className="text-slate-500 dark:text-slate-400 font-bold">Carregando histórico do atendimento...</p>
+    </div>
+  )
 
   const meta = getTipoMeta(ticket.tipo)
 
   return (
-    <div
-      style={{
-        ...styles.wrapper,
-        padding: isMobile ? "20px 10px" : "40px 20px",
-      }}
-    >
-      <div style={styles.container}>
-        <button
-          onClick={() => navigate("/dashboard/admin/diario")}
-          style={styles.backButton}
-        >
+    <div className="w-full min-h-screen bg-slate-50 dark:bg-slate-950 p-4 md:p-8 pb-20 transition-colors duration-200">
+      <div className="max-w-[1100px] mx-auto">
+        
+        <button onClick={() => navigate("/dashboard/admin/diario")} className="flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-[#1565C0] dark:hover:text-blue-400 font-bold text-sm mb-6 transition-colors">
           <ArrowLeft size={16} /> Voltar para o Diário
         </button>
 
-        <div style={styles.headerCard}>
-          <div style={styles.headerTags}>
-            <span
-              style={{
-                ...styles.badge,
-                backgroundColor: meta.bg,
-                color: meta.cor,
-              }}
-            >
+        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 md:p-8 mb-8">
+          <div className="flex flex-wrap items-center gap-3 mb-4">
+            <span className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 border ${meta.bg} ${meta.cor}`}>
               {meta.icone} {ticket.tipo}
             </span>
-            <span style={styles.dateTag}>
-              <Clock size={14} /> {ticket.data_evento}
-            </span>
-            <span
-              style={{
-                ...styles.badge,
-                backgroundColor:
-                  ticket.status === "Resolvido"
-                    ? "var(--bg-success)"
-                    : ticket.status === "Pendente"
-                      ? "var(--bg-danger)"
-                      : "var(--bg-warning)",
-                color:
-                  ticket.status === "Resolvido"
-                    ? "var(--text-success)"
-                    : ticket.status === "Pendente"
-                      ? "var(--text-danger)"
-                      : "var(--text-warning)",
-              }}
-            >
+            <span className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider border ${
+              ticket.status === 'Resolvido' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800' :
+              ticket.status === 'Pendente' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-red-200 dark:border-red-800' :
+              'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 dark:border-amber-800'
+            }`}>
               {ticket.status}
             </span>
+            <span className="flex items-center gap-1.5 text-xs font-bold text-slate-500 ml-auto">
+              <Clock size={14} /> {ticket.data_evento}
+            </span>
           </div>
-          <h1 style={styles.title}>{ticket.titulo}</h1>
-          <p style={styles.contactInfo}>
-            <Users size={16} /> Com quem: <strong>{ticket.contato}</strong>
+          <h1 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white leading-tight mb-3">{ticket.titulo}</h1>
+          <p className="flex items-center gap-2 text-sm font-semibold text-slate-500 dark:text-slate-400">
+            <Users size={16} /> Com quem: <strong className="text-slate-700 dark:text-slate-200">{ticket.contato}</strong>
           </p>
         </div>
 
-        <div
-          style={{
-            ...styles.splitLayout,
-            flexDirection: isMobile ? "column" : "row",
-          }}
-        >
-          <div style={styles.mainCol}>
-            <div style={styles.card}>
-              <h3 style={styles.sectionTitle}>
-                <FileText size={18} /> Relato Original
+        <div className="flex flex-col lg:flex-row gap-8 items-start">
+          
+          {/* COLUNA ESQUERDA (Principal) */}
+          <div className="flex-[2] w-full flex flex-col gap-8">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 md:p-8">
+              <h3 className="flex items-center gap-2 text-lg font-extrabold text-slate-800 dark:text-white mb-4 pb-4 border-b border-slate-100 dark:border-slate-800">
+                <FileText className="text-[#1565C0] dark:text-blue-400" size={20} /> Relato Original
               </h3>
-              <div style={styles.descBox}>{ticket.descricao}</div>
+              <div className="text-[15px] text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
+                {ticket.descricao}
+              </div>
             </div>
 
-            <div style={styles.card}>
-              <h3 style={styles.sectionTitle}>
-                <MessageCircle size={18} /> Evolução do Atendimento (
-                {notas.length})
+            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 md:p-8">
+              <h3 className="flex items-center gap-2 text-lg font-extrabold text-slate-800 dark:text-white mb-6">
+                <MessageCircle className="text-[#1565C0] dark:text-blue-400" size={20} /> Evolução do Atendimento
               </h3>
-              <div style={styles.threadContainer}>
+              
+              <div className="relative border-l-2 border-slate-200 dark:border-slate-700 ml-3 pl-6 pb-4">
                 {notas.map((nota) => (
-                  <div key={nota.id} style={styles.noteCard}>
-                    <div style={styles.noteHeader}>
-                      <div style={styles.avatar}>
-                        {nota.autor.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <div style={styles.noteAuthor}>{nota.autor}</div>
-                        <div style={styles.noteTime}>{nota.criado_em}</div>
-                      </div>
+                  <div key={nota.id} className="relative mb-8 last:mb-0">
+                    <div className="absolute -left-[35px] top-0 w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 text-[#1565C0] dark:text-blue-400 flex items-center justify-center font-black text-xs border-2 border-white dark:border-slate-900 shadow-sm">
+                      {nota.autor.charAt(0).toUpperCase()}
                     </div>
-                    <div style={styles.noteBody}>{nota.texto}</div>
+                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-5 border border-slate-100 dark:border-slate-800">
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="font-bold text-sm text-slate-800 dark:text-slate-200">{nota.autor}</span>
+                        <span className="text-xs font-medium text-slate-400">{nota.criado_em}</span>
+                      </div>
+                      <p className="text-[14px] text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap m-0">{nota.texto}</p>
+                    </div>
                   </div>
                 ))}
                 {notas.length === 0 && (
-                  <p
-                    style={{
-                      color: "var(--text-muted)",
-                      fontSize: "14px",
-                      textAlign: "center",
-                      margin: "20px 0",
-                    }}
-                  >
-                    Nenhuma evolução registrada neste atendimento ainda.
-                  </p>
+                  <p className="text-center text-sm text-slate-500 py-6">Nenhuma evolução registrada neste atendimento.</p>
                 )}
               </div>
 
-              <div style={styles.replyBox}>
+              <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800">
                 <form onSubmit={handleAtualizarTicket}>
                   <textarea
-                    value={novaNota}
-                    onChange={(e) => setNovaNota(e.target.value)}
-                    style={styles.replyTextarea}
+                    value={novaNota} onChange={(e) => setNovaNota(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-sm focus:border-[#1565C0] outline-none transition-all dark:text-white placeholder-slate-400 min-h-[100px] resize-y mb-4"
                     placeholder="Adicionar anotação, evolução ou resolução do caso..."
                   />
-                  <div style={styles.replyFooter}>
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "10px",
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontSize: "13px",
-                          fontWeight: "600",
-                          color: "var(--text-secondary)",
-                        }}
-                      >
-                        Alterar Status:
-                      </span>
-                      <select
-                        value={novoStatus}
-                        onChange={(e) => setNovoStatus(e.target.value)}
-                        style={styles.statusSelect}
-                      >
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs font-bold uppercase tracking-wide text-slate-500">Status:</span>
+                      <select value={novoStatus} onChange={(e) => setNovoStatus(e.target.value)} className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 text-sm font-bold rounded-lg px-3 py-2 outline-none cursor-pointer">
                         <option value="Pendente">Pendente</option>
                         <option value="Em andamento">Em andamento</option>
                         <option value="Resolvido">Resolvido</option>
                       </select>
                     </div>
-                    <button
-                      type="submit"
-                      disabled={
-                        isSubmitting ||
-                        (!novaNota.trim() && novoStatus === ticket.status)
-                      }
-                      style={styles.sendBtn}
-                    >
-                      {isSubmitting ? (
-                        <Loader2 size={16} className="spin" />
-                      ) : (
-                        <Send size={16} />
-                      )}{" "}
-                      Atualizar Atendimento
+                    <button type="submit" disabled={isSubmitting || (!novaNota.trim() && novoStatus === ticket.status)} className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#1565C0] hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-bold text-sm transition-colors shadow-md shadow-blue-500/20 disabled:opacity-50">
+                      {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />} Atualizar
                     </button>
                   </div>
                 </form>
@@ -303,403 +180,63 @@ export default function DiarioDetalhes() {
             </div>
           </div>
 
-          <div style={styles.sideCol}>
-            <div style={styles.sideCard}>
-              <h3 style={styles.sideTitle}>Propriedades</h3>
-              <div style={styles.propertyGroup}>
-                <div style={styles.propertyLabel}>
-                  <Users size={14} /> Participantes
-                </div>
-                <div style={styles.propertyValue}>
-                  {ticket.participantes}{" "}
-                  {ticket.participantes > 1 ? "pessoas" : "pessoa"}
-                </div>
+          {/* COLUNA DIREITA (Sidebar) */}
+          <div className="flex-[1] w-full min-w-[280px] flex flex-col gap-6">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-6">
+              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 border-b border-slate-100 dark:border-slate-800 pb-3">Propriedades</h3>
+              
+              <div className="mb-4">
+                <p className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase mb-1"><Users size={14}/> Participantes</p>
+                <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{ticket.participantes} {ticket.participantes > 1 ? "pessoas" : "pessoa"}</p>
               </div>
+              
               {ticket.tags && (
-                <div style={styles.propertyGroup}>
-                  <div style={styles.propertyLabel}>
-                    <Tag size={14} /> Tags de Categoria
-                  </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      flexWrap: "wrap",
-                      gap: "5px",
-                      marginTop: "5px",
-                    }}
-                  >
+                <div className="mb-4">
+                  <p className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase mb-2"><Tag size={14}/> Tags / Assuntos</p>
+                  <div className="flex flex-wrap gap-2">
                     {ticket.tags.split(",").map((t, i) => (
-                      <span key={i} style={styles.tagChip}>
+                      <span key={i} className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-1 rounded text-[11px] font-bold border border-slate-200 dark:border-slate-700">
                         #{t.trim()}
                       </span>
                     ))}
                   </div>
                 </div>
               )}
+
               {ticket.proximos_passos && (
-                <div style={styles.propertyGroup}>
-                  <div
-                    style={{
-                      ...styles.propertyLabel,
-                      color: "var(--text-warning)",
-                    }}
-                  >
-                    <ListChecks size={14} /> Próximos Passos
-                  </div>
-                  <div
-                    style={{
-                      ...styles.propertyValue,
-                      backgroundColor: "var(--bg-warning)",
-                      padding: "10px",
-                      borderRadius: "8px",
-                      border: "1px solid var(--border-warning)",
-                    }}
-                  >
+                <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800">
+                  <p className="flex items-center gap-2 text-xs font-bold text-amber-600 dark:text-amber-500 uppercase mb-2"><ListChecks size={14}/> Próximos Passos</p>
+                  <div className="bg-amber-50 dark:bg-amber-900/10 border-l-4 border-amber-400 p-3 rounded-r-lg text-sm text-amber-800 dark:text-amber-400 font-medium">
                     {ticket.proximos_passos}
                   </div>
                 </div>
               )}
             </div>
 
-            <div style={styles.sideCard}>
-              <h3 style={styles.sideTitle}>Evidência Fotográfica</h3>
+            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 overflow-hidden">
+              <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 border-b border-slate-100 dark:border-slate-800 pb-3">Evidência / Anexo</h3>
               {ticket.foto ? (
-                <div style={styles.fotoContainer}>
-                  <img
-                    src={ticket.foto}
-                    alt="Evidência"
-                    style={styles.fotoImg}
-                  />
-                  <a
-                    href={ticket.foto}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={styles.downloadLink}
-                  >
-                    Abrir imagem original
+                <div className="group relative rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden bg-slate-100 dark:bg-slate-800">
+                  <img src={ticket.foto} alt="Evidência" className="w-full h-auto block object-cover" />
+                  <a href={ticket.foto} target="_blank" rel="noopener noreferrer" className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white backdrop-blur-sm text-sm font-bold gap-2">
+                    <Eye size={24} /> Ver Arquivo
                   </a>
                 </div>
               ) : (
-                <div style={styles.emptyFoto}>
-                  <Paperclip
-                    size={24}
-                    color="var(--text-muted)"
-                    style={{ marginBottom: "10px" }}
-                  />
-                  Nenhum registro fotográfico anexado.
+                <div className="bg-slate-50 dark:bg-slate-800/50 border border-dashed border-slate-300 dark:border-slate-700 rounded-xl p-6 flex flex-col items-center text-center">
+                  <Paperclip size={24} className="text-slate-400 mb-2" />
+                  <p className="text-xs font-bold text-slate-500">Nenhum anexo salvo.</p>
                 </div>
               )}
             </div>
 
-            <div style={styles.sideCard}>
-              <h3 style={{ ...styles.sideTitle, color: "var(--text-danger)" }}>
-                Gerenciamento
-              </h3>
-              <button onClick={handleDelete} style={styles.btnDeleteGlobal}>
-                <Trash2 size={16} /> Excluir permanentemente
-              </button>
-            </div>
+            <button onClick={handleDelete} className="w-full flex items-center justify-center gap-2 bg-white dark:bg-slate-900 border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 py-3 rounded-xl font-bold text-sm transition-colors shadow-sm">
+              <Trash2 size={16} /> Excluir Registro
+            </button>
           </div>
+
         </div>
       </div>
     </div>
   )
-}
-
-const styles = {
-  wrapper: {
-    backgroundColor: "var(--bg-main)",
-    minHeight: "100vh",
-    fontFamily: "Inter, sans-serif",
-  },
-  container: { maxWidth: "1100px", margin: "0 auto" },
-  loadingContainer: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    height: "80vh",
-  },
-  backButton: {
-    display: "flex",
-    alignItems: "center",
-    gap: "6px",
-    background: "none",
-    border: "none",
-    cursor: "pointer",
-    fontSize: "14px",
-    color: "var(--text-secondary)",
-    fontWeight: "700",
-    padding: 0,
-    marginBottom: "20px",
-  },
-  headerCard: {
-    backgroundColor: "var(--bg-card)",
-    padding: "30px",
-    borderRadius: "12px",
-    border: "1px solid var(--border-color)",
-    marginBottom: "20px",
-  },
-  headerTags: {
-    display: "flex",
-    gap: "10px",
-    alignItems: "center",
-    marginBottom: "15px",
-    flexWrap: "wrap",
-  },
-  badge: {
-    padding: "6px 12px",
-    borderRadius: "8px",
-    fontSize: "12px",
-    fontWeight: "700",
-    textTransform: "uppercase",
-    display: "flex",
-    alignItems: "center",
-    gap: "6px",
-  },
-  dateTag: {
-    display: "flex",
-    alignItems: "center",
-    gap: "6px",
-    color: "var(--text-muted)",
-    fontSize: "13px",
-    fontWeight: "600",
-  },
-  title: {
-    margin: "0 0 10px 0",
-    fontSize: "28px",
-    fontWeight: "900",
-    color: "var(--text-primary)",
-  },
-  contactInfo: {
-    margin: 0,
-    display: "flex",
-    alignItems: "center",
-    gap: "6px",
-    color: "var(--text-secondary)",
-    fontSize: "15px",
-  },
-  splitLayout: {
-    display: "flex",
-    gap: "20px",
-    flexWrap: "wrap",
-    alignItems: "flex-start",
-  },
-  mainCol: {
-    flex: 2,
-    minWidth: "300px",
-    display: "flex",
-    flexDirection: "column",
-    gap: "20px",
-  },
-  sideCol: {
-    flex: 1,
-    minWidth: "280px",
-    display: "flex",
-    flexDirection: "column",
-    gap: "20px",
-  },
-  card: {
-    backgroundColor: "var(--bg-card)",
-    padding: "25px",
-    borderRadius: "12px",
-    border: "1px solid var(--border-color)",
-  },
-  sectionTitle: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    margin: "0 0 15px 0",
-    fontSize: "16px",
-    fontWeight: "800",
-    color: "var(--text-primary)",
-    paddingBottom: "12px",
-    borderBottom: "1px solid var(--border-color)",
-  },
-  descBox: {
-    backgroundColor: "var(--bg-main)",
-    padding: "20px",
-    borderRadius: "10px",
-    color: "var(--text-secondary)",
-    fontSize: "15px",
-    lineHeight: "1.6",
-    whiteSpace: "pre-wrap",
-  },
-  threadContainer: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "15px",
-    marginBottom: "20px",
-  },
-  noteCard: {
-    border: "1px solid var(--border-color)",
-    borderRadius: "10px",
-    padding: "15px",
-    backgroundColor: "var(--bg-card)",
-  },
-  noteHeader: {
-    display: "flex",
-    gap: "10px",
-    alignItems: "center",
-    marginBottom: "10px",
-  },
-  avatar: {
-    width: "32px",
-    height: "32px",
-    backgroundColor: "rgba(202, 138, 4, 0.2)",
-    color: "#CA8A04",
-    borderRadius: "50%",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontWeight: "bold",
-    fontSize: "14px",
-  },
-  noteAuthor: {
-    fontWeight: "700",
-    color: "var(--text-primary)",
-    fontSize: "14px",
-  },
-  noteTime: { color: "var(--text-muted)", fontSize: "12px" },
-  noteBody: {
-    color: "var(--text-secondary)",
-    fontSize: "14px",
-    lineHeight: "1.5",
-    whiteSpace: "pre-wrap",
-    paddingLeft: "42px",
-  },
-  replyBox: {
-    borderTop: "2px dashed var(--border-color)",
-    paddingTop: "20px",
-    marginTop: "10px",
-  },
-  replyTextarea: {
-    width: "100%",
-    padding: "15px",
-    borderRadius: "10px",
-    border: "1px solid var(--border-color)",
-    fontSize: "14px",
-    color: "var(--input-text)",
-    backgroundColor: "var(--input-bg)",
-    outline: "none",
-    resize: "vertical",
-    minHeight: "100px",
-    boxSizing: "border-box",
-    fontFamily: "inherit",
-    marginBottom: "15px",
-  },
-  replyFooter: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: "15px",
-  },
-  statusSelect: {
-    padding: "8px 12px",
-    borderRadius: "8px",
-    border: "1px solid var(--border-color)",
-    fontSize: "13px",
-    fontWeight: "600",
-    outline: "none",
-    color: "var(--input-text)",
-    backgroundColor: "var(--input-bg)",
-    cursor: "pointer",
-  },
-  sendBtn: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    backgroundColor: "#1565C0",
-    color: "white",
-    padding: "10px 20px",
-    borderRadius: "8px",
-    border: "none",
-    fontWeight: "700",
-    fontSize: "14px",
-    cursor: "pointer",
-    transition: "background 0.2s",
-  },
-  sideCard: {
-    backgroundColor: "var(--bg-card)",
-    padding: "20px",
-    borderRadius: "12px",
-    border: "1px solid var(--border-color)",
-  },
-  sideTitle: {
-    margin: "0 0 15px 0",
-    fontSize: "15px",
-    fontWeight: "800",
-    color: "var(--text-primary)",
-  },
-  propertyGroup: { marginBottom: "15px" },
-  propertyLabel: {
-    display: "flex",
-    alignItems: "center",
-    gap: "6px",
-    fontSize: "12px",
-    fontWeight: "700",
-    color: "var(--text-secondary)",
-    textTransform: "uppercase",
-    marginBottom: "5px",
-  },
-  propertyValue: {
-    fontSize: "14px",
-    color: "var(--text-primary)",
-    fontWeight: "500",
-    whiteSpace: "pre-wrap",
-  },
-  tagChip: {
-    backgroundColor: "var(--bg-main)",
-    color: "var(--text-secondary)",
-    fontSize: "12px",
-    fontWeight: "600",
-    padding: "4px 8px",
-    borderRadius: "6px",
-  },
-  fotoContainer: {
-    overflow: "hidden",
-    borderRadius: "8px",
-    border: "1px solid var(--border-color)",
-  },
-  fotoImg: { width: "100%", height: "auto", display: "block" },
-  downloadLink: {
-    display: "block",
-    textAlign: "center",
-    backgroundColor: "var(--bg-main)",
-    padding: "10px",
-    color: "var(--text-info)",
-    fontSize: "13px",
-    fontWeight: "600",
-    textDecoration: "none",
-    borderTop: "1px solid var(--border-color)",
-  },
-  emptyFoto: {
-    backgroundColor: "var(--bg-main)",
-    padding: "30px",
-    borderRadius: "8px",
-    border: "1px dashed var(--border-color)",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    color: "var(--text-muted)",
-    fontSize: "13px",
-    textAlign: "center",
-  },
-  btnDeleteGlobal: {
-    width: "100%",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: "8px",
-    backgroundColor: "var(--bg-danger)",
-    color: "var(--text-danger)",
-    border: "1px solid var(--border-danger)",
-    padding: "12px",
-    borderRadius: "8px",
-    fontSize: "14px",
-    fontWeight: "700",
-    cursor: "pointer",
-    transition: "background 0.2s",
-  },
 }

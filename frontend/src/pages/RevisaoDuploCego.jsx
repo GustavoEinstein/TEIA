@@ -1,197 +1,112 @@
 import React, { useState, useEffect } from "react"
 import api from "../services/api"
-import { useNavigate, useOutletContext } from "react-router-dom"
-import {
-  Clock,
-  Bot,
-  ArrowRight,
-  Tag,
-  BookOpen,
-  Lock,
-  AlertCircle,
-  Download,
-  ExternalLink,
-} from "lucide-react"
+import { useNavigate } from "react-router-dom"
+import { Clock, Bot, ArrowRight, Tag, BookOpen, Lock, Scale, CheckCircle2, AlertCircle, FileText } from "lucide-react"
 
 const RevisaoDuploCego = () => {
   const navigate = useNavigate()
-  const context = useOutletContext()
-  const isMobile = context ? context.isMobile : false
-
   const [producoes, setProducoes] = useState([])
   const [loading, setLoading] = useState(true)
   const userDisciplina = localStorage.getItem("user_disciplina") || "Geral"
 
   useEffect(() => {
+    const fetchReviewQueue = async () => {
+      try {
+        const response = await api.get("api/production/review-list/")
+        setProducoes(response.data)
+      } catch (error) {
+        console.error("Erro ao buscar fila de revisão:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
     fetchReviewQueue()
   }, [])
 
-  const fetchReviewQueue = async () => {
-    try {
-      const response = await api.get("api/production/review-list/")
-      setProducoes(response.data)
-    } catch (error) {
-      console.error("Erro ao buscar fila de revisão:", error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  if (loading)
-    return (
-      <div
-        style={{
-          textAlign: "center",
-          padding: "100px",
-          color: "var(--text-muted)",
-        }}
-      >
-        Carregando fila de validação...
+  if (loading) return (
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex justify-center items-center">
+      <div className="animate-pulse text-slate-400 font-bold flex items-center gap-2">
+        <Scale className="animate-pulse" /> Carregando fila de validação...
       </div>
-    )
+    </div>
+  )
 
   return (
-    <div style={styles.fullPageWrapper}>
-      <div style={styles.container}>
-        <div style={styles.header}>
+    <div className="w-full min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-200 p-4 md:p-8 pb-20">
+      <div className="max-w-[1000px] mx-auto">
+        
+        {/* Cabeçalho */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-10 pb-6 border-b border-slate-200 dark:border-slate-800">
           <div>
-            <div style={styles.lockTag}>
+            <div className="inline-flex items-center gap-1.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 px-2.5 py-1 rounded text-[10px] font-black uppercase tracking-widest mb-3 border border-indigo-200 dark:border-indigo-800/50">
               <Lock size={12} /> Área Restrita
             </div>
-            <h1 style={styles.pageTitle}>Fila de Validação</h1>
-            <p style={styles.pageSubtitle}>
-              Exibindo produções de{" "}
-              <strong style={{ color: "var(--text-primary)" }}>
-                {userDisciplina}
-              </strong>{" "}
-              aguardando sua análise.
+            <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-2">
+              Fila de Validação
+            </h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Exibindo produções de <strong className="text-slate-800 dark:text-slate-200">{userDisciplina}</strong> aguardando sua análise.
             </p>
           </div>
-          <div style={styles.counterBadge}>
-            <Clock size={16} color="var(--text-warning)" />
-            <span>{producoes.length} Pendentes</span>
+          <div className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-5 py-2.5 rounded-full text-sm font-bold flex items-center gap-2 shadow-sm border border-amber-200 dark:border-amber-800/50">
+            <Clock size={16} /> {producoes.length} Pendentes
           </div>
         </div>
 
-        <div style={styles.listContainer}>
+        {/* Lista de Fila */}
+        <div className="flex flex-col gap-5">
           {producoes.length > 0 ? (
             producoes.map((item) => (
-              <ReviewCard
-                key={item.id}
-                data={item}
-                onClick={() => navigate(`/dashboard/revisao/${item.id}`)}
-                isMobile={isMobile}
-              />
+              <ReviewCard key={item.id} data={item} onClick={() => navigate(`/dashboard/revisao/${item.id}`)} />
             ))
           ) : (
             <EmptyState disciplina={userDisciplina} />
           )}
         </div>
+
       </div>
     </div>
   )
 }
 
-const ReviewCard = ({ data, onClick, isMobile }) => {
-  const [isHovered, setIsHovered] = useState(false)
-
+const ReviewCard = ({ data, onClick }) => {
   return (
-    <div
-      style={{
-        ...styles.card,
-        ...(isHovered ? styles.cardHover : {}),
-        flexDirection: isMobile ? "column" : "row",
-      }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+    <div 
       onClick={onClick}
+      className="group flex flex-col md:flex-row bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 cursor-pointer transition-all hover:shadow-lg hover:-translate-y-1 hover:border-indigo-300 dark:hover:border-indigo-700 overflow-hidden"
     >
-      <div style={styles.cardContent}>
-        <div style={styles.cardTopRow}>
-          <span style={styles.subjectBadge}>{data.disciplina}</span>
-          <div style={styles.aiBadge}>
-            <Bot size={14} style={{ marginRight: "4px" }} />
-            {data.modelo_ia || "IA"}
-          </div>
-          <div style={styles.metaData}>
-            <Clock size={14} style={{ marginRight: "4px" }} />
-            {data.data}
-          </div>
-        </div>
-
-        <h3 style={styles.cardTitle}>{data.titulo}</h3>
-
-        <div style={styles.practicePreview}>
-          <BookOpen
-            size={14}
-            color="var(--text-secondary)"
-            style={{ minWidth: "14px", marginTop: "3px" }}
-          />
-          <span
-            style={{
-              marginLeft: "8px",
-              color: "var(--text-secondary)",
-              fontSize: "13px",
-            }}
-          >
-            Clique para ler os detalhes da prática e o relato de experiência...
+      <div className="flex-1 p-6 md:p-8 flex flex-col justify-center">
+        <div className="flex items-center gap-3 mb-4 flex-wrap">
+          <span className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-3 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider">
+            {data.disciplina}
           </span>
+          <div className="flex items-center gap-1.5 bg-blue-50 dark:bg-blue-900/20 text-[#1565C0] dark:text-blue-400 px-2.5 py-1 rounded-md text-[11px] font-bold border border-blue-100 dark:border-blue-900/50">
+            <Bot size={14} /> {data.modelo_ia || "IA"}
+          </div>
+          <div className="ml-auto text-xs font-bold text-amber-600 dark:text-amber-500 flex items-center gap-1.5">
+            <Clock size={14} /> Aguardando revisão
+          </div>
         </div>
 
-        <div style={styles.cardFooter}>
-          <div style={styles.footerItem}>
-            <Tag size={14} color="var(--text-muted)" />
-            <span>{data.categoria || "Atividade Prática"}</span>
-          </div>
-          <span style={styles.separator}>•</span>
-          <div style={styles.footerItem}>
-            <span style={styles.levelText}>{data.nivel || "Geral"}</span>
-          </div>
+        <h3 className="text-xl font-extrabold text-slate-900 dark:text-white mb-4 leading-snug group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+          {data.titulo}
+        </h3>
 
-          {/* BOTÕES DE MATERIAL DIRETO NO CARD */}
-          {(data.arquivo || data.link_material) && (
-            <>
-              <span style={styles.separator}>|</span>
-              {data.arquivo && (
-                <a
-                  href={data.arquivo}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  style={styles.footerLink}
-                >
-                  <Download size={14} /> Anexo
-                </a>
-              )}
-              {data.link_material && (
-                <a
-                  href={data.link_material}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  style={styles.footerLink}
-                >
-                  <ExternalLink size={14} /> Link
-                </a>
-              )}
-            </>
-          )}
+        <div className="bg-slate-50 dark:bg-slate-800/50 border-l-4 border-slate-300 dark:border-slate-700 py-2.5 px-4 mb-5 rounded-r-lg flex items-center gap-2">
+          <FileText size={16} className="text-slate-400 shrink-0" />
+          <span className="text-sm text-slate-500 dark:text-slate-400 font-medium">Clique para ler os detalhes da prática e avaliar...</span>
+        </div>
+
+        <div className="flex items-center gap-3 text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+          <div className="flex items-center gap-1.5"><Tag size={14} /> {data.categoria || "Atividade Prática"}</div>
+          <span>•</span>
+          <div>{data.nivel || "Geral"}</div>
         </div>
       </div>
 
-      <div
-        style={{
-          ...styles.cardAction,
-          borderLeft: isMobile ? "none" : "1px solid var(--border-color)",
-          borderTop: isMobile ? "1px solid var(--border-color)" : "none",
-          paddingTop: isMobile ? "15px" : "25px",
-          paddingLeft: isMobile ? "25px" : "25px",
-          width: isMobile ? "100%" : "200px",
-        }}
-      >
-        <button style={styles.reviewButton}>
-          Revisar Prática
-          <ArrowRight size={18} />
+      <div className="bg-slate-50 dark:bg-slate-800/30 md:border-l border-t md:border-t-0 border-slate-100 dark:border-slate-800 p-6 md:p-8 flex items-center justify-center min-w-[240px]">
+        <button className="w-full flex items-center justify-center gap-2 bg-[#1565C0] hover:bg-blue-700 text-white font-bold py-3.5 px-6 rounded-xl transition-all shadow-md shadow-blue-500/20 group-hover:scale-105">
+          Avaliar Prática <ArrowRight size={18} />
         </button>
       </div>
     </div>
@@ -199,232 +114,15 @@ const ReviewCard = ({ data, onClick, isMobile }) => {
 }
 
 const EmptyState = ({ disciplina }) => (
-  <div
-    style={{
-      textAlign: "center",
-      padding: "60px",
-      backgroundColor: "var(--bg-card)",
-      borderRadius: "16px",
-      border: "1px dashed var(--border-color)",
-    }}
-  >
-    <div
-      style={{
-        marginBottom: "15px",
-        display: "flex",
-        justifyContent: "center",
-      }}
-    >
-      <div
-        style={{
-          padding: "15px",
-          background: "var(--bg-success)",
-          borderRadius: "50%",
-        }}
-      >
-        <AlertCircle size={30} color="var(--text-success)" />
-      </div>
+  <div className="text-center py-24 bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-slate-300 dark:border-slate-800 flex flex-col items-center shadow-sm">
+    <div className="bg-emerald-50 dark:bg-emerald-900/20 p-5 rounded-full mb-6 shadow-sm border border-emerald-100 dark:border-emerald-800/50">
+      <CheckCircle2 size={40} className="text-emerald-500 dark:text-emerald-400" />
     </div>
-    <h3 style={{ color: "var(--text-primary)", margin: "0 0 10px 0" }}>
-      Tudo em dia!
-    </h3>
-    <p style={{ color: "var(--text-muted)" }}>
-      Não há novas produções de <strong>{disciplina}</strong> aguardando revisão
-      no momento.
+    <h3 className="text-2xl font-extrabold text-slate-900 dark:text-white mb-2 tracking-tight">Tudo em dia!</h3>
+    <p className="text-slate-500 dark:text-slate-400 text-base max-w-sm leading-relaxed">
+      Não há novas produções de <strong className="text-slate-700 dark:text-slate-300">{disciplina}</strong> aguardando revisão no momento. Ótimo trabalho!
     </p>
   </div>
 )
-
-const styles = {
-  fullPageWrapper: {
-    backgroundColor: "var(--bg-main)",
-    minHeight: "100vh",
-    width: "100%",
-    boxSizing: "border-box",
-    padding: "30px 20px",
-  },
-  container: {
-    width: "100%",
-    maxWidth: "1000px",
-    margin: "0 auto",
-    boxSizing: "border-box",
-  },
-  header: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-end",
-    marginBottom: "30px",
-    borderBottom: "1px solid var(--border-color)",
-    paddingBottom: "20px",
-    flexWrap: "wrap",
-    gap: "15px",
-  },
-  lockTag: {
-    display: "inline-flex",
-    alignItems: "center",
-    gap: "5px",
-    fontSize: "11px",
-    fontWeight: "700",
-    color: "var(--text-secondary)",
-    textTransform: "uppercase",
-    marginBottom: "5px",
-    backgroundColor: "var(--bg-alt)",
-    padding: "4px 8px",
-    borderRadius: "4px",
-  },
-  pageTitle: {
-    fontSize: "28px",
-    color: "var(--text-primary)",
-    fontWeight: "800",
-    margin: "0 0 8px 0",
-  },
-  pageSubtitle: { fontSize: "15px", color: "var(--text-muted)", margin: 0 },
-  counterBadge: {
-    backgroundColor: "var(--bg-warning)",
-    color: "var(--text-warning)",
-    padding: "8px 16px",
-    borderRadius: "30px",
-    fontSize: "13px",
-    fontWeight: "700",
-    display: "flex",
-    alignItems: "center",
-    gap: "6px",
-  },
-  listContainer: { display: "flex", flexDirection: "column", gap: "20px" },
-
-  card: {
-    backgroundColor: "var(--bg-card)",
-    borderRadius: "12px",
-    border: "1px solid var(--border-color)",
-    boxShadow: "0 2px 5px rgba(0,0,0,0.02)",
-    display: "flex",
-    transition: "all 0.2s ease",
-    cursor: "pointer",
-    overflow: "hidden",
-  },
-  cardHover: {
-    transform: "translateY(-2px)",
-    boxShadow: "0 8px 20px rgba(0,0,0,0.08)",
-    borderColor: "var(--text-info)",
-  },
-  cardContent: {
-    flex: 1,
-    padding: "25px",
-    display: "flex",
-    flexDirection: "column",
-  },
-  cardTopRow: {
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-    marginBottom: "14px",
-    flexWrap: "wrap",
-  },
-  subjectBadge: {
-    backgroundColor: "var(--bg-alt)",
-    color: "var(--text-primary)",
-    padding: "6px 12px",
-    borderRadius: "8px",
-    fontSize: "11px",
-    fontWeight: "700",
-    textTransform: "uppercase",
-    letterSpacing: "0.5px",
-  },
-  aiBadge: {
-    backgroundColor: "var(--bg-main)",
-    color: "var(--text-muted)",
-    padding: "6px 10px",
-    borderRadius: "8px",
-    fontSize: "11px",
-    fontWeight: "600",
-    display: "flex",
-    alignItems: "center",
-    border: "1px solid var(--border-color)",
-  },
-  metaData: {
-    marginLeft: "auto",
-    fontSize: "12px",
-    color: "var(--text-warning)",
-    display: "flex",
-    alignItems: "center",
-    fontWeight: "600",
-  },
-  cardTitle: {
-    fontSize: "18px",
-    fontWeight: "700",
-    color: "var(--text-primary)",
-    margin: "0 0 12px 0",
-  },
-  practicePreview: {
-    backgroundColor: "var(--bg-card)",
-    borderLeft: "3px solid var(--border-color)",
-    padding: "5px 15px",
-    marginBottom: "15px",
-    display: "flex",
-    alignItems: "flex-start",
-  },
-  cardFooter: {
-    display: "flex",
-    alignItems: "center",
-    marginTop: "auto",
-    gap: "10px",
-    flexWrap: "wrap",
-  },
-  footerItem: {
-    display: "flex",
-    alignItems: "center",
-    gap: "6px",
-    fontSize: "13px",
-    color: "var(--text-secondary)",
-    fontWeight: "500",
-  },
-  separator: { color: "var(--border-color)" },
-  levelText: {
-    backgroundColor: "var(--bg-alt)",
-    color: "var(--text-secondary)",
-    padding: "2px 8px",
-    borderRadius: "4px",
-    fontSize: "11px",
-    fontWeight: "600",
-  },
-  footerLink: {
-    display: "flex",
-    alignItems: "center",
-    gap: "4px",
-    color: "var(--text-info)",
-    fontSize: "13px",
-    fontWeight: "600",
-    textDecoration: "none",
-    padding: "4px 8px",
-    borderRadius: "4px",
-    backgroundColor: "var(--bg-info)",
-    transition: "background 0.2s",
-  },
-  cardAction: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "var(--bg-main)",
-    padding: "25px",
-    boxSizing: "border-box",
-  },
-  reviewButton: {
-    backgroundColor: "#1565C0",
-    color: "white",
-    border: "none",
-    borderRadius: "8px",
-    padding: "10px 20px",
-    fontWeight: "600",
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    fontSize: "14px",
-    transition: "background 0.2s",
-    width: "100%",
-    justifyContent: "center",
-  },
-}
 
 export default RevisaoDuploCego

@@ -43,17 +43,10 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.throttling import ScopedRateThrottle 
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from django.http import HttpResponse
-from django.template.loader import render_to_string
 from weasyprint import HTML
 
+# Nossos imports locais
 from .services.llm import get_llm_provider
-from .models import Producao
-
-# Importação dos modelos (Incluindo ConfiguracaoXP, Escola, Disciplina e Notificacao)
 from .models import (
     Profile, Producao, Avaliacao, Topico, Comentario, RegistroXP, 
     Conquista, ConquistaUsuario, DiarioOperacao, NotaDiario, ConfiguracaoXP, Escola, Disciplina, Notificacao
@@ -172,7 +165,6 @@ def api_get_register_options(request):
     escolas = list(Escola.objects.values_list('nome', flat=True).order_by('nome'))
     disciplinas = list(Disciplina.objects.values_list('nome', flat=True).order_by('nome'))
     
-    # Adicionamos "Outra" caso não tenha sido cadastrada, para o professor não ficar travado
     if "Outra" not in disciplinas:
         disciplinas.append("Outra")
 
@@ -182,7 +174,9 @@ def api_get_register_options(request):
     })
 
 
-#views de autenticação e perfil 
+# ============================================================================
+# AUTENTICAÇÃO E PERFIL 
+# ============================================================================
 @csrf_exempt
 @api_view(['POST'])
 @authentication_classes([])
@@ -244,12 +238,9 @@ def api_user_profile(request):
             pass
 
         nome_exibicao = user.first_name if user.first_name else user.username
-
-        # Dados de progresso de nível
         progresso = profile.get_progresso_proximo_nivel()
-
-        # Busca as conquistas (badges) do usuário
         conquistas_usuario = profile.conquistas.all().select_related('conquista')
+        
         lista_conquistas = [{
             'id': c.conquista.id,
             'nome': c.conquista.nome,
@@ -279,7 +270,7 @@ def api_user_profile(request):
             profile.disciplina = data['disciplina']
             
         if 'escola' in data:
-            profile.escola = profile.escola
+            profile.escola = data['escola']
 
         file = request.FILES.get('avatar')
         if file:
@@ -306,7 +297,9 @@ def api_user_profile(request):
         })
 
 
-#produção didatica e rascunho 
+# ============================================================================
+# PRODUÇÃO DIDÁTICA E RASCUNHOS
+# ============================================================================
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def api_create_production(request):
@@ -327,7 +320,6 @@ def api_create_production(request):
         is_draft = str(is_draft_val).strip().lower() in ['true', '1', 't', 'y', 'yes']
         status_inicial = 'Rascunho' if is_draft else 'Em revisão'
 
-        # --- RECUPERANDO A FLAG ANONIMO ---
         anonimo_val = data.get('anonimo')
         anonimo = str(anonimo_val).strip().lower() in ['true', '1', 't', 'y', 'yes'] if anonimo_val is not None else True
 
@@ -348,7 +340,7 @@ def api_create_production(request):
             resultados=data.get('resultados', ''),
             arquivo=arquivo,
             link_material=data.get('link_material', ''),
-            anonimo=anonimo, # <--- ADICIONADO AQUI
+            anonimo=anonimo,
             status=status_inicial 
         )
         return Response({'mensagem': 'Produção criada com sucesso!', 'id': nova_producao.id}, status=201)
@@ -379,7 +371,7 @@ def api_list_my_productions(request):
             'modelo_ia': p.modelo_ia,
             'feedback_revisor': feedback,
             'total_aprovacoes': total_aprovacoes,
-            'anonimo': getattr(p, 'anonimo', True) # Envia pro frontend
+            'anonimo': getattr(p, 'anonimo', True)
         })
     
     return Response(lista)
@@ -443,7 +435,6 @@ def api_get_production_details(request, pk):
 
         dados_referencia = None
         if p.producao_base:
-            # Garante anonimato se a base for anônima
             autor_base = "Professor(a) Anônimo(a)" if getattr(p.producao_base, 'anonimo', True) else (p.producao_base.user.first_name or p.producao_base.user.username)
             dados_referencia = {
                 'id': p.producao_base.id,
@@ -461,7 +452,6 @@ def api_get_production_details(request, pk):
 
         notas = avaliacoes_filtradas[-1]['notas'] if avaliacoes_filtradas else None
 
-        # --- LOGICA DE EXIBIÇÃO DE AUTOR ---
         autor_nome = "Professor(a) Anônimo(a)" if getattr(p, 'anonimo', True) else (p.user.first_name or p.user.username)
 
         data = {
@@ -483,8 +473,8 @@ def api_get_production_details(request, pk):
             'link_material': p.link_material,
             'data': p.data_criacao.strftime('%d/%m/%Y'),
             'status': p.status,
-            'autor': autor_nome, # <--- AQUI ELE VERIFICA SE DEVE MOSTRAR
-            'anonimo': getattr(p, 'anonimo', True), # Flag caso o front precise
+            'autor': autor_nome,
+            'anonimo': getattr(p, 'anonimo', True),
             
             'is_dono': is_dono,
             'is_admin': is_admin,
@@ -530,7 +520,6 @@ def api_update_production(request, pk):
         p.resultados = data.get('resultados', p.resultados)
         p.link_material = data.get('link_material', p.link_material)
 
-        # --- ATUALIZANDO ANONIMATO ---
         anonimo_val = data.get('anonimo')
         if anonimo_val is not None:
             p.anonimo = str(anonimo_val).strip().lower() in ['true', '1', 't', 'y', 'yes']
@@ -543,7 +532,6 @@ def api_update_production(request, pk):
         if novo_arquivo:
             p.arquivo = novo_arquivo
 
-  
         is_draft_val = data.get('is_draft')
         is_draft = str(is_draft_val).strip().lower() in ['true', '1', 't', 'y', 'yes']
         
@@ -566,15 +554,8 @@ def api_update_production(request, pk):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def api_toggle_author_visibility(request, pk):
-    """
-    Alterna a visibilidade do autor (anônimo ou público) de uma produção específica.
-    Apenas o dono da produção pode fazer essa alteração.
-    """
     try:
-        # Busca a produção garantindo que pertence ao usuário logado
         producao = Producao.objects.get(id=pk, user=request.user)
-        
-        # Inverte o valor atual do campo 'anonimo' (se for True vira False, e vice-versa)
         producao.anonimo = not producao.anonimo
         producao.save()
         
@@ -586,16 +567,14 @@ def api_toggle_author_visibility(request, pk):
         }, status=200)
         
     except Producao.DoesNotExist:
-        return Response({
-            'erro': 'Produção não encontrada ou você não tem permissão para alterá-la.'
-        }, status=404)
+        return Response({'erro': 'Produção não encontrada.'}, status=404)
     except Exception as e:
-        return Response({
-            'erro': 'Erro interno ao alterar a visibilidade.'
-        }, status=500)
+        return Response({'erro': 'Erro interno ao alterar a visibilidade.'}, status=500)
 
 
-#sistema de revisão e gamificação do sistema
+# ============================================================================
+# SISTEMA DE REVISÃO E GAMIFICAÇÃO
+# ============================================================================
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def api_list_review_queue(request):
@@ -742,7 +721,6 @@ def api_list_public_feed(request):
     
     lista = []
     for p in producoes:
-        # --- LOGICA DE EXIBIÇÃO DE AUTOR ---
         autor_nome = "Professor(a) Anônimo(a)" if getattr(p, 'anonimo', True) else (p.user.first_name or p.user.username)
 
         lista.append({
@@ -760,7 +738,9 @@ def api_list_public_feed(request):
     return Response(lista) 
 
 
-#painel de recuperação de senha
+# ============================================================================
+# RECUPERAÇÃO DE SENHA
+# ============================================================================
 @csrf_exempt
 @api_view(['POST'])
 @authentication_classes([]) 
@@ -778,7 +758,6 @@ def api_password_reset_request(request):
     token = default_token_generator.make_token(user)
     uid = urlsafe_base64_encode(force_bytes(user.pk))
     
-    # DICA: Quando for colocar no servidor oficial, troque esse localhost pelo domínio final (ex: teia.cic.unb.br)
     reset_link = f"http://localhost:5173/reset-password/{uid}/{token}"
 
     subject = "Redefinição de Senha - T.E.I.A"
@@ -804,8 +783,6 @@ def api_password_reset_request(request):
         html_content = render_to_string('emails/password_reset_email.html', context)
         
         msg = EmailMultiAlternatives(subject, texto_puro, from_email, to)
-        
-        # Adicionamos o @unb.br e outros domínios institucionais na lista de restrição
         dominios_rigidos = ['@hotmail.', '@outlook.', '@live.', '@msn.', '@unb.br', '@aluno.unb.br']
         
         if not any(dominio in email for dominio in dominios_rigidos):
@@ -843,7 +820,9 @@ def api_password_reset_confirm(request, uidb64, token):
         return Response({'erro': 'Link expirado ou inválido.'}, status=400)
 
 
-#painel de aprovação de contas 
+# ============================================================================
+# PAINEL DE ADMINISTRAÇÃO E APROVAÇÃO
+# ============================================================================
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def api_list_pending_users(request):
@@ -885,7 +864,9 @@ def api_approve_reject_user(request, user_id):
         return Response({'erro': 'Usuário não encontrado'}, status=404)
 
 
-#views para o forum do sistema 
+# ============================================================================
+# FÓRUM DO SISTEMA 
+# ============================================================================
 @api_view(['GET', 'POST', 'PUT', 'DELETE']) 
 @permission_classes([IsAuthenticated])
 def api_forum_detalhe_comentarios(request, pk):
@@ -910,7 +891,6 @@ def api_forum_detalhe_comentarios(request, pk):
 
         arquivo_url = request.build_absolute_uri(topico.arquivo.url) if topico.arquivo else None
         
-        # --- LÓGICA DE PRODUÇÃO BASE (Respeitando o anonimato da base) ---
         dados_base = None
         if topico.producao_base:
             autor_base = "Professor(a) Anônimo(a)" if getattr(topico.producao_base, 'anonimo', True) else (topico.producao_base.user.first_name or topico.producao_base.user.username)
@@ -1033,9 +1013,9 @@ def api_forum_topicos(request):
         }, status=201)
 
 
-
-#views para o painel de administração
-
+# ============================================================================
+# VIEWS DO ADMIN GERAL
+# ============================================================================
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def api_admin_list_users(request):
@@ -1128,7 +1108,9 @@ def api_listar_ciclos(request):
     return Response([])
 
 
+# ============================================================================
 # SISTEMA DE RANKING
+# ============================================================================
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def api_ranking_gamificacao(request):
@@ -1298,7 +1280,6 @@ class DiarioOperacaoView(APIView):
         if not all([titulo, tipo, data_evento, descricao]):
             return Response({'erro': 'Campos obrigatórios faltando.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Buscar o usuário caso um ID tenha sido selecionado
         docente = None
         if docente_id:
             try:
@@ -1355,7 +1336,6 @@ class DiarioNotaView(APIView):
         except DiarioOperacao.DoesNotExist:
             return Response({'erro': 'Registro não encontrado'}, status=status.HTTP_404_NOT_FOUND)
         
-        # Puxa todas as anotações feitas neste atendimento
         notas = diario.notas.all()
         lista_notas = [{
             'id': n.id,
@@ -1364,7 +1344,6 @@ class DiarioNotaView(APIView):
             'criado_em': timezone.localtime(n.criado_em).strftime('%d/%m/%Y %H:%M')
         } for n in notas]
 
-        # Puxa os dados completos do chamado
         dados_diario = {
             'id': diario.id,
             'titulo': diario.titulo,
@@ -1390,12 +1369,10 @@ class DiarioNotaView(APIView):
         texto = request.data.get('texto')
         novo_status = request.data.get('status') 
 
-        # Atualiza o status do chamado se for alterado
         if novo_status and novo_status != diario.status:
             diario.status = novo_status
             diario.save()
 
-        # Cria a nova anotação/comentário
         if texto:
             NotaDiario.objects.create(
                 diario=diario,
@@ -1492,40 +1469,38 @@ def api_mark_notifications_read(request):
     return Response({'mensagem': 'Notificações marcadas como lidas.'})
 
 # ============================================================================
-# Sistema de integração com IA para catalogação automática
+# Integração com IA para catalogação automática
 # ============================================================================
-
 class AutoCatalogAIView(APIView):
-    # Se estiver testando sem enviar o token JWT no header, altere temporariamente para [AllowAny]
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        raw_text = request.data.get('raw_text', '')
+        # Aceita o payload tanto como 'texto' (padrão do form) quanto 'raw_text'
+        raw_text = request.data.get('texto', '') or request.data.get('raw_text', '')
         
-        if not raw_text or not raw_text.strip():
-            return Response({'error': 'Por favor, informe um rascunho ou descrição da aula.'}, status=400)
+        if not raw_text or not str(raw_text).strip():
+            # Alterado de 'error' para 'erro' para o SweetAlert do frontend conseguir ler a mensagem corretamente
+            return Response({'erro': 'Por favor, informe um rascunho ou descrição da aula.'}, status=400)
 
         try:
             provider = get_llm_provider()
-            cataloged_data = provider.catalog_production(raw_text)
+            cataloged_data = provider.catalog_production(str(raw_text))
             return Response(cataloged_data, status=200)
             
         except Exception as e:
-            # Imprime o erro detalhado no terminal onde o server/docker está rodando
             print("\n❌ ERRO NA AUTO-CATALOGAÇÃO COM IA:")
             traceback.print_exc()
             print("="*50 + "\n")
             
-            # Retorna a mensagem de erro específica para o frontend exibir no SweetAlert
+            # Alterado de 'error' para 'erro'
             return Response(
-                {'error': f'Falha no processamento da IA: {str(e)}'}, 
+                {'erro': f'Falha no processamento da IA: {str(e)}'}, 
                 status=500
             )
 
 # ============================================================================
 # Sistema de exportação de produções para PDF
 # ============================================================================
-
 class ExportProducaoPDFView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -1536,7 +1511,6 @@ class ExportProducaoPDFView(APIView):
             return HttpResponse("Produção não encontrada.", status=404)
 
         try:
-            # Captura o nome do docente passado pelo Modal via Query Param (?docente=...)
             docente_param = request.GET.get('docente', '').strip()
             
             autor_nome = docente_param or getattr(producao, 'autor', None)
@@ -1551,7 +1525,6 @@ class ExportProducaoPDFView(APIView):
                 'recursos_str': ", ".join(producao.recursos) if isinstance(getattr(producao, 'recursos', None), list) else str(getattr(producao, 'recursos', '-')),
             }
 
-            # Renderiza o template fiel ao modelo do IFB / MEC
             html_string = render_to_string('relatorio_gdf.html', context)
 
             pdf_bytes = HTML(

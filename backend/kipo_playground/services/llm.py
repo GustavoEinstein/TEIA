@@ -21,7 +21,7 @@ class GeminiProvider(BaseLLMProvider):
         genai.configure(api_key=api_key)
         
         # Modelo atualizado com base nos modelos ativos da sua chave de API
-        self.model = genai.GenerativeModel('gemini-2.5-flash')
+        self.model = genai.GenerativeModel('gemini-flash-latest')
 
     def catalog_production(self, raw_text: str) -> dict:
         prompt = f"""

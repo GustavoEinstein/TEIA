@@ -14,10 +14,15 @@ from owlready2 import *
 from os.path import exists
 import os
 import shutil
-import json 
-import sys 
-import re 
+import json
+import sys
+import re
+import traceback
 from random import randint
+
+# --- IMPORTS DE PDF E IA ---
+from weasyprint import HTML
+from .services.llm import get_llm_provider
 
 # --- IMPORTS DO REST FRAMEWORK ---
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
@@ -41,19 +46,19 @@ from django.db.models import Count, Q
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework.exceptions import AuthenticationFailed
-from rest_framework.throttling import ScopedRateThrottle 
+from rest_framework.throttling import ScopedRateThrottle
 
 # Importação dos modelos
 from .models import (
-    Profile, Producao, Avaliacao, Topico, Comentario, RegistroXP, 
+    Profile, Producao, Avaliacao, Topico, Comentario, RegistroXP,
     Conquista, ConquistaUsuario, DiarioOperacao, NotaDiario, ConfiguracaoXP, Escola, Disciplina, Notificacao
 )
 
 
 # Lista de arquivos permitidos no servidor
 ALLOWED_EXTENSIONS = [
-    '.pdf', '.doc', '.docx', '.txt', 
-    '.ppt', '.pptx', '.xls', '.xlsx', 
+    '.pdf', '.doc', '.docx', '.txt',
+    '.ppt', '.pptx', '.xls', '.xlsx',
     '.jpg', '.jpeg', '.png'
 ]
 
@@ -118,7 +123,7 @@ def register(request):
             form.save()
             return redirect('/kipo_playground/welcome/')
 
-    context = {'form':form}
+    context = {'form': form}
     return render(request, 'register.html', context)
 
 
@@ -153,7 +158,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 # OPÇÕES PARA O FORMULÁRIO DE REGISTRO
 # ============================================================================
 @api_view(['GET'])
-@authentication_classes([]) 
+@authentication_classes([])
 @permission_classes([AllowAny])
 def api_get_register_options(request):
     escolas = list(Escola.objects.values_list('nome', flat=True).order_by('nome'))
@@ -175,7 +180,7 @@ def api_get_register_options(request):
 @api_view(['POST'])
 @authentication_classes([])
 @permission_classes([AllowAny])
-def api_register_user(request): 
+def api_register_user(request):
     data = request.data
     
     username = data.get('username')
@@ -183,7 +188,7 @@ def api_register_user(request):
     password = data.get('password')
     name = data.get('name')
     disciplina = data.get('disciplina', 'Outra')
-    escola = data.get('escola', '') 
+    escola = data.get('escola', '')
 
     if not username or not password or not email:
         return Response({'erro': 'Preencha todos os campos obrigatórios.'}, status=400)
@@ -202,12 +207,12 @@ def api_register_user(request):
             username=username,
             email=email,
             password=password,
-            first_name=name 
+            first_name=name
         )
         
         profile, created = Profile.objects.get_or_create(user=user)
         profile.disciplina = disciplina
-        profile.escola = escola 
+        profile.escola = escola
         profile.status_conta = 'Em análise'
         profile.save()
         
@@ -248,7 +253,7 @@ def api_user_profile(request):
             'username': nome_exibicao,
             'email': user.email,
             'disciplina': profile.disciplina,
-            'escola': profile.escola, 
+            'escola': profile.escola,
             'avatar': avatar_url,
             'is_superuser': user.is_superuser,
             'pontos': profile.pontos,
@@ -272,9 +277,9 @@ def api_user_profile(request):
             
         profile.save()
 
-        if 'username' in data and data['username']: 
-             user.first_name = data['username']
-             user.save()
+        if 'username' in data and data['username']:
+            user.first_name = data['username']
+            user.save()
         
         avatar_url = request.build_absolute_uri(profile.avatar.url) if profile.avatar else None
         nome_exibicao = user.first_name if user.first_name else user.username
@@ -328,25 +333,25 @@ def api_create_production(request):
                 pass
 
         nova_producao = Producao.objects.create(
-            user=user, 
+            user=user,
             titulo=data.get('titulo', ''),
             exibir_autor=exibir_autor,     # Salva a escolha do anonimato
             producao_base=producao_base,   # Associa à prática que serviu de base
             disciplina=data.get('disciplina', ''),
-            nivel=data.get('nivel_ensino', ''), 
+            nivel=data.get('nivel_ensino', ''),
             modelo_ia=data.get('modelo_ia', ''),
             prompts_ia=data.get('prompts_ia', ''),
             categoria=data.get('categoria', ''),
             bncc=data.get('bncc', ''),
-            bncc_computacao=data.get('bncc_computacao', ''), 
+            bncc_computacao=data.get('bncc_computacao', ''),
             metodologia=data.get('metodologia', ''),
             duracao=data.get('duracao', ''),
             recursos=recursos_str,
-            experiencia=data.get('experiencia', ''), 
+            experiencia=data.get('experiencia', ''),
             resultados=data.get('resultados', ''),
             arquivo=arquivo,
             link_material=data.get('link_material', ''),
-            status=status_inicial 
+            status=status_inicial
         )
         return Response({'mensagem': 'Produção criada com sucesso!', 'id': nova_producao.id}, status=201)
     
@@ -375,7 +380,7 @@ def api_list_my_productions(request):
             'status': p.status,
             'modelo_ia': p.modelo_ia,
             'feedback_revisor': feedback,
-            'total_aprovacoes': total_aprovacoes 
+            'total_aprovacoes': total_aprovacoes
         })
     
     return Response(lista)
@@ -390,7 +395,7 @@ def api_get_production_details(request, pk):
         is_dono = p.user == request.user
         is_admin = request.user.is_superuser
         is_aprovado = p.status in ['Aprovado', 'Concluído']
-        is_revisor_desta_pratica = p.avaliacoes.filter(revisor=request.user).exists() 
+        is_revisor_desta_pratica = p.avaliacoes.filter(revisor=request.user).exists()
         
         minha_disciplina = request.user.profile.disciplina if hasattr(request.user, 'profile') else 'Outra'
         is_potencial_revisor = (p.status == 'Em revisão' and p.disciplina == minha_disciplina and not is_dono)
@@ -417,7 +422,7 @@ def api_get_production_details(request, pk):
                 
             avaliacoes_detalhadas.append({
                 'ordem': i + 1,
-                'revisor_id': aval.revisor.id, 
+                'revisor_id': aval.revisor.id,
                 'aprovado': aval.aprovado,
                 'pontos_fortes': pontos_fortes,
                 'pontos_melhoria': pontos_melhoria,
@@ -439,14 +444,13 @@ def api_get_production_details(request, pk):
 
         dados_referencia = None
         if p.producao_base:
-            # Pega o autor original respeitando o anonimato dele também!
             autor_original = p.producao_base.user.first_name or p.producao_base.user.username
             autor_exibicao_original = autor_original if p.producao_base.exibir_autor else "Professor(a) Anônimo(a)"
             
             dados_referencia = {
                 'id': p.producao_base.id,
                 'titulo': p.producao_base.titulo,
-                'autor': autor_exibicao_original 
+                'autor': autor_exibicao_original
             }
 
         total_aprovacoes = avaliacoes.filter(aprovado=True).count()
@@ -468,35 +472,34 @@ def api_get_production_details(request, pk):
             'prompts_ia': p.prompts_ia,
             'categoria': p.categoria,
             'bncc': p.bncc,
-            'bncc_computacao': p.bncc_computacao, 
+            'bncc_computacao': p.bncc_computacao,
             'metodologia': p.metodologia,
             'duracao': p.duracao,
             'recursos': lista_recursos,
             'experiencia': p.experiencia,
             'resultados': p.resultados,
-            'arquivo': arquivo_url, 
+            'arquivo': arquivo_url,
             'link_material': p.link_material,
             'data': p.data_criacao.strftime('%d/%m/%Y'),
             'status': p.status,
             
             # --- NOVA LÓGICA DE AUTORIA ---
-            # Se for o dono ou admin, vê o nome verdadeiro. Senão, respeita o check de anonimato
             'autor': p.user.first_name or p.user.username if (p.exibir_autor or is_dono or is_admin) else "Professor(a) Anônimo(a)",
-            'exibir_autor': p.exibir_autor, # Passado para o front renderizar o checkbox/toggle
+            'exibir_autor': p.exibir_autor,
             
             'is_dono': is_dono,
             'is_admin': is_admin,
-            'is_revisor': is_revisor_desta_pratica, 
+            'is_revisor': is_revisor_desta_pratica,
 
-            'revisao_realizada': len(avaliacoes_filtradas) > 0, 
+            'revisao_realizada': len(avaliacoes_filtradas) > 0,
             'avaliacoes_detalhadas': avaliacoes_filtradas,
-            'feedback_texto': feedback_texto if (is_dono or is_admin) else None, 
+            'feedback_texto': feedback_texto if (is_dono or is_admin) else None,
             'notas': notas,
-            'total_avaliacoes': avaliacoes.count(), 
+            'total_avaliacoes': avaliacoes.count(),
             'total_aprovacoes': total_aprovacoes,
 
             'is_aprovado': is_aprovado,
-            'producao_base': dados_referencia 
+            'producao_base': dados_referencia
         }
         return Response(data)
         
@@ -521,14 +524,13 @@ def api_update_production(request, pk):
         p.prompts_ia = data.get('prompts_ia', p.prompts_ia)
         p.categoria = data.get('categoria', p.categoria)
         p.bncc = data.get('bncc', p.bncc)
-        p.bncc_computacao = data.get('bncc_computacao', p.bncc_computacao) 
+        p.bncc_computacao = data.get('bncc_computacao', p.bncc_computacao)
         p.metodologia = data.get('metodologia', p.metodologia)
         p.duracao = data.get('duracao', p.duracao)
         p.experiencia = data.get('experiencia', p.experiencia)
         p.resultados = data.get('resultados', p.resultados)
         p.link_material = data.get('link_material', p.link_material)
 
-        # Atualiza a preferência de anonimato se enviado no rascunho
         if 'exibir_autor' in data:
             exibir_autor_val = data.get('exibir_autor')
             p.exibir_autor = str(exibir_autor_val).strip().lower() not in ['false', '0', 'f', 'n']
@@ -547,7 +549,7 @@ def api_update_production(request, pk):
         if is_draft:
             p.status = 'Rascunho'
         else:
-            p.status = 'Em revisão' 
+            p.status = 'Em revisão'
             p.avaliacoes.all().delete()
             
         p.save()
@@ -573,7 +575,7 @@ def api_toggle_author_visibility(request, pk):
         p.save()
         status_msg = "visível" if p.exibir_autor else "oculto"
         return Response({
-            'mensagem': f'Seu nome agora está {status_msg} na comunidade.', 
+            'mensagem': f'Seu nome agora está {status_msg} na comunidade.',
             'exibir_autor': p.exibir_autor
         })
     except Producao.DoesNotExist:
@@ -706,7 +708,7 @@ def api_review_history(request):
             'disciplina': a.producao.disciplina,
             'data_revisao': a.data_avaliacao.strftime('%d/%m/%Y') if a.data_avaliacao else 'Data n/d',
             'meu_veredito': veredito_final,
-            'autor_anonimo': f"Prof. de {a.producao.disciplina}" 
+            'autor_anonimo': f"Prof. de {a.producao.disciplina}"
         })
     
     return Response(lista)
@@ -732,15 +734,13 @@ def api_list_public_feed(request):
     
     lista = []
     for p in producoes:
-        # --- LÓGICA DE ANONIMATO NO FEED ---
         nome_autor = p.user.first_name or p.user.username
         autor_exibicao = nome_autor if p.exibir_autor else "Professor(a) Anônimo(a)"
 
-        # --- LÓGICA DE RELEITURA (HERANÇA) ---
         base_info = None
         if p.producao_base:
             base_info = {
-                'id': p.producao_base.id, 
+                'id': p.producao_base.id,
                 'titulo': p.producao_base.titulo
             }
 
@@ -753,17 +753,17 @@ def api_list_public_feed(request):
             'categoria': p.categoria,
             'autor': autor_exibicao,
             'producao_base': base_info,
-            'resumo': p.experiencia[:150] + '...' if p.experiencia else '', 
-            'likes': 0 
+            'resumo': p.experiencia[:150] + '...' if p.experiencia else '',
+            'likes': 0
         })
     
-    return Response(lista) 
+    return Response(lista)
 
 
-#painel de recuperação de senha
+# Painel de recuperação de senha
 @csrf_exempt
 @api_view(['POST'])
-@authentication_classes([]) 
+@authentication_classes([])
 @permission_classes([AllowAny])
 def api_password_reset_request(request):
     email = request.data.get('email')
@@ -773,10 +773,8 @@ def api_password_reset_request(request):
     try:
         user = User.objects.get(email=email)
     except User.DoesNotExist:
-        # Por segurança, sempre dizemos que foi enviado mesmo se não existir
         return Response({'mensagem': 'Se o e-mail existir, um link foi enviado.'})
 
-    # Gera o Token seguro do Django
     token = default_token_generator.make_token(user)
     uid = urlsafe_base64_encode(force_bytes(user.pk))
     reset_link = f"http://localhost:5173/reset-password/{uid}/{token}"
@@ -786,24 +784,18 @@ def api_password_reset_request(request):
     to = [email]
 
     try:
-        # Pega a URL base dinamicamente apontando para a pasta assets
         logo_url = request.build_absolute_uri(settings.STATIC_URL + 'assets/unb.png')
         
-        # 1. Prepara as variáveis para o seu template HTML
         nome_usuario = user.first_name if user.first_name else user.username
         context = {
-            'nome': nome_usuario.split()[0].title(), # Pega só o primeiro nome
+            'nome': nome_usuario.split()[0].title(),
             'link': reset_link,
             'logo_url': logo_url
         }
 
-        # 2. Renderiza o HTML que você criou
         html_content = render_to_string('emails/password_reset_email.html', context)
-        
-        # 3. Cria uma versão em texto puro caso o provedor de e-mail bloqueie HTML
         text_content = strip_tags(html_content)
 
-        # 4. Monta a mensagem e envia
         msg = EmailMultiAlternatives(subject, text_content, from_email, to)
         msg.attach_alternative(html_content, "text/html")
         msg.send(fail_silently=False)
@@ -811,12 +803,12 @@ def api_password_reset_request(request):
         return Response({'mensagem': 'E-mail enviado com sucesso!'})
         
     except Exception as e:
-        print(f"ERRO AO ENVIAR E-MAIL: {e}") # Isso vai aparecer no seu terminal do backend para ajudar a debugar!
+        print(f"ERRO AO ENVIAR E-MAIL: {e}")
         return Response({'erro': 'Erro ao enviar e-mail. Verifique o console.'}, status=500)
 
 @csrf_exempt
 @api_view(['POST'])
-@authentication_classes([]) 
+@authentication_classes([])
 @permission_classes([AllowAny])
 def api_password_reset_confirm(request, uidb64, token):
     new_password = request.data.get('password')
@@ -838,7 +830,7 @@ def api_password_reset_confirm(request, uidb64, token):
         return Response({'erro': 'Link expirado ou inválido.'}, status=400)
 
 
-#painel de aprovação de contas 
+# Painel de aprovação de contas
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def api_list_pending_users(request):
@@ -880,8 +872,8 @@ def api_approve_reject_user(request, user_id):
         return Response({'erro': 'Usuário não encontrado'}, status=404)
 
 
-#views para o forum do sistema 
-@api_view(['GET', 'POST', 'PUT', 'DELETE']) 
+# Views para o fórum do sistema
+@api_view(['GET', 'POST', 'PUT', 'DELETE'])
 @permission_classes([IsAuthenticated])
 def api_forum_detalhe_comentarios(request, pk):
     try:
@@ -995,7 +987,7 @@ def api_forum_topicos(request):
         categoria = request.data.get('categoria', 'Geral')
         producao_base_id = request.data.get('producao_base_id')
         
-        arquivo_enviado = request.FILES.get('arquivo') 
+        arquivo_enviado = request.FILES.get('arquivo')
 
         if not titulo or not conteudo:
             return Response({'erro': 'Título e conteúdo são obrigatórios.'}, status=400)
@@ -1013,7 +1005,7 @@ def api_forum_topicos(request):
             categoria=categoria,
             autor=request.user,
             arquivo=arquivo_enviado,
-            producao_base=producao_base 
+            producao_base=producao_base
         )
 
         config_xp, _ = ConfiguracaoXP.objects.get_or_create(pk=1)
@@ -1026,9 +1018,7 @@ def api_forum_topicos(request):
         }, status=201)
 
 
-
-#views para o painel de administração
-
+# Views para o painel de administração
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def api_admin_list_users(request):
@@ -1319,7 +1309,7 @@ class DiarioOperacaoView(APIView):
             'status': novo_log.status,
             'contato': novo_log.contato or (novo_log.docente.first_name if novo_log.docente else 'Não informado'),
             'docente_id': novo_log.docente.id if novo_log.docente else None,
-            'data_evento': data_evento, 
+            'data_evento': data_evento,
             'descricao': novo_log.descricao,
             'proximos_passos': novo_log.proximos_passos,
             'tags': novo_log.tags,
@@ -1378,7 +1368,7 @@ class DiarioNotaView(APIView):
             return Response({'erro': 'Registro não encontrado'}, status=status.HTTP_404_NOT_FOUND)
         
         texto = request.data.get('texto')
-        novo_status = request.data.get('status') 
+        novo_status = request.data.get('status')
 
         if novo_status and novo_status != diario.status:
             diario.status = novo_status
@@ -1478,3 +1468,85 @@ def api_mark_notifications_read(request):
     """Marca todas as notificações não lidas como lidas."""
     request.user.notificacoes.filter(lida=False).update(lida=True)
     return Response({'mensagem': 'Notificações marcadas como lidas.'})
+
+
+# ============================================================================
+# INTEGRAÇÃO COM IA PARA CATALOGAÇÃO AUTOMÁTICA
+# ============================================================================
+class AutoCatalogAIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        raw_text = request.data.get('texto', '') or request.data.get('raw_text', '')
+        
+        if not raw_text or not str(raw_text).strip():
+            return Response(
+                {'erro': 'Por favor, informe um rascunho ou descrição da aula.'},
+                status=400
+            )
+
+        try:
+            provider = get_llm_provider()
+            cataloged_data = provider.catalog_production(str(raw_text))
+            return Response(cataloged_data, status=200)
+            
+        except Exception as e:
+            print("\n❌ ERRO NA AUTO-CATALOGAÇÃO COM IA:")
+            traceback.print_exc()
+            print("=" * 50 + "\n")
+            
+            return Response(
+                {'erro': f'Falha no processamento da IA: {str(e)}'},
+                status=500
+            )
+
+
+# ============================================================================
+# SISTEMA DE EXPORTAÇÃO DE PRODUÇÕES PARA PDF (IFB / MEC)
+# ============================================================================
+class ExportProducaoPDFView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        try:
+            producao = Producao.objects.get(pk=pk)
+        except Producao.DoesNotExist:
+            return HttpResponse("Produção não encontrada.", status=404)
+
+        try:
+            docente_param = request.GET.get('docente', '').strip()
+            
+            autor_nome = docente_param or getattr(producao, 'autor', None)
+            if not autor_nome and hasattr(producao, 'user') and producao.user:
+                autor_nome = producao.user.first_name or producao.user.username
+            
+            recursos_raw = getattr(producao, 'recursos', '-')
+            recursos_str = (
+                ", ".join(recursos_raw)
+                if isinstance(recursos_raw, list)
+                else str(recursos_raw or '-')
+            )
+
+            context = {
+                'producao': producao,
+                'docente': autor_nome or 'Não informado',
+                'nivel_ensino': getattr(producao, 'nivel_ensino', None) or getattr(producao, 'nivel', '-'),
+                'relato': getattr(producao, 'experiencia', None) or getattr(producao, 'relato', 'Não informado.'),
+                'recursos_str': recursos_str,
+            }
+
+            html_string = render_to_string('relatorio_gdf.html', context)
+
+            pdf_bytes = HTML(
+                string=html_string,
+                base_url=request.build_absolute_uri('/')
+            ).write_pdf()
+
+            response = HttpResponse(pdf_bytes, content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="plano_de_aula_{pk}_IFB.pdf"'
+            return response
+
+        except Exception as e:
+            print("\n❌ ERRO NA GERAÇÃO DO PDF:")
+            traceback.print_exc()
+            return HttpResponse(f"Erro ao gerar PDF: {str(e)}", status=500)

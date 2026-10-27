@@ -44,7 +44,7 @@ const SelecionarMetodo = () => {
               Prática Original
             </h3>
             <p className="text-sm text-slate-500 dark:text-slate-400 mb-8 flex-1 leading-relaxed">
-              Crie uma prática totalmente nova, preenchendo o formulário detalhado com a sua própria experiência.
+              Crie uma prática totalmente nova, preenchendo o formulário detalhado com a sua própria experiência.33
             </p>
             <span className="text-sm font-bold text-[#1565C0] dark:text-blue-400 flex items-center gap-1 group-hover:gap-2 transition-all">
               Começar do zero &rarr;

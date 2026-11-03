@@ -1,7 +1,7 @@
 # frontend/Dockerfile
 
 # Usa uma versão leve do Node.js
-FROM node:18-alpine
+FROM node:21-alpine
 
 # Define a pasta de trabalho dentro do contêiner
 WORKDIR /app

@@ -1,159 +1,108 @@
 import React from "react"
-import { useNavigate, useOutletContext } from "react-router-dom"
-import { ArrowLeft, Keyboard, Bookmark } from "lucide-react"
+import { useNavigate } from "react-router-dom"
+import { ArrowLeft, Keyboard, GitMerge, Sparkles } from "lucide-react"
 
 const SelecionarMetodo = () => {
   const navigate = useNavigate()
-  const { isMobile } = useOutletContext() || { isMobile: false }
 
   return (
-    <div style={styles.fullPageWrapper}>
-      <div style={styles.containerCenter}>
-        <button onClick={() => navigate(-1)} style={styles.backButtonSimple}>
-          <ArrowLeft size={20} /> Cancelar
-        </button>
-        <div style={{ ...styles.headerCenter, marginBottom: "40px" }}>
-          <h2 style={styles.titleCenter}>Como você deseja catalogar?</h2>
-          <p style={styles.subtitleCenter}>
-            Escolha a forma mais confortável para registrar sua atividade.
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-6 flex flex-col items-center pt-12 md:pt-20 transition-colors duration-200">
+      <div className="w-full max-w-6xl flex flex-col items-center">
+        {/* Botão Voltar */}
+        <div className="w-full mb-8">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-[#1565C0] dark:hover:text-blue-400 font-bold text-sm transition-colors"
+          >
+            <ArrowLeft size={18} /> Cancelar
+          </button>
+        </div>
+
+        {/* Título */}
+        <div className="text-center max-w-xl mb-12">
+          <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-4">
+            Como você deseja catalogar?
+          </h2>
+          <p className="text-base text-slate-500 dark:text-slate-400 leading-relaxed">
+            Escolha a forma mais confortável para registrar sua atividade na
+            comunidade.
           </p>
         </div>
-        <div
-          style={{
-            ...styles.selectionGrid,
-            flexDirection: isMobile ? "column" : "row",
-            flexWrap: "wrap",
-          }}
-        >
+
+        {/* Grid de 3 Cards de Seleção */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
+          {/* Card 1: Começar do Zero */}
           <div
-            style={styles.selectionCard}
             onClick={() => navigate("/dashboard/catalogar/manual")}
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-8 flex flex-col items-center text-center cursor-pointer hover:shadow-xl hover:-translate-y-1 hover:border-[#1565C0]/40 dark:hover:border-blue-500/40 transition-all duration-300 group"
           >
-            <div style={styles.iconCircleBlue}>
-              <Keyboard size={32} color="var(--text-info)" />
+            <div className="w-20 h-20 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-6 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/30 transition-colors">
+              <Keyboard
+                size={36}
+                className="text-slate-600 dark:text-slate-300 group-hover:text-[#1565C0] dark:group-hover:text-blue-400 transition-colors"
+              />
             </div>
-            <h3 style={styles.cardTitle}>Começar do Zero</h3>
-            <p style={styles.cardDesc}>
-              Preencha o formulário detalhado manualmente.
+            <h3 className="text-xl font-extrabold text-slate-900 dark:text-white mb-3">
+              Prática Original
+            </h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-8 flex-1 leading-relaxed">
+              Crie uma prática totalmente nova, preenchendo o formulário
+              detalhado com a sua própria experiência.
             </p>
-            <span style={styles.fakeLink}>Ir para formulário &rarr;</span>
+            <span className="text-sm font-bold text-[#1565C0] dark:text-blue-400 flex items-center gap-1 group-hover:gap-2 transition-all">
+              Começar do zero &rarr;
+            </span>
           </div>
 
+          {/* Card 2: Releitura */}
           <div
-            style={{
-              ...styles.selectionCard,
-              border: "2px solid var(--border-success)",
-              backgroundColor: "var(--bg-success)",
-            }}
             onClick={() => navigate("/dashboard/catalogar/base")}
+            className="bg-gradient-to-b from-blue-50/50 to-white dark:from-blue-900/10 dark:to-slate-900 border-2 border-blue-100 hover:border-[#1565C0] dark:border-blue-900/50 dark:hover:border-blue-500 rounded-2xl p-8 flex flex-col items-center text-center cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
           >
-            <div
-              style={{
-                ...styles.iconCircleBlue,
-                backgroundColor: "var(--bg-card)",
-              }}
-            >
-              <Bookmark size={32} color="var(--text-success)" />
+            <div className="w-20 h-20 rounded-full bg-white dark:bg-slate-800 shadow-sm flex items-center justify-center mb-6 group-hover:bg-[#1565C0] transition-colors">
+              <GitMerge
+                size={36}
+                className="text-[#1565C0] dark:text-blue-400 group-hover:text-white transition-colors"
+              />
             </div>
-            <h3 style={{ ...styles.cardTitle, color: "var(--text-success)" }}>
-              Basear em Colega
+            <h3 className="text-xl font-extrabold text-[#1565C0] dark:text-blue-400 mb-3">
+              Criar Releitura
             </h3>
-            <p style={{ ...styles.cardDesc, color: "var(--text-success)" }}>
-              Use uma prática validada como ponto de partida.
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-8 flex-1 leading-relaxed">
+              Use uma prática que já deu certo na comunidade e adapte para a sua
+              realidade (turma, recursos ou IA).
             </p>
-            <span style={{ ...styles.fakeLink, color: "var(--text-success)" }}>
-              Buscar práticas &rarr;
+            <span className="text-sm font-bold text-[#1565C0] dark:text-blue-400 flex items-center gap-1 group-hover:gap-2 transition-all">
+              Buscar no Acervo &rarr;
+            </span>
+          </div>
+
+          {/* Card 3: Catalogar com IA (NOVO CARD) */}
+          <div
+            onClick={() => navigate("/dashboard/catalogar/assistido")}
+            className="bg-gradient-to-b from-purple-50/60 to-white dark:from-purple-900/10 dark:to-slate-900 border-2 border-purple-100 hover:border-purple-600 dark:border-purple-900/50 dark:hover:border-purple-500 rounded-2xl p-8 flex flex-col items-center text-center cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
+          >
+            <div className="w-20 h-20 rounded-full bg-white dark:bg-slate-800 shadow-sm flex items-center justify-center mb-6 group-hover:bg-purple-600 transition-colors">
+              <Sparkles
+                size={36}
+                className="text-purple-600 dark:text-purple-400 group-hover:text-white transition-colors"
+              />
+            </div>
+            <h3 className="text-xl font-extrabold text-purple-700 dark:text-purple-400 mb-3">
+              Catalogar com IA
+            </h3>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-8 flex-1 leading-relaxed">
+              Cole o rascunho da sua aula ou notas livres e deixe a IA extrair e
+              preencher os campos para você.
+            </p>
+            <span className="text-sm font-bold text-purple-600 dark:text-purple-400 flex items-center gap-1 group-hover:gap-2 transition-all">
+              Usar Assistente IA &rarr;
             </span>
           </div>
         </div>
       </div>
     </div>
   )
-}
-
-const styles = {
-  fullPageWrapper: {
-    backgroundColor: "var(--bg-main)",
-    minHeight: "100vh",
-    width: "100%",
-    boxSizing: "border-box",
-    padding: "20px",
-  },
-  containerCenter: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    paddingTop: "40px",
-    width: "100%",
-    maxWidth: "1000px",
-    margin: "0 auto",
-  },
-  backButtonSimple: {
-    background: "none",
-    border: "none",
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    color: "var(--text-secondary)",
-    fontWeight: "600",
-    fontSize: "15px",
-    marginBottom: "20px",
-    alignSelf: "flex-start",
-  },
-  headerCenter: { textAlign: "center", maxWidth: "600px" },
-  titleCenter: {
-    fontSize: "32px",
-    color: "var(--text-primary)",
-    margin: "0 0 10px 0",
-    fontWeight: "800",
-  },
-  subtitleCenter: { fontSize: "18px", color: "var(--text-muted)", margin: 0 },
-  selectionGrid: {
-    display: "flex",
-    gap: "30px",
-    justifyContent: "center",
-    width: "100%",
-  },
-  selectionCard: {
-    flex: 1,
-    backgroundColor: "var(--bg-card)",
-    padding: "40px 30px",
-    borderRadius: "20px",
-    border: "1px solid var(--border-color)",
-    boxShadow: "0 4px 15px rgba(0,0,0,0.05)",
-    cursor: "pointer",
-    transition: "all 0.3s ease",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    textAlign: "center",
-    minWidth: "280px",
-  },
-  iconCircleBlue: {
-    width: "80px",
-    height: "80px",
-    borderRadius: "50%",
-    backgroundColor: "var(--bg-info)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: "20px",
-  },
-  cardTitle: {
-    fontSize: "20px",
-    fontWeight: "700",
-    color: "var(--text-primary)",
-    marginBottom: "15px",
-  },
-  cardDesc: {
-    fontSize: "14px",
-    color: "var(--text-secondary)",
-    lineHeight: "1.6",
-    marginBottom: "25px",
-    flex: 1,
-  },
-  fakeLink: { fontSize: "14px", fontWeight: "700", color: "var(--text-info)" },
 }
 
 export default SelecionarMetodo

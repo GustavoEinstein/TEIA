@@ -3,18 +3,8 @@ import { useNavigate, useOutletContext } from "react-router-dom"
 import api from "../services/api"
 import Swal from "sweetalert2"
 import {
-  TrendingUp,
-  School,
-  BookOpen,
-  Save,
-  Plus,
-  Loader2,
-  Settings,
-  FileCheck,
-  ChevronRight,
-  Trophy,
-  X,
-  MessageSquare,
+  TrendingUp, School, BookOpen, Save, Plus, Loader2,
+  Settings, FileCheck, ChevronRight, Trophy, X, MessageSquare,
 } from "lucide-react"
 
 export default function ConfiguracoesGerais() {
@@ -60,17 +50,8 @@ export default function ConfiguracoesGerais() {
     e.preventDefault()
     setSavingXp(true)
     try {
-      await api.post("api/admin/configuracoes/", {
-        acao: "atualizar_xp",
-        ...xpConfig,
-      })
-      Swal.fire({
-        icon: "success",
-        title: "Sucesso!",
-        text: "Economia de XP atualizada.",
-        timer: 1500,
-        showConfirmButton: false,
-      })
+      await api.post("api/admin/configuracoes/", { acao: "atualizar_xp", ...xpConfig })
+      Swal.fire({ icon: "success", title: "Sucesso!", text: "Economia de XP atualizada.", timer: 1500, showConfirmButton: false })
     } catch (error) {
       Swal.fire("Erro", "Não foi possível salvar.", "error")
     } finally {
@@ -81,10 +62,7 @@ export default function ConfiguracoesGerais() {
   const adicionarItem = async (tipo, nome, setInputFunc) => {
     if (!nome.trim()) return
     try {
-      await api.post("api/admin/configuracoes/", {
-        acao: `adicionar_${tipo}`,
-        nome: nome,
-      })
+      await api.post("api/admin/configuracoes/", { acao: `adicionar_${tipo}`, nome: nome })
       setInputFunc("")
       carregarConfiguracoes()
     } catch (error) {
@@ -94,207 +72,117 @@ export default function ConfiguracoesGerais() {
 
   const removerItem = async (tipo, id) => {
     try {
-      await api.post("api/admin/configuracoes/", {
-        acao: `remover_${tipo}`,
-        id: id,
-      })
+      await api.post("api/admin/configuracoes/", { acao: `remover_${tipo}`, id: id })
       carregarConfiguracoes()
     } catch (error) {
       Swal.fire("Erro", `Não foi possível remover.`, "error")
     }
   }
 
-  if (loading)
-    return (
-      <div style={styles.loadingContainer}>
-        <Loader2 className="spin" size={32} color="#7B1FA2" />
-        <p style={{ marginTop: "10px", color: "var(--text-muted)" }}>
-          Carregando arquitetura do sistema...
-        </p>
-        <style>{`@keyframes spin { 100% { transform: rotate(360deg); } } .spin { animation: spin 1s linear infinite; }`}</style>
-      </div>
-    )
+  if (loading) return (
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center transition-colors duration-200">
+      <Loader2 className="animate-spin text-purple-600 mb-4" size={32} />
+      <p className="text-slate-500 dark:text-slate-400 font-bold">Carregando arquitetura do sistema...</p>
+    </div>
+  )
+
+  const inputClass = "flex-1 bg-transparent border-none outline-none px-4 py-3 text-sm font-bold text-slate-900 dark:text-white placeholder-slate-400"
 
   return (
-    <div
-      style={{
-        ...styles.wrapper,
-        padding: isMobile ? "20px 10px" : "40px 20px",
-      }}
-    >
-      <style>{`
-        input::placeholder, textarea::placeholder { color: var(--text-muted) !important; opacity: 1 !important; }
-        ::-webkit-input-placeholder { color: var(--text-muted) !important; opacity: 1 !important; }
-        :-moz-placeholder { color: var(--text-muted) !important; opacity: 1 !important; }
-      `}</style>
-
-      <div style={styles.container}>
-        <div style={styles.header}>
-          <div style={styles.titleGroup}>
-            <div style={styles.iconCirclePurple}>
-              <Settings size={28} color="#7B1FA2" />
+    <div className="w-full min-h-screen bg-slate-50 dark:bg-slate-950 p-4 md:p-8 pb-20 transition-colors duration-200">
+      <div className="max-w-[1000px] mx-auto">
+        
+        <header className="mb-8 border-b border-slate-200 dark:border-slate-800 pb-6">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center shrink-0 border border-purple-200 dark:border-purple-800/50">
+              <Settings size={28} className="text-purple-700 dark:text-purple-400" />
             </div>
             <div>
-              <h1
-                style={{
-                  ...styles.pageTitle,
-                  fontSize: isMobile ? "24px" : "28px",
-                }}
-              >
-                Configurações do Sistema
-              </h1>
-              <p style={styles.pageSubtitle}>
-                Ajuste a economia do jogo e os dados base da plataforma.
-              </p>
+              <h1 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight">Configurações do Sistema</h1>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Ajuste a economia do jogo e os dados base da plataforma.</p>
             </div>
           </div>
-        </div>
+        </header>
 
-        <div
-          style={{
-            ...styles.layoutWithTabs,
-            flexDirection: isMobile ? "column" : "row",
-          }}
-        >
-          <aside
-            style={{
-              ...styles.tabSidebar,
-              width: isMobile ? "100%" : "250px",
-              marginBottom: isMobile ? "20px" : "0",
-            }}
-          >
-            <nav style={styles.tabNav}>
-              <button
-                style={
-                  activeTab === "economia" ? styles.tabBtnActive : styles.tabBtn
-                }
-                onClick={() => setActiveTab("economia")}
-              >
-                <TrendingUp size={18} /> Economia de XP{" "}
-                {activeTab === "economia" && (
-                  <ChevronRight size={16} style={styles.chevron} />
-                )}
-              </button>
-              <button
-                style={
-                  activeTab === "escolas" ? styles.tabBtnActive : styles.tabBtn
-                }
-                onClick={() => setActiveTab("escolas")}
-              >
-                <School size={18} /> Escolas{" "}
-                {activeTab === "escolas" && (
-                  <ChevronRight size={16} style={styles.chevron} />
-                )}
-              </button>
-              <button
-                style={
-                  activeTab === "disciplinas"
-                    ? styles.tabBtnActive
-                    : styles.tabBtn
-                }
-                onClick={() => setActiveTab("disciplinas")}
-              >
-                <BookOpen size={18} /> Disciplinas{" "}
-                {activeTab === "disciplinas" && (
-                  <ChevronRight size={16} style={styles.chevron} />
-                )}
-              </button>
-            </nav>
+        <div className="flex flex-col md:flex-row gap-8 items-start">
+          
+          <aside className="w-full md:w-[250px] shrink-0 flex flex-col gap-2">
+            <button
+              onClick={() => setActiveTab("economia")}
+              className={`flex items-center justify-between w-full p-4 rounded-xl font-bold text-[15px] transition-all ${
+                activeTab === "economia" ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm border border-slate-200 dark:border-slate-800" : "text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+              }`}
+            >
+              <div className="flex items-center gap-3"><TrendingUp size={18} /> Economia de XP</div>
+              {activeTab === "economia" && <ChevronRight size={16} className="text-slate-400" />}
+            </button>
+            <button
+              onClick={() => setActiveTab("escolas")}
+              className={`flex items-center justify-between w-full p-4 rounded-xl font-bold text-[15px] transition-all ${
+                activeTab === "escolas" ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm border border-slate-200 dark:border-slate-800" : "text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+              }`}
+            >
+              <div className="flex items-center gap-3"><School size={18} /> Escolas</div>
+              {activeTab === "escolas" && <ChevronRight size={16} className="text-slate-400" />}
+            </button>
+            <button
+              onClick={() => setActiveTab("disciplinas")}
+              className={`flex items-center justify-between w-full p-4 rounded-xl font-bold text-[15px] transition-all ${
+                activeTab === "disciplinas" ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm border border-slate-200 dark:border-slate-800" : "text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+              }`}
+            >
+              <div className="flex items-center gap-3"><BookOpen size={18} /> Disciplinas</div>
+              {activeTab === "disciplinas" && <ChevronRight size={16} className="text-slate-400" />}
+            </button>
           </aside>
 
-          <main style={styles.mainContent}>
+          <main className="flex-1 w-full bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 md:p-8">
+            
             {activeTab === "economia" && (
-              <div style={styles.card}>
-                <div style={styles.cardHeader}>
-                  <div style={styles.cardHeaderIcon}>
-                    <TrendingUp size={24} color="#1565C0" />
+              <div>
+                <div className="flex items-center gap-4 mb-8">
+                  <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center shrink-0 border border-blue-200 dark:border-blue-800/50">
+                    <TrendingUp size={24} className="text-[#1565C0] dark:text-blue-400" />
                   </div>
                   <div>
-                    <h2 style={styles.cardTitle}>Pesos de Gamificação</h2>
-                    <p style={styles.cardDesc}>
-                      Determine quantos pontos de experiência (XP) cada ação
-                      gera para os professores.
-                    </p>
+                    <h2 className="text-xl font-extrabold text-slate-900 dark:text-white">Pesos de Gamificação</h2>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Determine quantos pontos de experiência (XP) cada ação gera para os professores.</p>
                   </div>
                 </div>
 
-                <form onSubmit={salvarXp} style={styles.formGrid}>
-                  <div style={styles.formGroup}>
-                    <label style={styles.label}>
-                      <FileCheck size={16} color="var(--text-muted)" /> Revisar
-                      a prática de um colega
-                    </label>
-                    <div style={styles.inputWithAddon}>
-                      <input
-                        type="number"
-                        name="xp_revisao"
-                        value={xpConfig.xp_revisao}
-                        onChange={handleXpChange}
-                        style={styles.inputBorderless}
-                      />
-                      <span style={styles.addonText}>XP</span>
+                <form onSubmit={salvarXp} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="flex flex-col gap-2">
+                    <label className="flex items-center gap-2 text-sm font-bold text-slate-600 dark:text-slate-400"><FileCheck size={16} /> Revisar prática de colega</label>
+                    <div className="flex items-center bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden focus-within:border-[#1565C0] transition-colors">
+                      <input type="number" name="xp_revisao" value={xpConfig.xp_revisao} onChange={handleXpChange} className={inputClass} />
+                      <span className="px-4 bg-slate-100 dark:bg-slate-800 border-l border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-black h-full flex items-center">XP</span>
                     </div>
                   </div>
-                  <div style={styles.formGroup}>
-                    <label style={styles.label}>
-                      <Trophy size={16} color="var(--text-muted)" /> Ter uma
-                      produção Aprovada
-                    </label>
-                    <div style={styles.inputWithAddon}>
-                      <input
-                        type="number"
-                        name="xp_aprovacao"
-                        value={xpConfig.xp_aprovacao}
-                        onChange={handleXpChange}
-                        style={styles.inputBorderless}
-                      />
-                      <span style={styles.addonText}>XP</span>
+                  <div className="flex flex-col gap-2">
+                    <label className="flex items-center gap-2 text-sm font-bold text-slate-600 dark:text-slate-400"><Trophy size={16} /> Ter produção Aprovada</label>
+                    <div className="flex items-center bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden focus-within:border-[#1565C0] transition-colors">
+                      <input type="number" name="xp_aprovacao" value={xpConfig.xp_aprovacao} onChange={handleXpChange} className={inputClass} />
+                      <span className="px-4 bg-slate-100 dark:bg-slate-800 border-l border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-black h-full flex items-center">XP</span>
                     </div>
                   </div>
-                  <div style={styles.formGroup}>
-                    <label style={styles.label}>
-                      <MessageSquare size={16} color="var(--text-muted)" />{" "}
-                      Criar um novo Tópico no Fórum
-                    </label>
-                    <div style={styles.inputWithAddon}>
-                      <input
-                        type="number"
-                        name="xp_topico"
-                        value={xpConfig.xp_topico}
-                        onChange={handleXpChange}
-                        style={styles.inputBorderless}
-                      />
-                      <span style={styles.addonText}>XP</span>
+                  <div className="flex flex-col gap-2">
+                    <label className="flex items-center gap-2 text-sm font-bold text-slate-600 dark:text-slate-400"><MessageSquare size={16} /> Criar Tópico no Fórum</label>
+                    <div className="flex items-center bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden focus-within:border-[#1565C0] transition-colors">
+                      <input type="number" name="xp_topico" value={xpConfig.xp_topico} onChange={handleXpChange} className={inputClass} />
+                      <span className="px-4 bg-slate-100 dark:bg-slate-800 border-l border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-black h-full flex items-center">XP</span>
                     </div>
                   </div>
-                  <div style={styles.formGroup}>
-                    <label style={styles.label}>
-                      <MessageSquare size={16} color="var(--text-muted)" />{" "}
-                      Responder/Comentar no Fórum
-                    </label>
-                    <div style={styles.inputWithAddon}>
-                      <input
-                        type="number"
-                        name="xp_comentario"
-                        value={xpConfig.xp_comentario}
-                        onChange={handleXpChange}
-                        style={styles.inputBorderless}
-                      />
-                      <span style={styles.addonText}>XP</span>
+                  <div className="flex flex-col gap-2">
+                    <label className="flex items-center gap-2 text-sm font-bold text-slate-600 dark:text-slate-400"><MessageSquare size={16} /> Responder no Fórum</label>
+                    <div className="flex items-center bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden focus-within:border-[#1565C0] transition-colors">
+                      <input type="number" name="xp_comentario" value={xpConfig.xp_comentario} onChange={handleXpChange} className={inputClass} />
+                      <span className="px-4 bg-slate-100 dark:bg-slate-800 border-l border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-black h-full flex items-center">XP</span>
                     </div>
                   </div>
-                  <div style={styles.submitRow}>
-                    <button
-                      type="submit"
-                      disabled={savingXp}
-                      style={styles.submitBtn}
-                    >
-                      {savingXp ? (
-                        <Loader2 size={18} className="spin" />
-                      ) : (
-                        <Save size={18} />
-                      )}{" "}
-                      Salvar Regras de XP
+
+                  <div className="md:col-span-2 flex justify-end mt-4">
+                    <button type="submit" disabled={savingXp} className="flex items-center justify-center gap-2 bg-[#1565C0] hover:bg-blue-700 text-white px-8 py-3 rounded-xl font-bold transition-colors shadow-md shadow-blue-500/20 w-full md:w-auto">
+                      {savingXp ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />} Salvar Regras de XP
                     </button>
                   </div>
                 </form>
@@ -302,152 +190,71 @@ export default function ConfiguracoesGerais() {
             )}
 
             {activeTab === "escolas" && (
-              <div style={styles.card}>
-                <div style={styles.cardHeader}>
-                  <div
-                    style={{
-                      ...styles.cardHeaderIcon,
-                      backgroundColor: "var(--bg-success)",
-                    }}
-                  >
-                    <School size={24} color="var(--text-success)" />
+              <div>
+                <div className="flex items-center gap-4 mb-8">
+                  <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center shrink-0 border border-emerald-200 dark:border-emerald-800/50">
+                    <School size={24} className="text-emerald-600 dark:text-emerald-400" />
                   </div>
                   <div>
-                    <h2 style={styles.cardTitle}>Instituições de Ensino</h2>
-                    <p style={styles.cardDesc}>
-                      Estas opções aparecerão para os usuários no momento de
-                      criar uma conta.
-                    </p>
+                    <h2 className="text-xl font-extrabold text-slate-900 dark:text-white">Instituições de Ensino</h2>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Estas opções aparecerão para os usuários no momento de criar uma conta.</p>
                   </div>
                 </div>
 
-                <div style={styles.addBarContainer}>
+                <div className="flex flex-col sm:flex-row gap-3 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200 dark:border-slate-800 mb-6">
                   <input
-                    type="text"
-                    placeholder="Digite o nome de uma nova escola..."
-                    value={novaEscola}
-                    onChange={(e) => setNovaEscola(e.target.value)}
-                    style={styles.inputSearch}
-                    onKeyPress={(e) =>
-                      e.key === "Enter" &&
-                      adicionarItem("escola", novaEscola, setNovaEscola)
-                    }
+                    type="text" placeholder="Digite o nome de uma nova escola..." value={novaEscola}
+                    onChange={(e) => setNovaEscola(e.target.value)} onKeyPress={(e) => e.key === "Enter" && adicionarItem("escola", novaEscola, setNovaEscola)}
+                    className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-3 outline-none text-sm dark:text-white"
                   />
-                  <button
-                    onClick={() =>
-                      adicionarItem("escola", novaEscola, setNovaEscola)
-                    }
-                    style={{ ...styles.btnAdd, backgroundColor: "#059669" }}
-                  >
+                  <button onClick={() => adicionarItem("escola", novaEscola, setNovaEscola)} className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg font-bold text-sm transition-colors shadow-sm">
                     <Plus size={18} /> Adicionar
                   </button>
                 </div>
 
-                <div style={styles.tagsGrid}>
+                <div className="flex flex-wrap gap-3">
                   {escolas.map((e) => (
-                    <div key={e.id} style={styles.tagItem}>
-                      <span style={styles.tagText}>{e.nome}</span>
-                      <button
-                        onClick={() => removerItem("escola", e.id)}
-                        style={styles.tagDeleteBtn}
-                        title="Remover"
-                      >
-                        <X size={14} />
-                      </button>
+                    <div key={e.id} className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full">
+                      <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{e.nome}</span>
+                      <button onClick={() => removerItem("escola", e.id)} className="p-1 text-red-500 hover:bg-red-200 dark:hover:bg-red-900/30 rounded-full transition-colors"><X size={14} /></button>
                     </div>
                   ))}
-                  {escolas.length === 0 && (
-                    <p style={styles.emptyText}>Nenhuma escola cadastrada.</p>
-                  )}
+                  {escolas.length === 0 && <p className="text-sm text-slate-500 w-full text-center py-6 border border-dashed border-slate-300 dark:border-slate-700 rounded-xl">Nenhuma escola cadastrada.</p>}
                 </div>
               </div>
             )}
 
             {activeTab === "disciplinas" && (
-              <div style={styles.card}>
-                <div style={styles.cardHeader}>
-                  <div
-                    style={{
-                      ...styles.cardHeaderIcon,
-                      backgroundColor: "var(--bg-warning)",
-                    }}
-                  >
-                    <BookOpen size={24} color="var(--text-warning)" />
+              <div>
+                <div className="flex items-center gap-4 mb-8">
+                  <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center shrink-0 border border-amber-200 dark:border-amber-800/50">
+                    <BookOpen size={24} className="text-amber-600 dark:text-amber-500" />
                   </div>
                   <div>
-                    <h2 style={styles.cardTitle}>Disciplinas e Áreas</h2>
-                    <p style={styles.cardDesc}>
-                      Cadastre novas áreas de atuação para categorizar os
-                      professores.
-                    </p>
+                    <h2 className="text-xl font-extrabold text-slate-900 dark:text-white">Disciplinas e Áreas</h2>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Cadastre novas áreas de atuação para categorizar os professores.</p>
                   </div>
                 </div>
 
-                <div style={styles.addBarContainer}>
+                <div className="flex flex-col sm:flex-row gap-3 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200 dark:border-slate-800 mb-6">
                   <input
-                    type="text"
-                    placeholder="Digite o nome de uma nova disciplina..."
-                    value={novaDisciplina}
-                    onChange={(e) => setNovaDisciplina(e.target.value)}
-                    style={styles.inputSearch}
-                    onKeyPress={(e) =>
-                      e.key === "Enter" &&
-                      adicionarItem(
-                        "disciplina",
-                        novaDisciplina,
-                        setNovaDisciplina,
-                      )
-                    }
+                    type="text" placeholder="Digite o nome de uma nova disciplina..." value={novaDisciplina}
+                    onChange={(e) => setNovaDisciplina(e.target.value)} onKeyPress={(e) => e.key === "Enter" && adicionarItem("disciplina", novaDisciplina, setNovaDisciplina)}
+                    className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-3 outline-none text-sm dark:text-white"
                   />
-                  <button
-                    onClick={() =>
-                      adicionarItem(
-                        "disciplina",
-                        novaDisciplina,
-                        setNovaDisciplina,
-                      )
-                    }
-                    style={{ ...styles.btnAdd, backgroundColor: "#EA580C" }}
-                  >
+                  <button onClick={() => adicionarItem("disciplina", novaDisciplina, setNovaDisciplina)} className="flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-6 py-3 rounded-lg font-bold text-sm transition-colors shadow-sm">
                     <Plus size={18} /> Adicionar
                   </button>
                 </div>
 
-                <div style={styles.tagsGrid}>
+                <div className="flex flex-wrap gap-3">
                   {disciplinas.map((d) => (
-                    <div
-                      key={d.id}
-                      style={{
-                        ...styles.tagItem,
-                        border: "1px solid var(--border-warning)",
-                        backgroundColor: "var(--bg-warning)",
-                      }}
-                    >
-                      <span
-                        style={{
-                          ...styles.tagText,
-                          color: "var(--text-warning)",
-                        }}
-                      >
-                        {d.nome}
-                      </span>
-                      <button
-                        onClick={() => removerItem("disciplina", d.id)}
-                        style={{
-                          ...styles.tagDeleteBtn,
-                          color: "var(--text-warning)",
-                        }}
-                        title="Remover"
-                      >
-                        <X size={14} />
-                      </button>
+                    <div key={d.id} className="flex items-center gap-2 px-4 py-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-full">
+                      <span className="text-sm font-bold text-amber-700 dark:text-amber-400">{d.nome}</span>
+                      <button onClick={() => removerItem("disciplina", d.id)} className="p-1 text-amber-500 hover:bg-amber-200 dark:hover:bg-amber-900/50 rounded-full transition-colors"><X size={14} /></button>
                     </div>
                   ))}
-                  {disciplinas.length === 0 && (
-                    <p style={styles.emptyText}>
-                      Nenhuma disciplina cadastrada.
-                    </p>
-                  )}
+                  {disciplinas.length === 0 && <p className="text-sm text-slate-500 w-full text-center py-6 border border-dashed border-slate-300 dark:border-slate-700 rounded-xl">Nenhuma disciplina cadastrada.</p>}
                 </div>
               </div>
             )}
@@ -456,260 +263,4 @@ export default function ConfiguracoesGerais() {
       </div>
     </div>
   )
-}
-
-const styles = {
-  wrapper: {
-    backgroundColor: "var(--bg-main)",
-    minHeight: "100vh",
-    fontFamily: "'Inter', sans-serif",
-  },
-  container: { maxWidth: "1000px", margin: "0 auto" },
-  loadingContainer: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    height: "80vh",
-  },
-  header: {
-    marginBottom: "30px",
-    borderBottom: "1px solid var(--border-color)",
-    paddingBottom: "20px",
-  },
-  backButton: {
-    display: "flex",
-    alignItems: "center",
-    gap: "6px",
-    background: "none",
-    border: "none",
-    cursor: "pointer",
-    fontSize: "14px",
-    color: "var(--text-secondary)",
-    fontWeight: "700",
-    padding: 0,
-    marginBottom: "20px",
-  },
-  titleGroup: { display: "flex", alignItems: "center", gap: "15px" },
-  iconCirclePurple: {
-    width: "55px",
-    height: "55px",
-    backgroundColor: "rgba(123, 31, 162, 0.1)",
-    borderRadius: "16px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-  },
-  pageTitle: {
-    margin: 0,
-    fontWeight: "900",
-    color: "var(--text-primary)",
-    letterSpacing: "-0.5px",
-  },
-  pageSubtitle: {
-    margin: 0,
-    color: "var(--text-muted)",
-    marginTop: "4px",
-    fontSize: "15px",
-  },
-  layoutWithTabs: { display: "flex", gap: "30px", alignItems: "flex-start" },
-  tabSidebar: { display: "flex", flexDirection: "column" },
-  tabNav: { display: "flex", flexDirection: "column", gap: "8px" },
-  tabBtn: {
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-    width: "100%",
-    padding: "14px 18px",
-    backgroundColor: "transparent",
-    border: "none",
-    borderRadius: "12px",
-    fontSize: "15px",
-    fontWeight: "600",
-    color: "var(--text-secondary)",
-    cursor: "pointer",
-    textAlign: "left",
-    transition: "all 0.2s",
-  },
-  tabBtnActive: {
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-    width: "100%",
-    padding: "14px 18px",
-    backgroundColor: "var(--bg-card)",
-    border: "1px solid var(--border-color)",
-    borderRadius: "12px",
-    fontSize: "15px",
-    fontWeight: "700",
-    color: "var(--text-primary)",
-    cursor: "pointer",
-    textAlign: "left",
-    boxShadow: "0 4px 6px rgba(0,0,0,0.02)",
-  },
-  chevron: { marginLeft: "auto", color: "var(--text-muted)" },
-  mainContent: { flex: 1, width: "100%" },
-  card: {
-    backgroundColor: "var(--bg-card)",
-    borderRadius: "20px",
-    padding: "30px",
-    boxShadow: "0 10px 25px -5px rgba(0,0,0,0.02)",
-    border: "1px solid var(--border-color)",
-  },
-  cardHeader: {
-    display: "flex",
-    alignItems: "center",
-    gap: "15px",
-    marginBottom: "30px",
-  },
-  cardHeaderIcon: {
-    width: "48px",
-    height: "48px",
-    borderRadius: "12px",
-    backgroundColor: "var(--bg-info)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-  },
-  cardTitle: {
-    margin: "0 0 6px 0",
-    fontSize: "20px",
-    fontWeight: "800",
-    color: "var(--text-primary)",
-  },
-  cardDesc: {
-    margin: 0,
-    fontSize: "14px",
-    color: "var(--text-secondary)",
-    lineHeight: "1.5",
-  },
-  formGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-    gap: "25px",
-  },
-  formGroup: { display: "flex", flexDirection: "column", gap: "8px" },
-  label: {
-    display: "flex",
-    alignItems: "center",
-    gap: "6px",
-    fontSize: "14px",
-    fontWeight: "700",
-    color: "var(--text-secondary)",
-  },
-  inputWithAddon: {
-    display: "flex",
-    alignItems: "center",
-    border: "1px solid var(--border-color)",
-    borderRadius: "10px",
-    backgroundColor: "var(--input-bg)",
-    overflow: "hidden",
-    height: "45px",
-  },
-  inputBorderless: {
-    flex: 1,
-    border: "none",
-    background: "transparent",
-    outline: "none",
-    padding: "10px 15px",
-    fontSize: "16px",
-    color: "var(--input-text)",
-    fontWeight: "700",
-  },
-  addonText: {
-    padding: "0 15px",
-    color: "var(--text-muted)",
-    fontWeight: "800",
-    backgroundColor: "var(--bg-alt)",
-    height: "100%",
-    display: "flex",
-    alignItems: "center",
-    borderLeft: "1px solid var(--border-color)",
-  },
-  submitRow: {
-    gridColumn: "1 / -1",
-    display: "flex",
-    justifyContent: "flex-end",
-    marginTop: "10px",
-  },
-  submitBtn: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    padding: "12px 24px",
-    backgroundColor: "#1565C0",
-    color: "white",
-    border: "none",
-    borderRadius: "10px",
-    fontWeight: "700",
-    fontSize: "15px",
-    cursor: "pointer",
-    transition: "transform 0.2s",
-  },
-  addBarContainer: {
-    display: "flex",
-    gap: "10px",
-    marginBottom: "25px",
-    backgroundColor: "var(--bg-alt)",
-    padding: "10px",
-    borderRadius: "12px",
-    border: "1px solid var(--border-color)",
-  },
-  inputSearch: {
-    flex: 1,
-    padding: "12px 15px",
-    borderRadius: "8px",
-    border: "none",
-    fontSize: "15px",
-    outline: "none",
-    color: "var(--input-text)",
-    backgroundColor: "var(--input-bg)",
-  },
-  btnAdd: {
-    color: "white",
-    border: "none",
-    borderRadius: "8px",
-    padding: "0 20px",
-    display: "flex",
-    alignItems: "center",
-    gap: "6px",
-    fontWeight: "700",
-    cursor: "pointer",
-  },
-  tagsGrid: { display: "flex", flexWrap: "wrap", gap: "10px" },
-  tagItem: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    padding: "8px 12px 8px 16px",
-    backgroundColor: "var(--bg-alt)",
-    border: "1px solid var(--border-color)",
-    borderRadius: "30px",
-    fontSize: "14px",
-    fontWeight: "600",
-  },
-  tagText: { color: "var(--text-primary)" },
-  tagDeleteBtn: {
-    background: "transparent",
-    border: "none",
-    color: "var(--text-danger)",
-    cursor: "pointer",
-    padding: "4px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: "50%",
-    transition: "all 0.2s",
-  },
-  emptyText: {
-    color: "var(--text-muted)",
-    fontSize: "14px",
-    width: "100%",
-    padding: "20px",
-    textAlign: "center",
-    border: "1px dashed var(--border-color)",
-    borderRadius: "12px",
-  },
 }

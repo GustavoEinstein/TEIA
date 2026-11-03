@@ -14,10 +14,15 @@ from owlready2 import *
 from os.path import exists
 import os
 import shutil
-import json 
-import sys 
-import re 
+import json
+import sys
+import re
+import traceback
 from random import randint
+
+# --- IMPORTS DE PDF E IA ---
+from weasyprint import HTML
+from .services.llm import get_llm_provider
 
 # --- IMPORTS DO REST FRAMEWORK ---
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
@@ -41,24 +46,24 @@ from django.db.models import Count, Q
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework.exceptions import AuthenticationFailed
-from rest_framework.throttling import ScopedRateThrottle 
+from rest_framework.throttling import ScopedRateThrottle
 
-# Importação dos modelos (Incluindo ConfiguracaoXP, Escola, Disciplina e Notificacao)
+# Importação dos modelos
 from .models import (
-    Profile, Producao, Avaliacao, Topico, Comentario, RegistroXP, 
+    Profile, Producao, Avaliacao, Topico, Comentario, RegistroXP,
     Conquista, ConquistaUsuario, DiarioOperacao, NotaDiario, ConfiguracaoXP, Escola, Disciplina, Notificacao
 )
 
 
 # Lista de arquivos permitidos no servidor
 ALLOWED_EXTENSIONS = [
-    '.pdf', '.doc', '.docx', '.txt', 
-    '.ppt', '.pptx', '.xls', '.xlsx', 
+    '.pdf', '.doc', '.docx', '.txt',
+    '.ppt', '.pptx', '.xls', '.xlsx',
     '.jpg', '.jpeg', '.png'
 ]
 
 # ============================================================================
-# FUNÇÃO AUXILIAR DE GAMIFICAÇÃO (ATUALIZADA COM NOTIFICAÇÕES)
+# FUNÇÃO AUXILIAR DE GAMIFICAÇÃO
 # ============================================================================
 def adicionar_xp(perfil, quantidade, descricao):
     """Adiciona XP ao perfil, gera histórico e dispara notificações"""
@@ -73,7 +78,6 @@ def adicionar_xp(perfil, quantidade, descricao):
         descricao=descricao
     )
 
-    # 1. Notifica o ganho de XP
     Notificacao.objects.create(
         user=perfil.user,
         titulo=f"+{quantidade} XP",
@@ -81,7 +85,6 @@ def adicionar_xp(perfil, quantidade, descricao):
         tipo='XP'
     )
 
-    # 2. Verifica se subiu de Nível e notifica!
     nivel_atual = perfil.get_nivel()
     if nivel_anterior != nivel_atual:
         Notificacao.objects.create(
@@ -120,7 +123,7 @@ def register(request):
             form.save()
             return redirect('/kipo_playground/welcome/')
 
-    context = {'form':form}
+    context = {'form': form}
     return render(request, 'register.html', context)
 
 
@@ -152,17 +155,15 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
 
 # ============================================================================
-# NOVO: OPÇÕES PARA O FORMULÁRIO DE REGISTRO (PÚBLICO)
+# OPÇÕES PARA O FORMULÁRIO DE REGISTRO
 # ============================================================================
 @api_view(['GET'])
-@authentication_classes([]) 
+@authentication_classes([])
 @permission_classes([AllowAny])
 def api_get_register_options(request):
-    """Devolve as escolas e disciplinas do banco de dados para a página de Registro."""
     escolas = list(Escola.objects.values_list('nome', flat=True).order_by('nome'))
     disciplinas = list(Disciplina.objects.values_list('nome', flat=True).order_by('nome'))
     
-    # Adicionamos "Outra" caso não tenha sido cadastrada, para o professor não ficar travado
     if "Outra" not in disciplinas:
         disciplinas.append("Outra")
 
@@ -172,12 +173,14 @@ def api_get_register_options(request):
     })
 
 
-#views de autenticação e perfil 
+# ============================================================================
+# AUTENTICAÇÃO E PERFIL
+# ============================================================================
 @csrf_exempt
 @api_view(['POST'])
 @authentication_classes([])
 @permission_classes([AllowAny])
-def api_register_user(request): 
+def api_register_user(request):
     data = request.data
     
     username = data.get('username')
@@ -185,7 +188,7 @@ def api_register_user(request):
     password = data.get('password')
     name = data.get('name')
     disciplina = data.get('disciplina', 'Outra')
-    escola = data.get('escola', '') 
+    escola = data.get('escola', '')
 
     if not username or not password or not email:
         return Response({'erro': 'Preencha todos os campos obrigatórios.'}, status=400)
@@ -204,12 +207,12 @@ def api_register_user(request):
             username=username,
             email=email,
             password=password,
-            first_name=name 
+            first_name=name
         )
         
         profile, created = Profile.objects.get_or_create(user=user)
         profile.disciplina = disciplina
-        profile.escola = escola 
+        profile.escola = escola
         profile.status_conta = 'Em análise'
         profile.save()
         
@@ -234,11 +237,8 @@ def api_user_profile(request):
             pass
 
         nome_exibicao = user.first_name if user.first_name else user.username
-
-        # Dados de progresso de nível
         progresso = profile.get_progresso_proximo_nivel()
 
-        # Busca as conquistas (badges) do usuário
         conquistas_usuario = profile.conquistas.all().select_related('conquista')
         lista_conquistas = [{
             'id': c.conquista.id,
@@ -253,7 +253,7 @@ def api_user_profile(request):
             'username': nome_exibicao,
             'email': user.email,
             'disciplina': profile.disciplina,
-            'escola': profile.escola, 
+            'escola': profile.escola,
             'avatar': avatar_url,
             'is_superuser': user.is_superuser,
             'pontos': profile.pontos,
@@ -277,9 +277,9 @@ def api_user_profile(request):
             
         profile.save()
 
-        if 'username' in data and data['username']: 
-             user.first_name = data['username']
-             user.save()
+        if 'username' in data and data['username']:
+            user.first_name = data['username']
+            user.save()
         
         avatar_url = request.build_absolute_uri(profile.avatar.url) if profile.avatar else None
         nome_exibicao = user.first_name if user.first_name else user.username
@@ -296,7 +296,9 @@ def api_user_profile(request):
         })
 
 
-#produção didatica e rascunho 
+# ============================================================================
+# PRODUÇÃO DIDÁTICA E RASCUNHO (ATUALIZADO FASE 1)
+# ============================================================================
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def api_create_production(request):
@@ -317,24 +319,39 @@ def api_create_production(request):
         is_draft = str(is_draft_val).strip().lower() in ['true', '1', 't', 'y', 'yes']
         status_inicial = 'Rascunho' if is_draft else 'Em revisão'
 
+        # --- LÓGICA DE AUTORIA (ANONIMATO) ---
+        exibir_autor_val = data.get('exibir_autor', True)
+        exibir_autor = str(exibir_autor_val).strip().lower() not in ['false', '0', 'f', 'n']
+
+        # --- LÓGICA DE RELEITURA (HERANÇA) ---
+        producao_base_id = data.get('producao_base')
+        producao_base = None
+        if producao_base_id:
+            try:
+                producao_base = Producao.objects.get(id=producao_base_id)
+            except Producao.DoesNotExist:
+                pass
+
         nova_producao = Producao.objects.create(
-            user=user, 
+            user=user,
             titulo=data.get('titulo', ''),
+            exibir_autor=exibir_autor,     # Salva a escolha do anonimato
+            producao_base=producao_base,   # Associa à prática que serviu de base
             disciplina=data.get('disciplina', ''),
-            nivel=data.get('nivel_ensino', ''), 
+            nivel=data.get('nivel_ensino', ''),
             modelo_ia=data.get('modelo_ia', ''),
             prompts_ia=data.get('prompts_ia', ''),
             categoria=data.get('categoria', ''),
             bncc=data.get('bncc', ''),
-            bncc_computacao=data.get('bncc_computacao', ''), 
+            bncc_computacao=data.get('bncc_computacao', ''),
             metodologia=data.get('metodologia', ''),
             duracao=data.get('duracao', ''),
             recursos=recursos_str,
-            experiencia=data.get('experiencia', ''), 
+            experiencia=data.get('experiencia', ''),
             resultados=data.get('resultados', ''),
             arquivo=arquivo,
             link_material=data.get('link_material', ''),
-            status=status_inicial 
+            status=status_inicial
         )
         return Response({'mensagem': 'Produção criada com sucesso!', 'id': nova_producao.id}, status=201)
     
@@ -363,7 +380,7 @@ def api_list_my_productions(request):
             'status': p.status,
             'modelo_ia': p.modelo_ia,
             'feedback_revisor': feedback,
-            'total_aprovacoes': total_aprovacoes 
+            'total_aprovacoes': total_aprovacoes
         })
     
     return Response(lista)
@@ -378,7 +395,7 @@ def api_get_production_details(request, pk):
         is_dono = p.user == request.user
         is_admin = request.user.is_superuser
         is_aprovado = p.status in ['Aprovado', 'Concluído']
-        is_revisor_desta_pratica = p.avaliacoes.filter(revisor=request.user).exists() 
+        is_revisor_desta_pratica = p.avaliacoes.filter(revisor=request.user).exists()
         
         minha_disciplina = request.user.profile.disciplina if hasattr(request.user, 'profile') else 'Outra'
         is_potencial_revisor = (p.status == 'Em revisão' and p.disciplina == minha_disciplina and not is_dono)
@@ -405,7 +422,7 @@ def api_get_production_details(request, pk):
                 
             avaliacoes_detalhadas.append({
                 'ordem': i + 1,
-                'revisor_id': aval.revisor.id, 
+                'revisor_id': aval.revisor.id,
                 'aprovado': aval.aprovado,
                 'pontos_fortes': pontos_fortes,
                 'pontos_melhoria': pontos_melhoria,
@@ -427,10 +444,13 @@ def api_get_production_details(request, pk):
 
         dados_referencia = None
         if p.producao_base:
+            autor_original = p.producao_base.user.first_name or p.producao_base.user.username
+            autor_exibicao_original = autor_original if p.producao_base.exibir_autor else "Professor(a) Anônimo(a)"
+            
             dados_referencia = {
                 'id': p.producao_base.id,
                 'titulo': p.producao_base.titulo,
-                'autor': f"Prof. de {p.producao_base.disciplina}" 
+                'autor': autor_exibicao_original
             }
 
         total_aprovacoes = avaliacoes.filter(aprovado=True).count()
@@ -452,31 +472,34 @@ def api_get_production_details(request, pk):
             'prompts_ia': p.prompts_ia,
             'categoria': p.categoria,
             'bncc': p.bncc,
-            'bncc_computacao': p.bncc_computacao, 
+            'bncc_computacao': p.bncc_computacao,
             'metodologia': p.metodologia,
             'duracao': p.duracao,
             'recursos': lista_recursos,
             'experiencia': p.experiencia,
             'resultados': p.resultados,
-            'arquivo': arquivo_url, 
+            'arquivo': arquivo_url,
             'link_material': p.link_material,
             'data': p.data_criacao.strftime('%d/%m/%Y'),
             'status': p.status,
-            'autor': p.user.first_name or p.user.username,
+            
+            # --- NOVA LÓGICA DE AUTORIA ---
+            'autor': p.user.first_name or p.user.username if (p.exibir_autor or is_dono or is_admin) else "Professor(a) Anônimo(a)",
+            'exibir_autor': p.exibir_autor,
             
             'is_dono': is_dono,
             'is_admin': is_admin,
-            'is_revisor': is_revisor_desta_pratica, 
+            'is_revisor': is_revisor_desta_pratica,
 
-            'revisao_realizada': len(avaliacoes_filtradas) > 0, 
+            'revisao_realizada': len(avaliacoes_filtradas) > 0,
             'avaliacoes_detalhadas': avaliacoes_filtradas,
-            'feedback_texto': feedback_texto if (is_dono or is_admin) else None, 
+            'feedback_texto': feedback_texto if (is_dono or is_admin) else None,
             'notas': notas,
-            'total_avaliacoes': avaliacoes.count(), 
+            'total_avaliacoes': avaliacoes.count(),
             'total_aprovacoes': total_aprovacoes,
 
             'is_aprovado': is_aprovado,
-            'producao_base': dados_referencia 
+            'producao_base': dados_referencia
         }
         return Response(data)
         
@@ -501,12 +524,16 @@ def api_update_production(request, pk):
         p.prompts_ia = data.get('prompts_ia', p.prompts_ia)
         p.categoria = data.get('categoria', p.categoria)
         p.bncc = data.get('bncc', p.bncc)
-        p.bncc_computacao = data.get('bncc_computacao', p.bncc_computacao) 
+        p.bncc_computacao = data.get('bncc_computacao', p.bncc_computacao)
         p.metodologia = data.get('metodologia', p.metodologia)
         p.duracao = data.get('duracao', p.duracao)
         p.experiencia = data.get('experiencia', p.experiencia)
         p.resultados = data.get('resultados', p.resultados)
         p.link_material = data.get('link_material', p.link_material)
+
+        if 'exibir_autor' in data:
+            exibir_autor_val = data.get('exibir_autor')
+            p.exibir_autor = str(exibir_autor_val).strip().lower() not in ['false', '0', 'f', 'n']
 
         recursos_input = data.getlist('recursos') if hasattr(data, 'getlist') else data.get('recursos')
         if recursos_input:
@@ -516,14 +543,13 @@ def api_update_production(request, pk):
         if novo_arquivo:
             p.arquivo = novo_arquivo
 
-  
         is_draft_val = data.get('is_draft')
         is_draft = str(is_draft_val).strip().lower() in ['true', '1', 't', 'y', 'yes']
         
         if is_draft:
             p.status = 'Rascunho'
         else:
-            p.status = 'Em revisão' 
+            p.status = 'Em revisão'
             p.avaliacoes.all().delete()
             
         p.save()
@@ -536,7 +562,29 @@ def api_update_production(request, pk):
         return Response({'erro': 'Erro interno ao atualizar.'}, status=500)
 
 
-#sistema de revisão e gamificação do sistema
+# ============================================================================
+# NOVO: CONTROLE DE VISIBILIDADE DO AUTOR (LIGA/DESLIGA)
+# ============================================================================
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def api_toggle_author_visibility(request, pk):
+    """Permite que apenas o dono da prática ligue/desligue seu nome a qualquer momento"""
+    try:
+        p = Producao.objects.get(id=pk, user=request.user)
+        p.exibir_autor = not p.exibir_autor
+        p.save()
+        status_msg = "visível" if p.exibir_autor else "oculto"
+        return Response({
+            'mensagem': f'Seu nome agora está {status_msg} na comunidade.',
+            'exibir_autor': p.exibir_autor
+        })
+    except Producao.DoesNotExist:
+        return Response({'erro': 'Acesso negado ou prática não encontrada.'}, status=404)
+
+
+# ============================================================================
+# SISTEMA DE REVISÃO E GAMIFICAÇÃO DO SISTEMA
+# ============================================================================
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def api_list_review_queue(request):
@@ -628,15 +676,16 @@ def api_submit_review(request, pk):
         else:
             total_aprovacoes = p.avaliacoes.filter(aprovado=True).count()
             
-            if total_aprovacoes >= 2:
+            # Alterado para >= 1 para aprovar logo com a primeira validação
+            if total_aprovacoes >= 1:
                 p.status = 'Aprovado'
-                msg_response = f'Revisão registrada! Você ganhou +{config_xp.xp_revisao} XP. A produção alcançou 2 aprovações e foi publicada na comunidade.'
+                msg_response = f'Revisão registrada! Você ganhou +{config_xp.xp_revisao} XP. A produção foi aprovada e publicada na comunidade.'
                 
                 perfil_autor = p.user.profile
                 adicionar_xp(perfil_autor, config_xp.xp_aprovacao, f"Produção aprovada pela comunidade: {p.titulo}")
             else:
                 p.status = 'Em revisão'
-                msg_response = f'Revisão registrada! Você ganhou +{config_xp.xp_revisao} XP. Esta produção agora possui {total_aprovacoes} aprovação(ões). Aguardando o segundo revisor.'
+                msg_response = f'Revisão registrada! Você ganhou +{config_xp.xp_revisao} XP.'
 
         p.save()
         return Response({'mensagem': msg_response, 'xp_ganho': config_xp.xp_revisao})
@@ -660,16 +709,19 @@ def api_review_history(request):
             'disciplina': a.producao.disciplina,
             'data_revisao': a.data_avaliacao.strftime('%d/%m/%Y') if a.data_avaliacao else 'Data n/d',
             'meu_veredito': veredito_final,
-            'autor_anonimo': f"Prof. de {a.producao.disciplina}" 
+            'autor_anonimo': f"Prof. de {a.producao.disciplina}"
         })
     
     return Response(lista)
 
 
+# ============================================================================
+# FEED DA COMUNIDADE (ATUALIZADO FASE 1)
+# ============================================================================
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def api_list_public_feed(request):
-    producoes = Producao.objects.filter(status='Aprovado').order_by('-data_criacao')
+    producoes = Producao.objects.filter(status='Aprovado').select_related('producao_base').order_by('-data_criacao')
     
     busca = request.GET.get('search', '')
     
@@ -683,6 +735,16 @@ def api_list_public_feed(request):
     
     lista = []
     for p in producoes:
+        nome_autor = p.user.first_name or p.user.username
+        autor_exibicao = nome_autor if p.exibir_autor else "Professor(a) Anônimo(a)"
+
+        base_info = None
+        if p.producao_base:
+            base_info = {
+                'id': p.producao_base.id,
+                'titulo': p.producao_base.titulo
+            }
+
         lista.append({
             'id': p.id,
             'titulo': p.titulo,
@@ -690,20 +752,19 @@ def api_list_public_feed(request):
             'nivel': p.nivel,
             'modelo_ia': p.modelo_ia,
             'categoria': p.categoria,
-            'autor': p.user.first_name or p.user.username, 
-            'resumo': p.experiencia[:150] + '...' if p.experiencia else '', 
-            'likes': 0 
+            'autor': autor_exibicao,
+            'producao_base': base_info,
+            'resumo': p.experiencia[:150] + '...' if p.experiencia else '',
+            'likes': 0
         })
     
-    return Response(lista) 
+    return Response(lista)
 
 
-#painel de recuperação de senha
-#painel de recuperação de senha
-#painel de recuperação de senha
+# Painel de recuperação de senha
 @csrf_exempt
 @api_view(['POST'])
-@authentication_classes([]) 
+@authentication_classes([])
 @permission_classes([AllowAny])
 def api_password_reset_request(request):
     email = request.data.get('email', '').strip().lower()
@@ -724,44 +785,33 @@ def api_password_reset_request(request):
     subject = "Redefinição de Senha - T.E.I.A"
     from_email = settings.DEFAULT_FROM_EMAIL
     to = [email]
-    
-    nome_usuario = user.first_name.split()[0].title() if user.first_name else "Professor(a)"
-    texto_puro = (
-        f"Olá, {nome_usuario}.\n\n"
-        f"Recebemos um pedido para redefinir a senha da sua conta no Portal T.E.I.A.\n\n"
-        f"Copie e cole o link abaixo no seu navegador para cadastrar uma nova senha:\n"
-        f"{reset_link}\n\n"
-        f"Se você não fez essa solicitação, pode ignorar este e-mail."
-    )
 
     try:
         logo_url = request.build_absolute_uri(settings.STATIC_URL + 'assets/unb.png')
+        
+        nome_usuario = user.first_name if user.first_name else user.username
         context = {
-            'nome': nome_usuario,
+            'nome': nome_usuario.split()[0].title(),
             'link': reset_link,
             'logo_url': logo_url
         }
+
         html_content = render_to_string('emails/password_reset_email.html', context)
-        
-        msg = EmailMultiAlternatives(subject, texto_puro, from_email, to)
-        
-        # Adicionamos o @unb.br e outros domínios institucionais na lista de restrição
-        dominios_rigidos = ['@hotmail.', '@outlook.', '@live.', '@msn.', '@unb.br', '@aluno.unb.br']
-        
-        if not any(dominio in email for dominio in dominios_rigidos):
-            msg.attach_alternative(html_content, "text/html")
-            
+        text_content = strip_tags(html_content)
+
+        msg = EmailMultiAlternatives(subject, text_content, from_email, to)
+        msg.attach_alternative(html_content, "text/html")
         msg.send(fail_silently=False)
 
         return Response({'mensagem': 'E-mail enviado! Se não achar, verifique a pasta Spam ou Quarentena.'})
         
     except Exception as e:
-        print(f"ERRO AO ENVIAR E-MAIL: {e}") 
+        print(f"ERRO AO ENVIAR E-MAIL: {e}")
         return Response({'erro': 'Erro ao enviar e-mail. Verifique o console.'}, status=500)
 
 @csrf_exempt
 @api_view(['POST'])
-@authentication_classes([]) 
+@authentication_classes([])
 @permission_classes([AllowAny])
 def api_password_reset_confirm(request, uidb64, token):
     new_password = request.data.get('password')
@@ -783,7 +833,7 @@ def api_password_reset_confirm(request, uidb64, token):
         return Response({'erro': 'Link expirado ou inválido.'}, status=400)
 
 
-#painel de aprovação de contas 
+# Painel de aprovação de contas
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def api_list_pending_users(request):
@@ -825,8 +875,8 @@ def api_approve_reject_user(request, user_id):
         return Response({'erro': 'Usuário não encontrado'}, status=404)
 
 
-#views para o forum do sistema 
-@api_view(['GET', 'POST', 'PUT', 'DELETE']) 
+# Views para o fórum do sistema
+@api_view(['GET', 'POST', 'PUT', 'DELETE'])
 @permission_classes([IsAuthenticated])
 def api_forum_detalhe_comentarios(request, pk):
     try:
@@ -850,7 +900,6 @@ def api_forum_detalhe_comentarios(request, pk):
 
         arquivo_url = request.build_absolute_uri(topico.arquivo.url) if topico.arquivo else None
         
-        # --- NOVA LÓGICA DE PRODUÇÃO BASE ---
         dados_base = None
         if topico.producao_base:
             dados_base = {
@@ -870,7 +919,7 @@ def api_forum_detalhe_comentarios(request, pk):
             'is_dono_topico': topico.autor == request.user,
             'data': timezone.localtime(topico.data_criacao).strftime('%d/%m/%Y %H:%M'),
             'arquivo': arquivo_url,
-            'producao_base': dados_base,  # <--- ADICIONADO AQUI
+            'producao_base': dados_base,
             'comentarios': lista_comentarios
         }
         return Response(dados_topico)
@@ -939,18 +988,16 @@ def api_forum_topicos(request):
         titulo = request.data.get('titulo')
         conteudo = request.data.get('conteudo')
         categoria = request.data.get('categoria', 'Geral')
-        producao_base_id = request.data.get('producao_base_id') # <--- ADICIONADO AQUI
+        producao_base_id = request.data.get('producao_base_id')
         
-        arquivo_enviado = request.FILES.get('arquivo') 
+        arquivo_enviado = request.FILES.get('arquivo')
 
         if not titulo or not conteudo:
             return Response({'erro': 'Título e conteúdo são obrigatórios.'}, status=400)
             
-        # --- NOVA LÓGICA DE PRODUÇÃO BASE ---
         producao_base = None
         if producao_base_id:
             try:
-                # Garante que só pode referenciar aprovadas
                 producao_base = Producao.objects.get(id=producao_base_id, status='Aprovado')
             except Producao.DoesNotExist:
                 pass
@@ -961,7 +1008,7 @@ def api_forum_topicos(request):
             categoria=categoria,
             autor=request.user,
             arquivo=arquivo_enviado,
-            producao_base=producao_base # <--- ADICIONADO AQUI
+            producao_base=producao_base
         )
 
         config_xp, _ = ConfiguracaoXP.objects.get_or_create(pk=1)
@@ -974,9 +1021,7 @@ def api_forum_topicos(request):
         }, status=201)
 
 
-
-#views para o painel de administração
-
+# Views para o painel de administração
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def api_admin_list_users(request):
@@ -1094,7 +1139,6 @@ def api_ranking_gamificacao(request):
         'nivel': u.profile.get_nivel() if hasattr(u, 'profile') else ''
     } for u in revisores_qs if u.total_revisoes > 0]
 
-    # --- CORREÇÃO APLICADA AQUI: de 'comentarios' para 'comentarios_usuario' ---
     forum_qs = User.objects.annotate(
         total_forum=Count('topicos_forum', distinct=True) + Count('comentarios_usuario', distinct=True)
     ).order_by('-total_forum')[:10]
@@ -1240,7 +1284,6 @@ class DiarioOperacaoView(APIView):
         if not all([titulo, tipo, data_evento, descricao]):
             return Response({'erro': 'Campos obrigatórios faltando.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Buscar o usuário caso um ID tenha sido selecionado
         docente = None
         if docente_id:
             try:
@@ -1269,7 +1312,7 @@ class DiarioOperacaoView(APIView):
             'status': novo_log.status,
             'contato': novo_log.contato or (novo_log.docente.first_name if novo_log.docente else 'Não informado'),
             'docente_id': novo_log.docente.id if novo_log.docente else None,
-            'data_evento': data_evento, 
+            'data_evento': data_evento,
             'descricao': novo_log.descricao,
             'proximos_passos': novo_log.proximos_passos,
             'tags': novo_log.tags,
@@ -1297,7 +1340,6 @@ class DiarioNotaView(APIView):
         except DiarioOperacao.DoesNotExist:
             return Response({'erro': 'Registro não encontrado'}, status=status.HTTP_404_NOT_FOUND)
         
-        # Puxa todas as anotações feitas neste atendimento
         notas = diario.notas.all()
         lista_notas = [{
             'id': n.id,
@@ -1306,7 +1348,6 @@ class DiarioNotaView(APIView):
             'criado_em': timezone.localtime(n.criado_em).strftime('%d/%m/%Y %H:%M')
         } for n in notas]
 
-        # Puxa os dados completos do chamado
         dados_diario = {
             'id': diario.id,
             'titulo': diario.titulo,
@@ -1330,14 +1371,12 @@ class DiarioNotaView(APIView):
             return Response({'erro': 'Registro não encontrado'}, status=status.HTTP_404_NOT_FOUND)
         
         texto = request.data.get('texto')
-        novo_status = request.data.get('status') 
+        novo_status = request.data.get('status')
 
-        # Atualiza o status do chamado se for alterado
         if novo_status and novo_status != diario.status:
             diario.status = novo_status
             diario.save()
 
-        # Cria a nova anotação/comentário
         if texto:
             NotaDiario.objects.create(
                 diario=diario,
@@ -1432,3 +1471,85 @@ def api_mark_notifications_read(request):
     """Marca todas as notificações não lidas como lidas."""
     request.user.notificacoes.filter(lida=False).update(lida=True)
     return Response({'mensagem': 'Notificações marcadas como lidas.'})
+
+
+# ============================================================================
+# INTEGRAÇÃO COM IA PARA CATALOGAÇÃO AUTOMÁTICA
+# ============================================================================
+class AutoCatalogAIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        raw_text = request.data.get('texto', '') or request.data.get('raw_text', '')
+        
+        if not raw_text or not str(raw_text).strip():
+            return Response(
+                {'erro': 'Por favor, informe um rascunho ou descrição da aula.'},
+                status=400
+            )
+
+        try:
+            provider = get_llm_provider()
+            cataloged_data = provider.catalog_production(str(raw_text))
+            return Response(cataloged_data, status=200)
+            
+        except Exception as e:
+            print("\n❌ ERRO NA AUTO-CATALOGAÇÃO COM IA:")
+            traceback.print_exc()
+            print("=" * 50 + "\n")
+            
+            return Response(
+                {'erro': f'Falha no processamento da IA: {str(e)}'},
+                status=500
+            )
+
+
+# ============================================================================
+# SISTEMA DE EXPORTAÇÃO DE PRODUÇÕES PARA PDF (IFB / MEC)
+# ============================================================================
+class ExportProducaoPDFView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        try:
+            producao = Producao.objects.get(pk=pk)
+        except Producao.DoesNotExist:
+            return HttpResponse("Produção não encontrada.", status=404)
+
+        try:
+            docente_param = request.GET.get('docente', '').strip()
+            
+            autor_nome = docente_param or getattr(producao, 'autor', None)
+            if not autor_nome and hasattr(producao, 'user') and producao.user:
+                autor_nome = producao.user.first_name or producao.user.username
+            
+            recursos_raw = getattr(producao, 'recursos', '-')
+            recursos_str = (
+                ", ".join(recursos_raw)
+                if isinstance(recursos_raw, list)
+                else str(recursos_raw or '-')
+            )
+
+            context = {
+                'producao': producao,
+                'docente': autor_nome or 'Não informado',
+                'nivel_ensino': getattr(producao, 'nivel_ensino', None) or getattr(producao, 'nivel', '-'),
+                'relato': getattr(producao, 'experiencia', None) or getattr(producao, 'relato', 'Não informado.'),
+                'recursos_str': recursos_str,
+            }
+
+            html_string = render_to_string('relatorio_gdf.html', context)
+
+            pdf_bytes = HTML(
+                string=html_string,
+                base_url=request.build_absolute_uri('/')
+            ).write_pdf()
+
+            response = HttpResponse(pdf_bytes, content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="plano_de_aula_{pk}_IFB.pdf"'
+            return response
+
+        except Exception as e:
+            print("\n❌ ERRO NA GERAÇÃO DO PDF:")
+            traceback.print_exc()
+            return HttpResponse(f"Erro ao gerar PDF: {str(e)}", status=500)

@@ -3,17 +3,8 @@ import { Link } from "react-router-dom"
 import api from "../../services/api"
 import Swal from "sweetalert2"
 import {
-  MessageSquare,
-  PlusCircle,
-  Paperclip,
-  CheckCircle,
-  Filter,
-  Search,
-  ChevronDown,
-  Loader2,
-  MessagesSquare,
-  Link2,
-  X,
+  MessageSquare, PlusCircle, Paperclip, CheckCircle, Filter, 
+  Search, ChevronDown, Loader2, MessagesSquare, Link2, X
 } from "lucide-react"
 
 export default function Forum() {
@@ -22,14 +13,8 @@ export default function Forum() {
   const [showModal, setShowModal] = useState(false)
   const [filtroCategoria, setFiltroCategoria] = useState("Todas")
   const [busca, setBusca] = useState("")
-  const categoriasDisponiveis = [
-    "Todas",
-    "Dúvida BNCC",
-    "Metodologia",
-    "Uso de IA",
-    "Sugestão",
-    "Geral",
-  ]
+  
+  const categoriasDisponiveis = ["Todas", "Dúvida BNCC", "Metodologia", "Uso de IA", "Sugestão", "Geral"]
 
   const [titulo, setTitulo] = useState("")
   const [conteudo, setConteudo] = useState("")
@@ -81,29 +66,26 @@ export default function Forum() {
     formData.append("titulo", titulo)
     formData.append("conteudo", conteudo)
     formData.append("categoria", categoria)
-    if (arquivo) formData.append("arquivo", arquivo)
-    if (producaoSelecionada)
-      formData.append("producao_base_id", producaoSelecionada.id)
+    
+    if (arquivo) {
+        formData.append("arquivo", arquivo)
+    }
+    
+    if (producaoSelecionada) {
+        formData.append("producao_base_id", producaoSelecionada.id)
+    }
 
     try {
-      await api.post("api/forum/topicos/", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      })
-
-      // --- AVISANDO O RADAR DE NOTIFICAÇÕES (XP INSTANTÂNEO) ---
+      await api.post("api/forum/topicos/", formData)
+      
       window.dispatchEvent(new Event("perfilAtualizado"))
-
       setShowModal(false)
-      setTitulo("")
-      setConteudo("")
-      setCategoria("Geral")
-      setArquivo(null)
-      setBuscaBase("")
-      setResultadosBase([])
-      setProducaoSelecionada(null)
+      setTitulo(""); setConteudo(""); setCategoria("Geral"); setArquivo(null); setBuscaBase(""); setResultadosBase([]); setProducaoSelecionada(null);
       carregarTopicos()
+      Swal.fire({ icon: 'success', title: 'Tópico Criado!', confirmButtonColor: '#1565C0' })
     } catch (error) {
-      Swal.fire("Erro!", "Ocorreu um problema.", "error")
+      const msg = error.response?.data?.erro || "Ocorreu um problema ao criar o tópico."
+      Swal.fire("Erro!", msg, "error")
     }
   }
 
@@ -118,611 +100,218 @@ export default function Forum() {
       if (diffSegundos < 60) return "agora mesmo"
       if (diffSegundos < 3600) return `há ${Math.floor(diffSegundos / 60)} min`
       if (diffSegundos < 86400) return `há ${Math.floor(diffSegundos / 3600)}h`
-      if (diffSegundos < 604800)
-        return `há ${Math.floor(diffSegundos / 86400)} dias`
+      if (diffSegundos < 604800) return `há ${Math.floor(diffSegundos / 86400)} dias`
       return dataString
     } catch (e) {
       return dataString
     }
   }
 
-  const getCategoriaStyle = (cat) => {
-    const styles = {
-      "Dúvida BNCC": { bg: "var(--bg-info)", color: "var(--text-info)" },
-      Metodologia: { bg: "var(--bg-warning)", color: "var(--text-warning)" },
-      "Uso de IA": { bg: "rgba(168, 85, 247, 0.1)", color: "#C084FC" },
-      Sugestão: { bg: "var(--bg-success)", color: "var(--text-success)" },
-      Geral: { bg: "var(--bg-alt)", color: "var(--text-secondary)" },
+  const getCategoriaClass = (cat) => {
+    switch(cat) {
+      case "Dúvida BNCC": return "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400 border-blue-200 dark:border-blue-800"
+      case "Metodologia": return "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 border-amber-200 dark:border-amber-800"
+      case "Uso de IA": return "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400 border-purple-200 dark:border-purple-800"
+      case "Sugestão": return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800"
+      default: return "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-700"
     }
-    return styles[cat] || styles["Geral"]
   }
 
   const topicosFiltrados = topicos.filter(
-    (t) =>
-      (filtroCategoria === "Todas" || t.categoria === filtroCategoria) &&
-      t.titulo.toLowerCase().includes(busca.toLowerCase()),
+    (t) => (filtroCategoria === "Todas" || t.categoria === filtroCategoria) && t.titulo.toLowerCase().includes(busca.toLowerCase())
   )
 
+  const inputClass = "w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-sm focus:border-[#1565C0] dark:focus:border-blue-500 outline-none transition-all dark:text-white placeholder-slate-400"
+
   return (
-    <div style={styles.container}>
-      <div style={styles.headerArea}>
-        <h2 style={styles.pageTitle}>Fórum de Rascunhos e Dúvidas</h2>
-        <button onClick={() => setShowModal(true)} style={styles.btnCreate}>
-          <PlusCircle size={18} /> Novo Tópico
-        </button>
-      </div>
-
-      <div style={styles.toolbar}>
-        <div style={styles.searchWrapper}>
-          <Search size={18} style={styles.iconInside} />
-          <input
-            type="text"
-            placeholder="Buscar discussão..."
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-            style={styles.searchInput}
-          />
-        </div>
-        <div style={styles.selectWrapper}>
-          <Filter size={18} style={styles.iconInside} />
-          <select
-            value={filtroCategoria}
-            onChange={(e) => setFiltroCategoria(e.target.value)}
-            style={styles.selectInput}
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 md:p-8 transition-colors duration-200 pb-20">
+      <div className="max-w-[1000px] mx-auto">
+        
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-1">
+              Fórum de Discussões
+            </h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Debata ideias, tire dúvidas e colabore com outros professores.
+            </p>
+          </div>
+          <button 
+            onClick={() => setShowModal(true)} 
+            className="flex items-center gap-2 bg-[#1565C0] hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-bold text-sm transition-all shadow-md shadow-blue-500/20 hover:-translate-y-0.5 whitespace-nowrap"
           >
-            {categoriasDisponiveis.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat === "Todas" ? "Todas as Categorias" : cat}
-              </option>
-            ))}
-          </select>
-          <ChevronDown size={18} style={styles.iconDropdown} />
+            <PlusCircle size={18} /> Novo Tópico
+          </button>
         </div>
-      </div>
 
-      {loading ? (
-        <div style={styles.loadingContainer}>
-          <Loader2 size={32} color="#2563EB" className="spin" />
-          <p style={{ marginTop: "10px", color: "var(--text-muted)" }}>
-            Carregando discussões...
-          </p>
-          <style>{`@keyframes spin { 100% { transform: rotate(360deg); } } .spin { animation: spin 1s linear infinite; }`}</style>
+        {/* Toolbar de Busca e Filtro */}
+        <div className="flex flex-col sm:flex-row gap-4 mb-8">
+          <div className="relative flex-1">
+            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text" placeholder="Buscar discussão..." value={busca} onChange={(e) => setBusca(e.target.value)}
+              className={`${inputClass} pl-11`}
+            />
+          </div>
+          <div className="relative w-full sm:w-[220px]">
+            <Filter size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+            <select
+              value={filtroCategoria} onChange={(e) => setFiltroCategoria(e.target.value)}
+              className={`${inputClass} pl-11 appearance-none cursor-pointer`}
+            >
+              {categoriasDisponiveis.map((cat) => (
+                <option key={cat} value={cat}>{cat === "Todas" ? "Todas as Categorias" : cat}</option>
+              ))}
+            </select>
+            <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+          </div>
         </div>
-      ) : topicosFiltrados.length === 0 ? (
-        <div style={styles.emptyState}>
-          <MessagesSquare
-            size={48}
-            color="var(--border-color)"
-            style={{ marginBottom: "15px" }}
-          />
-          <h3 style={{ margin: "0 0 5px 0", color: "var(--text-secondary)" }}>
-            Nenhum tópico encontrado
-          </h3>
-          <p style={{ color: "var(--text-muted)", margin: 0 }}>
-            Tente mudar os filtros ou inicie uma discussão!
-          </p>
-        </div>
-      ) : (
-        <div style={styles.topicList}>
-          {topicosFiltrados.map((topico) => {
-            const catStyle = getCategoriaStyle(topico.categoria)
-            return (
-              <Link
-                to={`/dashboard/forum/${topico.id}`}
-                key={topico.id}
-                style={{ textDecoration: "none", color: "inherit" }}
-              >
-                <div style={styles.topicCard}>
-                  <div style={styles.topicHeader}>
-                    <span
-                      style={{
-                        ...styles.tag,
-                        backgroundColor: catStyle.bg,
-                        color: catStyle.color,
-                      }}
-                    >
+
+        {/* Lista de Tópicos */}
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+            <Loader2 size={32} className="animate-spin mb-4 text-[#1565C0]" />
+            <p className="font-bold">Carregando discussões...</p>
+          </div>
+        ) : topicosFiltrados.length === 0 ? (
+          <div className="text-center py-20 bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-slate-300 dark:border-slate-800 flex flex-col items-center shadow-sm">
+            <div className="bg-slate-100 dark:bg-slate-800 p-4 rounded-full mb-4">
+              <MessagesSquare size={32} className="text-slate-400" />
+            </div>
+            <h3 className="text-xl font-extrabold text-slate-800 dark:text-white mb-2">Nenhum tópico encontrado</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm">Tente mudar os filtros de busca ou inicie uma nova discussão!</p>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {topicosFiltrados.map((topico) => (
+              <Link to={`/dashboard/forum/${topico.id}`} key={topico.id} className="block group">
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 md:p-6 rounded-xl shadow-sm hover:shadow-md hover:border-[#1565C0]/50 dark:hover:border-blue-500/50 transition-all">
+                  
+                  <div className="flex items-center gap-3 mb-3">
+                    <span className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border ${getCategoriaClass(topico.categoria)}`}>
                       {topico.categoria}
                     </span>
                     {topico.resolvido && (
-                      <span style={styles.tagResolved}>
-                        <CheckCircle size={14} /> Resolvido
+                      <span className="flex items-center gap-1 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider">
+                        <CheckCircle size={12} /> Resolvido
                       </span>
                     )}
                   </div>
-                  <h3 style={styles.topicTitle}>{topico.titulo}</h3>
-                  <div style={styles.topicFooter}>
-                    <div style={styles.authorArea}>
-                      <div style={styles.authorAvatar}>
-                        {topico.autor
-                          ? topico.autor.charAt(0).toUpperCase()
-                          : "P"}
+                  
+                  <h3 className="text-lg font-extrabold text-slate-900 dark:text-white mb-3 group-hover:text-[#1565C0] dark:group-hover:text-blue-400 transition-colors leading-snug">
+                    {topico.titulo}
+                  </h3>
+                  
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-t border-slate-100 dark:border-slate-800/80 pt-4 mt-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center text-xs font-black">
+                        {topico.autor ? topico.autor.charAt(0).toUpperCase() : "P"}
                       </div>
-                      <span>
-                        Por Prof. <strong>{topico.autor}</strong>{" "}
-                        <span style={{ opacity: 0.6, margin: "0 5px" }}>•</span>{" "}
-                        {calcularTempoAtras(topico.data)}
+                      <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                        Por <strong className="text-slate-700 dark:text-slate-300">Prof. {topico.autor}</strong> • {calcularTempoAtras(topico.data)}
                       </span>
                     </div>
-                    <span style={styles.commentsBadge}>
-                      <MessageSquare size={16} /> {topico.total_comentarios}{" "}
-                      Respostas
-                    </span>
+                    <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700">
+                      <MessageSquare size={14} /> {topico.total_comentarios} Respostas
+                    </div>
                   </div>
+
                 </div>
               </Link>
-            )
-          })}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
 
+      </div>
+
+      {/* MODAL: CRIAR TÓPICO */}
       {showModal && (
-        <div style={styles.modalOverlay} onClick={() => setShowModal(false)}>
-          <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-            <h3 style={styles.modalTitle}>Criar Nova Discussão</h3>
-            <form onSubmit={handleCriarTopico}>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Categoria</label>
-                <select
-                  value={categoria}
-                  onChange={(e) => setCategoria(e.target.value)}
-                  style={styles.input}
-                >
-                  {categoriasDisponiveis
-                    .filter((c) => c !== "Todas")
-                    .map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
-                      </option>
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[1000] flex items-center justify-center p-4" onClick={() => setShowModal(false)}>
+          <div className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-2xl shadow-2xl p-6 md:p-8 relative overflow-hidden flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
+            <button onClick={() => setShowModal(false)} className="absolute top-4 right-4 p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"><X size={20}/></button>
+            <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-6">Novo Tópico</h2>
+            
+            <div className="overflow-y-auto pr-2 scrollbar-thin flex-1">
+              <form onSubmit={handleCriarTopico} className="flex flex-col gap-5">
+                
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wide">Categoria</label>
+                  <select value={categoria} onChange={(e) => setCategoria(e.target.value)} className={`${inputClass} appearance-none cursor-pointer`}>
+                    {categoriasDisponiveis.filter((c) => c !== "Todas").map((cat) => (
+                      <option key={cat} value={cat}>{cat}</option>
                     ))}
-                </select>
-              </div>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Título</label>
-                <input
-                  type="text"
-                  value={titulo}
-                  onChange={(e) => setTitulo(e.target.value)}
-                  required
-                  placeholder="Ex: Como avaliar competências?"
-                  style={styles.input}
-                />
-              </div>
+                  </select>
+                </div>
 
-              <div
-                style={{
-                  ...styles.inputGroup,
-                  backgroundColor: "var(--bg-main)",
-                  padding: "15px",
-                  borderRadius: "8px",
-                  border: "1px dashed var(--border-color)",
-                }}
-              >
-                <label
-                  style={{
-                    ...styles.label,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "5px",
-                    color: "var(--text-primary)",
-                  }}
-                >
-                  <Link2 size={16} color="#3B82F6" /> Vincular Prática Base
-                  (Opcional)
-                </label>
-                {producaoSelecionada ? (
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      backgroundColor: "var(--bg-info)",
-                      padding: "10px 15px",
-                      borderRadius: "6px",
-                      border: "1px solid var(--border-info)",
-                    }}
-                  >
-                    <div>
-                      <div
-                        style={{
-                          fontWeight: "600",
-                          color: "var(--text-info)",
-                          fontSize: "14px",
-                        }}
-                      >
-                        {producaoSelecionada.titulo}
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wide">Título</label>
+                  <input type="text" value={titulo} onChange={(e) => setTitulo(e.target.value)} required placeholder="Ex: Como avaliar competências com a BNCC?" className={inputClass} />
+                </div>
+
+                <div className="bg-slate-50 dark:bg-slate-800/30 border border-dashed border-slate-300 dark:border-slate-700 p-5 rounded-xl">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-3 uppercase tracking-wide flex items-center gap-2">
+                    <Link2 size={16} className="text-[#1565C0] dark:text-blue-400" /> Vincular Prática Base (Opcional)
+                  </label>
+                  
+                  {producaoSelecionada ? (
+                    <div className="flex justify-between items-center bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 p-3 rounded-xl">
+                      <div>
+                        <div className="text-sm font-bold text-[#1565C0] dark:text-blue-400 mb-0.5">{producaoSelecionada.titulo}</div>
+                        <div className="text-xs text-blue-600/70 dark:text-blue-300/70">{producaoSelecionada.disciplina}</div>
                       </div>
-                      <div
-                        style={{ fontSize: "12px", color: "var(--text-info)" }}
-                      >
-                        {producaoSelecionada.disciplina}
-                      </div>
+                      <button type="button" onClick={() => setProducaoSelecionada(null)} className="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 p-2 rounded-full transition-colors"><X size={16}/></button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setProducaoSelecionada(null)}
-                      style={{
-                        background: "none",
-                        border: "none",
-                        color: "var(--text-danger)",
-                        cursor: "pointer",
-                        display: "flex",
-                      }}
-                    >
-                      <X size={18} />
-                    </button>
-                  </div>
-                ) : (
-                  <div style={{ position: "relative" }}>
-                    <input
-                      type="text"
-                      placeholder="Busque por título ou disciplina para vincular..."
-                      value={buscaBase}
-                      onChange={(e) => setBuscaBase(e.target.value)}
-                      style={{ ...styles.input, marginBottom: 0 }}
-                    />
-                    {loadingBusca && (
-                      <span
-                        style={{
-                          position: "absolute",
-                          right: "10px",
-                          top: "12px",
-                          fontSize: "12px",
-                          color: "var(--text-muted)",
-                        }}
-                      >
-                        Buscando...
-                      </span>
-                    )}
-                    {resultadosBase.length > 0 && buscaBase.trim() !== "" && (
-                      <div style={styles.autocompleteDropdown}>
-                        {resultadosBase.map((prod) => (
-                          <div
-                            key={prod.id}
-                            onClick={() => {
-                              setProducaoSelecionada(prod)
-                              setBuscaBase("")
-                              setResultadosBase([])
-                            }}
-                            style={styles.autocompleteItem}
-                          >
-                            <div
-                              style={{ fontWeight: "500", fontSize: "13px" }}
-                            >
-                              {prod.titulo}
+                  ) : (
+                    <div className="relative">
+                      <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="text" placeholder="Busque por título ou disciplina para vincular..." value={buscaBase} onChange={(e) => setBuscaBase(e.target.value)}
+                        className={`${inputClass} pl-10 bg-white dark:bg-slate-900`}
+                      />
+                      {loadingBusca && <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-[#1565C0] uppercase tracking-widest animate-pulse">Buscando...</span>}
+                      {resultadosBase.length > 0 && buscaBase.trim() !== "" && (
+                        <div className="absolute top-full left-0 w-full mt-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl max-h-48 overflow-y-auto z-50">
+                          {resultadosBase.map((prod) => (
+                            <div key={prod.id} onClick={() => { setProducaoSelecionada(prod); setBuscaBase(""); setResultadosBase([]); }} className="p-3 border-b border-slate-100 dark:border-slate-700 hover:bg-blue-50 dark:hover:bg-slate-700 cursor-pointer transition-colors">
+                              <div className="font-bold text-sm text-slate-800 dark:text-white mb-0.5">{prod.titulo}</div>
+                              <div className="text-xs text-slate-500 dark:text-slate-400">{prod.disciplina}</div>
                             </div>
-                            <div
-                              style={{
-                                fontSize: "11px",
-                                color: "var(--text-muted)",
-                              }}
-                            >
-                              {prod.disciplina}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
 
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>Sua dúvida ou contexto</label>
-                <textarea
-                  value={conteudo}
-                  onChange={(e) => setConteudo(e.target.value)}
-                  required
-                  rows="5"
-                  placeholder="Explique sua dúvida..."
-                  style={{ ...styles.input, resize: "vertical" }}
-                />
-              </div>
-              <div style={styles.inputGroup}>
-                <label style={styles.fileLabel}>
-                  <Paperclip size={18} /> Anexar Rascunho (Opcional)
-                  <input
-                    type="file"
-                    onChange={(e) => setArquivo(e.target.files[0])}
-                    style={{ display: "none" }}
-                  />
-                </label>
-                {arquivo && <span style={styles.fileName}>{arquivo.name}</span>}
-              </div>
-              <div style={styles.modalActions}>
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  style={styles.btnCancel}
-                >
-                  Cancelar
-                </button>
-                <button type="submit" style={styles.btnSubmit}>
-                  Publicar
-                </button>
-              </div>
-            </form>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wide">Sua dúvida ou contexto</label>
+                  <textarea value={conteudo} onChange={(e) => setConteudo(e.target.value)} required rows="5" placeholder="Explique os detalhes para a comunidade..." className={inputClass} />
+                </div>
+
+                <div>
+                  <label className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer transition-colors w-fit">
+                    <Paperclip size={16} className="text-[#1565C0] dark:text-blue-400" /> Anexar Arquivo (Opcional)
+                    <input 
+                        type="file" 
+                        accept=".pdf,.doc,.docx,.jpg,.png" 
+                        onChange={(e) => setArquivo(e.target.files[0])} 
+                        className="hidden" 
+                    />
+                  </label>
+                  {arquivo && <span className="ml-3 text-sm font-semibold text-emerald-600 dark:text-emerald-400">{arquivo.name}</span>}
+                </div>
+
+              </form>
+            </div>
+            
+            <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-3 shrink-0">
+              <button onClick={() => setShowModal(false)} className="px-5 py-2.5 rounded-lg font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">Cancelar</button>
+              <button onClick={handleCriarTopico} className="px-6 py-2.5 rounded-lg font-bold text-white bg-[#1565C0] hover:bg-blue-700 transition-colors shadow-md shadow-blue-500/20">Publicar Tópico</button>
+            </div>
           </div>
         </div>
       )}
     </div>
   )
-}
-
-const styles = {
-  container: {
-    padding: "30px 20px",
-    maxWidth: "900px",
-    margin: "0 auto",
-    fontFamily: "Inter, sans-serif",
-  },
-  headerArea: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: "25px",
-    flexWrap: "wrap",
-    gap: "15px",
-  },
-  pageTitle: {
-    color: "var(--text-primary)",
-    margin: 0,
-    fontSize: "24px",
-    fontWeight: "800",
-  },
-  btnCreate: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    padding: "10px 18px",
-    backgroundColor: "#2563EB",
-    color: "#fff",
-    border: "none",
-    borderRadius: "8px",
-    cursor: "pointer",
-    fontWeight: "700",
-  },
-  toolbar: {
-    display: "flex",
-    gap: "15px",
-    marginBottom: "30px",
-    flexWrap: "wrap",
-  },
-  searchWrapper: { flex: 1, position: "relative", minWidth: "250px" },
-  selectWrapper: { position: "relative", minWidth: "220px" },
-  iconInside: {
-    position: "absolute",
-    left: "15px",
-    top: "50%",
-    transform: "translateY(-50%)",
-    color: "var(--text-muted)",
-  },
-  iconDropdown: {
-    position: "absolute",
-    right: "15px",
-    top: "50%",
-    transform: "translateY(-50%)",
-    color: "var(--text-muted)",
-    pointerEvents: "none",
-  },
-  searchInput: {
-    width: "100%",
-    padding: "12px 15px 12px 42px",
-    borderRadius: "8px",
-    border: "1px solid var(--border-color)",
-    outline: "none",
-    fontSize: "14px",
-    boxSizing: "border-box",
-    color: "var(--input-text)",
-    backgroundColor: "var(--input-bg)",
-  },
-  selectInput: {
-    width: "100%",
-    padding: "12px 40px 12px 42px",
-    borderRadius: "8px",
-    border: "1px solid var(--border-color)",
-    appearance: "none",
-    backgroundColor: "var(--input-bg)",
-    fontSize: "14px",
-    color: "var(--input-text)",
-    cursor: "pointer",
-    outline: "none",
-    fontWeight: "500",
-  },
-  loadingContainer: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "60px 0",
-  },
-  emptyState: {
-    textAlign: "center",
-    padding: "60px 20px",
-    backgroundColor: "var(--bg-card)",
-    borderRadius: "12px",
-    border: "2px dashed var(--border-color)",
-  },
-  topicList: { display: "flex", flexDirection: "column", gap: "16px" },
-  topicCard: {
-    border: "1px solid var(--border-color)",
-    padding: "20px",
-    borderRadius: "12px",
-    backgroundColor: "var(--bg-card)",
-    transition: "all 0.2s",
-    display: "flex",
-    flexDirection: "column",
-    gap: "12px",
-    cursor: "pointer",
-  },
-  topicHeader: { display: "flex", gap: "10px", alignItems: "center" },
-  tag: {
-    fontSize: "11px",
-    fontWeight: "700",
-    padding: "4px 10px",
-    borderRadius: "6px",
-    textTransform: "uppercase",
-  },
-  tagResolved: {
-    display: "flex",
-    alignItems: "center",
-    gap: "4px",
-    fontSize: "11px",
-    fontWeight: "700",
-    color: "var(--text-success)",
-    backgroundColor: "var(--bg-success)",
-    padding: "4px 10px",
-    borderRadius: "6px",
-    textTransform: "uppercase",
-  },
-  topicTitle: {
-    margin: "0",
-    color: "var(--text-primary)",
-    fontSize: "18px",
-    fontWeight: "700",
-  },
-  topicFooter: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    fontSize: "13px",
-    color: "var(--text-muted)",
-    marginTop: "4px",
-    flexWrap: "wrap",
-    gap: "10px",
-  },
-  authorArea: { display: "flex", alignItems: "center", gap: "8px" },
-  authorAvatar: {
-    width: "26px",
-    height: "26px",
-    backgroundColor: "var(--bg-alt)",
-    color: "var(--text-secondary)",
-    borderRadius: "50%",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontWeight: "bold",
-    fontSize: "12px",
-  },
-  commentsBadge: {
-    display: "flex",
-    alignItems: "center",
-    gap: "5px",
-    fontWeight: "600",
-    backgroundColor: "var(--bg-alt)",
-    padding: "6px 12px",
-    borderRadius: "20px",
-    color: "var(--text-secondary)",
-  },
-  modalOverlay: {
-    position: "fixed",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(15, 23, 42, 0.6)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 1000,
-    backdropFilter: "blur(4px)",
-  },
-  modalContent: {
-    backgroundColor: "var(--bg-card)",
-    padding: "30px",
-    borderRadius: "16px",
-    width: "100%",
-    maxWidth: "550px",
-    boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
-  },
-  modalTitle: {
-    marginTop: 0,
-    marginBottom: "24px",
-    color: "var(--text-primary)",
-    fontSize: "20px",
-    fontWeight: "800",
-  },
-  inputGroup: { marginBottom: "16px" },
-  label: {
-    display: "block",
-    marginBottom: "6px",
-    fontWeight: "600",
-    color: "var(--text-secondary)",
-    fontSize: "14px",
-  },
-  input: {
-    width: "100%",
-    padding: "12px",
-    borderRadius: "8px",
-    border: "1px solid var(--border-color)",
-    outline: "none",
-    boxSizing: "border-box",
-    fontFamily: "inherit",
-    fontSize: "14px",
-    color: "var(--input-text)",
-    backgroundColor: "var(--input-bg)",
-  },
-  fileLabel: {
-    display: "inline-flex",
-    alignItems: "center",
-    gap: "8px",
-    cursor: "pointer",
-    color: "var(--text-info)",
-    fontWeight: "600",
-    backgroundColor: "var(--bg-info)",
-    padding: "10px 16px",
-    borderRadius: "8px",
-    fontSize: "14px",
-  },
-  fileName: {
-    marginLeft: "12px",
-    fontSize: "13px",
-    color: "var(--text-muted)",
-    fontWeight: "500",
-  },
-  modalActions: {
-    display: "flex",
-    justifyContent: "flex-end",
-    gap: "12px",
-    marginTop: "30px",
-  },
-  btnCancel: {
-    padding: "12px 20px",
-    backgroundColor: "var(--bg-alt)",
-    color: "var(--text-secondary)",
-    border: "none",
-    borderRadius: "8px",
-    cursor: "pointer",
-    fontWeight: "700",
-    fontSize: "14px",
-  },
-  btnSubmit: {
-    padding: "12px 24px",
-    backgroundColor: "#2563EB",
-    color: "#fff",
-    border: "none",
-    borderRadius: "8px",
-    cursor: "pointer",
-    fontWeight: "700",
-    fontSize: "14px",
-  },
-  autocompleteDropdown: {
-    position: "absolute",
-    top: "100%",
-    left: 0,
-    right: 0,
-    backgroundColor: "var(--bg-card)",
-    border: "1px solid var(--border-color)",
-    borderRadius: "6px",
-    marginTop: "4px",
-    zIndex: 10,
-    maxHeight: "150px",
-    overflowY: "auto",
-    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-  },
-  autocompleteItem: {
-    padding: "10px",
-    borderBottom: "1px solid var(--border-color)",
-    cursor: "pointer",
-    color: "var(--text-primary)",
-  },
 }

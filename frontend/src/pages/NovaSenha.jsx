@@ -1,21 +1,20 @@
 import React, { useState } from 'react';
 import api from '../services/api';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Lock, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Lock, CheckCircle2, AlertCircle, ArrowLeft } from 'lucide-react';
 
 const NovaSenha = () => {
-    const { uid, token } = useParams(); // Captura os códigos da URL
+    const { uid, token } = useParams();
     const navigate = useNavigate();
     
     const [password, setPassword] = useState('');
     const [confirm, setConfirm] = useState('');
-    const [status, setStatus] = useState('idle'); // idle, loading, success, error
+    const [status, setStatus] = useState('idle');
     const [errorMessage, setErrorMessage] = useState('');
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         
-        // 1. Validação local
         if (password !== confirm) {
             setErrorMessage("As senhas não coincidem.");
             setStatus('error');
@@ -31,91 +30,88 @@ const NovaSenha = () => {
         setErrorMessage('');
 
         try {
-            // 2. Envio para o Backend Django
             await api.post(`api/password_reset_confirm/${uid}/${token}/`, { password });
-            
             setStatus('success');
-            
-            // Redireciona para o login após 3 segundos
-            setTimeout(() => {
-                navigate('/login');
-            }, 3000);
-
+            setTimeout(() => navigate('/login'), 3000);
         } catch (error) {
             console.error(error);
             setStatus('error');
-            // Tenta pegar a mensagem de erro específica do backend ou usa uma genérica
             const msg = error.response?.data?.erro || "O link é inválido ou expirou. Solicite novamente.";
             setErrorMessage(msg);
         }
     };
 
     return (
-        <div style={styles.background}>
-            <div style={styles.card}>
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col justify-center items-center p-4 transition-colors duration-300">
+            <div className="w-full max-w-[420px] mb-6">
+                <button 
+                  onClick={() => navigate("/login")} 
+                  className="flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-[#1565C0] dark:hover:text-blue-400 font-semibold text-sm transition-colors"
+                >
+                  <ArrowLeft size={16} /> Voltar ao Login
+                </button>
+            </div>
+
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl w-full max-w-[420px] p-8 md:p-10 text-center">
                 
-                <h2 style={styles.title}>Definir Nova Senha</h2>
+                <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2 tracking-tight">Definir Nova Senha</h2>
 
                 {status === 'success' ? (
-                    <div style={styles.successBox}>
-                        <CheckCircle2 size={48} style={{marginBottom: '15px'}} />
-                        <h3 style={{margin: '0 0 10px 0', fontSize: '20px'}}>Senha Alterada!</h3>
-                        <p style={{margin: 0, fontSize: '14px', lineHeight: '1.5'}}>
+                    <div className="mt-8 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/50 text-emerald-700 dark:text-emerald-400 p-6 rounded-xl flex flex-col items-center animate-in fade-in zoom-in">
+                        <CheckCircle2 size={48} className="mb-4 text-emerald-500" />
+                        <h3 className="text-xl font-bold mb-2">Senha Alterada!</h3>
+                        <p className="text-sm leading-relaxed">
                             Sua senha foi atualizada com sucesso.<br/>
                             Redirecionando para o login...
                         </p>
                     </div>
                 ) : (
-                    <form onSubmit={handleSubmit}>
-                        <p style={styles.subtitle}>Crie uma nova senha segura para sua conta.</p>
+                    <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-5 text-left">
+                        <p className="text-sm text-slate-500 dark:text-slate-400 text-center mb-2">Crie uma nova senha segura para sua conta.</p>
 
-                        <div style={styles.inputGroup}>
-                            <label style={styles.label}>Nova Senha</label>
-                            <div style={styles.inputWrapper}>
-                                <Lock size={18} color="#90A4AE" style={{marginLeft: '12px'}}/>
+                        <div>
+                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wide">Nova Senha</label>
+                            <div className="relative group">
+                                <Lock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#1565C0] dark:group-focus-within:text-blue-400 transition-colors" />
                                 <input 
                                     type="password" 
                                     required 
                                     value={password} 
                                     onChange={e => setPassword(e.target.value)} 
-                                    style={styles.input} 
                                     placeholder="Mínimo de 8 caracteres"
                                     disabled={status === 'loading'}
+                                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl pl-10 pr-4 py-3 text-sm focus:border-[#1565C0] dark:focus:border-blue-500 outline-none transition-all dark:text-white placeholder-slate-400"
                                 />
                             </div>
                         </div>
 
-                        <div style={styles.inputGroup}>
-                            <label style={styles.label}>Confirmar Senha</label>
-                            <div style={styles.inputWrapper}>
-                                <Lock size={18} color="#90A4AE" style={{marginLeft: '12px'}}/>
+                        <div>
+                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wide">Confirmar Senha</label>
+                            <div className="relative group">
+                                <Lock size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#1565C0] dark:group-focus-within:text-blue-400 transition-colors" />
                                 <input 
                                     type="password" 
                                     required 
                                     value={confirm} 
                                     onChange={e => setConfirm(e.target.value)} 
-                                    style={styles.input} 
                                     placeholder="Repita a senha"
                                     disabled={status === 'loading'}
+                                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl pl-10 pr-4 py-3 text-sm focus:border-[#1565C0] dark:focus:border-blue-500 outline-none transition-all dark:text-white placeholder-slate-400"
                                 />
                             </div>
                         </div>
 
                         {status === 'error' && (
-                            <div style={styles.errorBox}>
-                                <AlertCircle size={16} style={{marginRight: '6px', minWidth: '16px'}} />
+                            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 text-red-600 dark:text-red-400 p-3 rounded-lg text-sm font-medium flex items-center gap-2">
+                                <AlertCircle size={16} className="shrink-0" />
                                 <span>{errorMessage}</span>
                             </div>
                         )}
 
                         <button 
                             type="submit" 
-                            style={{
-                                ...styles.button,
-                                opacity: status === 'loading' ? 0.7 : 1,
-                                cursor: status === 'loading' ? 'not-allowed' : 'pointer'
-                            }} 
                             disabled={status === 'loading'}
+                            className="w-full bg-[#1565C0] hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl transition-all shadow-md shadow-blue-500/20 disabled:opacity-70 disabled:cursor-not-allowed mt-2"
                         >
                             {status === 'loading' ? 'Salvando...' : 'Alterar Senha'}
                         </button>
@@ -124,25 +120,6 @@ const NovaSenha = () => {
             </div>
         </div>
     );
-};
-
-const styles = {
-    background: { display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', backgroundColor: '#F1F5F9' },
-    card: { backgroundColor: 'white', padding: '40px', borderRadius: '16px', boxShadow: '0 10px 25px rgba(0,0,0,0.05)', width: '100%', maxWidth: '420px' },
-    
-    title: { margin: '0 0 10px 0', color: '#1E293B', fontSize: '24px', fontWeight: '800', textAlign: 'center' },
-    subtitle: { textAlign: 'center', color: '#64748B', fontSize: '14px', marginBottom: '30px' },
-    
-    inputGroup: { marginBottom: '20px' },
-    label: { display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#334155' },
-    inputWrapper: { display: 'flex', alignItems: 'center', border: '1px solid #E2E8F0', borderRadius: '10px', backgroundColor: '#F8FAFC', transition: 'border-color 0.2s' },
-    input: { width: '100%', padding: '14px 12px', border: 'none', background: 'transparent', outline: 'none', color: '#334155', fontSize: '15px' },
-    
-    button: { width: '100%', padding: '14px', backgroundColor: '#1565C0', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '700', fontSize: '15px', marginTop: '10px', transition: 'background 0.2s' },
-    
-    successBox: { textAlign: 'center', color: '#15803D', padding: '30px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', backgroundColor: '#F0FDF4', borderRadius: '12px', border: '1px solid #BBF7D0' },
-    
-    errorBox: { display: 'flex', alignItems: 'center', backgroundColor: '#FEF2F2', color: '#DC2626', padding: '12px', borderRadius: '8px', fontSize: '13px', marginBottom: '20px', border: '1px solid #FECACA' }
 };
 
 export default NovaSenha;

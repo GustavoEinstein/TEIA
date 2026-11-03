@@ -5,66 +5,56 @@ import Header from "./components/Header"
 
 function Dashboard() {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
-  const [sidebarOpen, setSidebarOpen] = useState(!isMobile)
+  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768)
 
   useEffect(() => {
+    let lastMobile = window.innerWidth < 768
+
     const handleResize = () => {
       const mobile = window.innerWidth < 768
       setIsMobile(mobile)
-      if (!mobile) setSidebarOpen(true)
-      else setSidebarOpen(false)
+      
+      // Só abre/fecha automaticamente se cruzar a barreira entre celular e PC
+      if (mobile !== lastMobile) {
+        setSidebarOpen(!mobile)
+        lastMobile = mobile
+      }
     }
+
     window.addEventListener("resize", handleResize)
     return () => window.removeEventListener("resize", handleResize)
   }, [])
 
-  const toggleSidebar = () => setSidebarOpen(!sidebarOpen)
+  const toggleSidebar = () => setSidebarOpen((prev) => !prev)
 
   return (
-    <div
-      style={{
-        display: "flex",
-        minHeight: "100vh",
-        position: "relative",
-        backgroundColor: "var(--bg-main)",
-      }}
-    >
+    <div className="flex min-h-screen relative bg-[#F4F7FE] dark:bg-slate-950 transition-colors duration-200">
       <Sidebar
         isOpen={sidebarOpen}
         isMobile={isMobile}
         onClose={() => setSidebarOpen(false)}
+        onToggle={toggleSidebar}
       />
 
       {isMobile && sidebarOpen && (
         <div
           onClick={() => setSidebarOpen(false)}
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(0,0,0,0.5)",
-            zIndex: 999,
-          }}
+          className="fixed inset-0 bg-black/50 backdrop-blur-[1px] z-[999]"
         />
       )}
 
       <div
         style={{
-          flex: 1,
-          marginLeft: isMobile ? "0" : "260px",
-          display: "flex",
-          flexDirection: "column",
-          width: isMobile ? "100%" : "calc(100% - 260px)",
-          transition: "margin-left 0.3s ease",
-          backgroundColor: "var(--bg-main)",
+          marginLeft: isMobile || !sidebarOpen ? "0px" : "var(--sidebar-width, 280px)",
+          width: isMobile || !sidebarOpen ? "100%" : "calc(100% - var(--sidebar-width, 280px))",
         }}
+        className="flex-1 flex flex-col min-h-screen transition-[margin-left,width] duration-150 ease-out bg-[#F4F7FE] dark:bg-slate-950"
       >
-        <Header onToggleMenu={toggleSidebar} showMenuButton={isMobile} />
-        <main
-          style={{ padding: "0", flex: 1, backgroundColor: "var(--bg-main)" }}
-        >
+        <Header
+          onToggleMenu={toggleSidebar}
+          showMenuButton={isMobile || !sidebarOpen}
+        />
+        <main className="p-0 flex-1 bg-[#F4F7FE] dark:bg-slate-950">
           <Outlet context={{ isMobile }} />
         </main>
       </div>

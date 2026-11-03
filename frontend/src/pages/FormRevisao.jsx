@@ -3,29 +3,10 @@ import api from "../services/api"
 import { useOutletContext, useParams, useNavigate } from "react-router-dom"
 import Swal from "sweetalert2"
 import {
-  Star,
-  CheckCircle2,
-  Bot,
-  Download,
-  ArrowLeft,
-  Clock,
-  Wrench,
-  BookOpen,
-  Target,
-  Lightbulb,
-  ThumbsUp,
-  ShieldAlert,
-  FileText,
-  User,
-  AlertTriangle,
-  Lock,
-  PenTool,
-  Eye,
-  Cpu,
-  Terminal,
-  Link,
-  ExternalLink,
-  Package,
+  Star, CheckCircle2, Bot, Download, ArrowLeft, Clock,
+  Wrench, BookOpen, Target, Lightbulb, ThumbsUp, ShieldAlert,
+  FileText, User, AlertTriangle, Lock, PenTool, Eye,
+  Cpu, Terminal, Link, ExternalLink, Package, BarChart3
 } from "lucide-react"
 
 const Revisao = () => {
@@ -63,10 +44,7 @@ const Revisao = () => {
   const handleDownload = async () => {
     if (!producaoEmRevisao || !producaoEmRevisao.arquivo) return
     try {
-      const urlRelativa = producaoEmRevisao.arquivo.replace(
-        "https://teia.cic.unb.br/kipo_playground/",
-        "",
-      )
+      const urlRelativa = producaoEmRevisao.arquivo.replace("https://teia.cic.unb.br/kipo_playground/", "")
       const response = await api.get(urlRelativa, { responseType: "blob" })
       const urlBlob = window.URL.createObjectURL(new Blob([response.data]))
       const link = document.createElement("a")
@@ -96,8 +74,7 @@ const Revisao = () => {
     fetchDetails()
   }, [id, navigate])
 
-  const handleScoreChange = (campo, valor) =>
-    setAvaliacao((prev) => ({ ...prev, [campo]: valor }))
+  const handleScoreChange = (campo, valor) => setAvaliacao((prev) => ({ ...prev, [campo]: valor }))
 
   const handleSubmit = async (veredito) => {
     if (!isFormComplete) return
@@ -125,7 +102,6 @@ const Revisao = () => {
         nota_inovacao: avaliacao.notaInovacao,
       })
 
-      // --- AVISANDO O RADAR DE NOTIFICAÇÕES (XP INSTANTÂNEO) ---
       window.dispatchEvent(new Event("perfilAtualizado"))
 
       if (veredito) {
@@ -162,53 +138,28 @@ const Revisao = () => {
     }
   }
 
-  if (loading)
-    return (
-      <div
-        style={{
-          padding: "50px",
-          textAlign: "center",
-          color: "var(--text-muted)",
-        }}
-      >
-        Carregando...
+  if (loading) return (
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex justify-center items-center">
+      <div className="animate-pulse text-slate-400 font-bold flex items-center gap-2">
+        <Clock className="animate-spin" size={24} /> Carregando área de revisão...
       </div>
-    )
+    </div>
+  )
   if (!producaoEmRevisao) return null
 
   const CriteriaCard = ({ label, description, fieldName, value }) => (
-    <div style={styles.criteriaCard}>
-      <div style={styles.criteriaHeader}>
-        <span style={styles.criteriaTitle}>{label}</span>
-        <span
-          style={{
-            ...styles.scoreBadge,
-            color:
-              value > 0
-                ? value <= 2
-                  ? "var(--text-danger)"
-                  : "var(--text-success)"
-                : "var(--text-muted)",
-          }}
-        >
+    <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col h-full transition-colors hover:border-[#1565C0]/30 dark:hover:border-blue-500/30">
+      <div className="flex justify-between items-start mb-2">
+        <span className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-tight pr-2">{label}</span>
+        <span className={`text-sm font-black ${value > 0 ? (value <= 2 ? 'text-red-500' : 'text-emerald-500') : 'text-slate-400'}`}>
           {value > 0 ? value : "-"}
         </span>
       </div>
-      <p style={styles.criteriaDesc}>{description}</p>
-      <div style={styles.starsWrapper}>
+      <p className="text-[11px] text-slate-500 dark:text-slate-400 mb-4 flex-1">{description}</p>
+      <div className="flex justify-center gap-1 mt-auto">
         {[1, 2, 3, 4, 5].map((star) => (
-          <button
-            key={star}
-            onClick={() => handleScoreChange(fieldName, star)}
-            type="button"
-            style={styles.starBtn}
-          >
-            <Star
-              size={24}
-              fill={star <= value ? "#FFC107" : "var(--bg-main)"}
-              color={star <= value ? "#FFB300" : "var(--border-color)"}
-              strokeWidth={2}
-            />
+          <button key={star} type="button" onClick={() => handleScoreChange(fieldName, star)} className="p-0.5 hover:scale-110 transition-transform">
+            <Star size={22} className={star <= value ? "fill-amber-400 text-amber-400" : "fill-slate-200 text-slate-200 dark:fill-slate-700 dark:text-slate-600"} />
           </button>
         ))}
       </div>
@@ -216,244 +167,184 @@ const Revisao = () => {
   )
 
   return (
-    <div style={styles.fullPageWrapper}>
-      <div style={styles.container}>
-        <div style={styles.topBar}>
-          <button
-            onClick={() => navigate("/dashboard/revisao")}
-            style={styles.backButton}
-          >
-            <ArrowLeft size={20} /> Voltar
+    <div className="w-full min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-200 p-4 md:p-8 pb-20">
+      <div className="max-w-[1000px] mx-auto">
+        
+        {/* Cabeçalho */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+          <button onClick={() => navigate("/dashboard/revisao")} className="flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-[#1565C0] dark:hover:text-blue-400 font-bold text-sm transition-colors">
+            <ArrowLeft size={18} /> Voltar
           </button>
-          <div style={{ textAlign: "right" }}>
-            <h1 style={styles.pageTitle}>Sala de Revisão</h1>
-            <p style={styles.pageSubtitle}>
-              Analise o conteúdo abaixo e preencha a avaliação no final.
-            </p>
+          <div className="text-left sm:text-right">
+            <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">Sala de Revisão</h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Analise o conteúdo abaixo e preencha a avaliação no final.</p>
           </div>
         </div>
 
-        <div style={styles.materialCard}>
-          <div style={styles.materialHeader}>
-            <div style={styles.badgesRow}>
-              <span style={styles.badgeDisc}>
-                {producaoEmRevisao.disciplina}
-              </span>
-              <span style={styles.badgeLevel}>{producaoEmRevisao.nivel}</span>
-            </div>
-            <h2 style={styles.materialTitle}>{producaoEmRevisao.titulo}</h2>
-            <div style={styles.metaInfo}>
-              <span style={styles.metaItem}>
-                <Bot size={14} /> {producaoEmRevisao.modelo_ia}
-              </span>
-              <span style={styles.metaItem}>
-                <User size={14} /> Autor Anônimo
-              </span>
-            </div>
-          </div>
-
-          <div style={styles.techSheet}>
-            <div style={styles.techItem}>
-              <Wrench size={16} color="var(--text-primary)" />
-              <div style={{ width: "100%" }}>
-                <span style={styles.techLabel}>Metodologia</span>
-                <span style={styles.techValue}>
-                  {producaoEmRevisao.metodologia}
-                </span>
+        {/* MATERIAL A SER REVISADO */}
+        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 md:p-10 mb-10">
+          
+          <div className="border-b border-slate-100 dark:border-slate-800 pb-6 mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div>
+              <div className="flex gap-2 mb-3">
+                <span className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-3 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider">{producaoEmRevisao.disciplina}</span>
+                <span className="bg-blue-50 dark:bg-blue-900/30 text-[#1565C0] dark:text-blue-400 px-3 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider border border-blue-100 dark:border-blue-800/50">{producaoEmRevisao.nivel}</span>
+              </div>
+              <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white leading-tight mb-4">{producaoEmRevisao.titulo}</h2>
+              <div className="flex flex-wrap items-center gap-4 text-sm font-semibold">
+                <div className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/50 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700"><Bot size={16}/> {producaoEmRevisao.modelo_ia || "Nenhum modelo"}</div>
+                <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400"><User size={16}/> Autor(a) Anônimo(a)</div>
               </div>
             </div>
-            <div style={styles.techItem}>
-              <Clock size={16} color="var(--text-primary)" />
-              <div style={{ width: "100%" }}>
-                <span style={styles.techLabel}>Duração</span>
-                <span style={styles.techValue}>
-                  {producaoEmRevisao.duracao}
-                </span>
+
+            {/* Ações Rápidas (Arquivos) */}
+            <div className="flex flex-col gap-2 shrink-0 w-full md:w-auto">
+              {producaoEmRevisao.arquivo && (
+                <button onClick={handleDownload} className="flex items-center justify-center gap-2 bg-[#1565C0] hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-bold text-sm transition-all shadow-md shadow-blue-500/20">
+                  <Download size={18} /> Baixar Roteiro
+                </button>
+              )}
+              {producaoEmRevisao.link_material && (
+                <a href={producaoEmRevisao.link_material} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-5 py-2.5 rounded-lg font-bold text-sm transition-all shadow-md shadow-purple-500/20">
+                  <ExternalLink size={18} /> Acessar Link
+                </a>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10 bg-slate-50 dark:bg-slate-800/30 p-5 rounded-xl border border-slate-100 dark:border-slate-800">
+            <div className="flex gap-3">
+              <div className="bg-white dark:bg-slate-800 p-2.5 rounded-full shadow-sm shrink-0 h-fit"><Wrench size={18} className="text-[#1565C0] dark:text-blue-400"/></div>
+              <div><span className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Metodologia</span><span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{producaoEmRevisao.metodologia || "-"}</span></div>
+            </div>
+            <div className="flex gap-3">
+              <div className="bg-white dark:bg-slate-800 p-2.5 rounded-full shadow-sm shrink-0 h-fit"><Clock size={18} className="text-[#1565C0] dark:text-blue-400"/></div>
+              <div><span className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Duração</span><span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{producaoEmRevisao.duracao || "-"}</span></div>
+            </div>
+            <div className="flex gap-3">
+              <div className="bg-white dark:bg-slate-800 p-2.5 rounded-full shadow-sm shrink-0 h-fit"><Package size={18} className="text-[#1565C0] dark:text-blue-400"/></div>
+              <div><span className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">Recursos</span><span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{Array.isArray(producaoEmRevisao.recursos) ? producaoEmRevisao.recursos.join(", ") : producaoEmRevisao.recursos || "-"}</span></div>
+            </div>
+          </div>
+
+          <div className="space-y-10">
+            <div>
+              <h3 className="flex items-center gap-2 text-lg font-extrabold text-[#1565C0] dark:text-blue-400 mb-4"><BookOpen size={20} /> Alinhamento BNCC</h3>
+              <div className="bg-slate-50 dark:bg-slate-800/50 border-l-4 border-[#1565C0] dark:border-blue-500 p-5 rounded-r-xl">
+                <p className="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap text-sm">{producaoEmRevisao.bncc || "Não informado."}</p>
               </div>
             </div>
-            <div style={styles.techItem}>
-              <Package size={16} color="var(--text-primary)" />
-              <div style={{ width: "100%" }}>
-                <span style={styles.techLabel}>Recursos</span>
-                <span style={styles.techValue}>
-                  {Array.isArray(producaoEmRevisao.recursos)
-                    ? producaoEmRevisao.recursos.join(", ")
-                    : typeof producaoEmRevisao.recursos === "string"
-                      ? producaoEmRevisao.recursos
-                          .split(",")
-                          .map((r) => r.trim())
-                          .join(", ")
-                      : "-"}
-                </span>
+
+            {producaoEmRevisao.bncc_computacao && (
+              <div>
+                <h3 className="flex items-center gap-2 text-lg font-extrabold text-indigo-600 dark:text-indigo-400 mb-4"><Cpu size={20} /> BNCC Computação</h3>
+                <div className="bg-slate-50 dark:bg-slate-800/50 border-l-4 border-indigo-500 p-5 rounded-r-xl">
+                  <p className="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap text-sm">{producaoEmRevisao.bncc_computacao}</p>
+                </div>
+              </div>
+            )}
+
+            <div>
+              <h3 className="flex items-center gap-2 text-lg font-extrabold text-slate-700 dark:text-slate-400 mb-4"><Terminal size={20} /> Prompts na IA</h3>
+              <div className="bg-slate-50 dark:bg-slate-800/50 border-l-4 border-slate-400 p-5 rounded-r-xl font-mono text-sm text-slate-600 dark:text-slate-400 whitespace-pre-wrap">
+                {producaoEmRevisao.prompts_ia || "Nenhum prompt registrado."}
+              </div>
+            </div>
+
+            <div>
+              <h3 className="flex items-center gap-2 text-lg font-extrabold text-amber-600 dark:text-amber-500 mb-4"><Lightbulb size={20} /> Relato de Experiência</h3>
+              <div className="bg-slate-50 dark:bg-slate-800/50 border-l-4 border-amber-500 p-5 rounded-r-xl">
+                <p className="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap text-[15px]">{producaoEmRevisao.experiencia || producaoEmRevisao.relato || "Não informado."}</p>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="flex items-center gap-2 text-lg font-extrabold text-emerald-600 dark:text-emerald-500 mb-4"><Target size={20} /> Resultados</h3>
+              <div className="bg-emerald-50 dark:bg-emerald-900/10 border-l-4 border-emerald-500 p-5 rounded-r-xl">
+                <p className="text-emerald-800 dark:text-emerald-300 italic text-sm whitespace-pre-wrap">{producaoEmRevisao.resultados || "Sem resultados registrados."}</p>
               </div>
             </div>
           </div>
 
-          <div style={styles.section}>
-            <h3 style={styles.sectionTitle}>
-              <BookOpen size={18} /> Alinhamento BNCC
-            </h3>
-            <div style={styles.bnccBox}>
-              <p style={styles.bnccText}>
-                {producaoEmRevisao.bncc || "Não informado."}
-              </p>
-            </div>
-          </div>
-
-          <div style={styles.section}>
-            <h3 style={styles.sectionTitle}>
-              <Cpu size={18} /> BNCC Computação
-            </h3>
-            <div
-              style={{
-                ...styles.bnccBox,
-                backgroundColor: "var(--bg-info)",
-                borderLeftColor: "var(--text-info)",
-              }}
-            >
-              <p style={{ ...styles.bnccText, color: "var(--text-info)" }}>
-                {producaoEmRevisao.bncc_computacao || "Não informado."}
-              </p>
-            </div>
-          </div>
-
-          <div style={styles.section}>
-            <h3 style={styles.sectionTitle}>
-              <Terminal size={18} /> Prompts Utilizados
-            </h3>
-            <div style={styles.promptBox}>
-              {producaoEmRevisao.prompts_ia || "Nenhum prompt registrado."}
-            </div>
-          </div>
-
-          <div style={styles.section}>
-            <h3 style={styles.sectionTitle}>
-              <Lightbulb size={18} /> Relato de Experiência
-            </h3>
-            <p style={styles.textBody}>{producaoEmRevisao.experiencia}</p>
-          </div>
-
-          <div style={styles.section}>
-            <h3 style={styles.sectionTitle}>
-              <Target size={18} /> Resultados
-            </h3>
-            <div style={styles.resultsBox}>
-              {producaoEmRevisao.resultados || "Sem resultados."}
-            </div>
-          </div>
-
-          {/* O COMPONENTE COM A TRAVA ABSOLUTA E DUPLA DE PRIVACIDADE */}
-          {<ParecerTecnico producao={producaoEmRevisao} />}
+          <ParecerTecnico producao={producaoEmRevisao} />
         </div>
 
-        <div style={styles.stepSeparator}>
-          <div style={styles.stepLine}></div>
-          <div style={styles.stepLabel}>
-            <PenTool size={16} /> Área de Avaliação
+        {/* --- DIVISOR: ÁREA DE AVALIAÇÃO --- */}
+        <div className="flex items-center gap-4 my-12 opacity-80">
+          <div className="flex-1 h-px bg-slate-300 dark:bg-slate-700"></div>
+          <div className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest flex items-center gap-2">
+            <PenTool size={16}/> Área de Avaliação
           </div>
-          <div style={styles.stepLine}></div>
+          <div className="flex-1 h-px bg-slate-300 dark:bg-slate-700"></div>
         </div>
 
-        <div style={styles.reviewSection}>
-          <h3 style={styles.reviewTitle}>Sua Avaliação</h3>
+        {/* FORMULÁRIO DE AVALIAÇÃO */}
+        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-lg shadow-[#1565C0]/5 border-2 border-slate-200 dark:border-slate-800 p-6 md:p-10">
+          <h3 className="text-xl font-black text-slate-800 dark:text-white mb-8">Sua Avaliação</h3>
 
-          <div style={styles.criteriaGrid}>
-            <CriteriaCard
-              label="Coerência Pedagógica"
-              description="Objetivos claros e alinhados?"
-              fieldName="notaCoerencia"
-              value={avaliacao.notaCoerencia}
-            />
-            <CriteriaCard
-              label="Qualidade do Prompt"
-              description="Uso intencional da IA?"
-              fieldName="notaQualidade"
-              value={avaliacao.notaQualidade}
-            />
-            <CriteriaCard
-              label="Metodologia Ativa"
-              description="Aluno protagonista?"
-              fieldName="notaMetodologia"
-              value={avaliacao.notaMetodologia}
-            />
-            <CriteriaCard
-              label="Avaliação"
-              description="Critérios de verificação?"
-              fieldName="notaAvaliacao"
-              value={avaliacao.notaAvaliacao}
-            />
-            <CriteriaCard
-              label="Inclusão e Acessibilidade"
-              description="Acessível a todos?"
-              fieldName="notaInclusao"
-              value={avaliacao.notaInclusao}
-            />
-            <CriteriaCard
-              label="Inovação e Criatividade"
-              description="Ideias originais?"
-              fieldName="notaInovacao"
-              value={avaliacao.notaInovacao}
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-10">
+            <CriteriaCard label="Coerência Pedagógica" description="Objetivos claros e alinhados à BNCC?" fieldName="notaCoerencia" value={avaliacao.notaCoerencia} />
+            <CriteriaCard label="Qualidade do Prompt" description="O uso da IA foi intencional e bem estruturado?" fieldName="notaQualidade" value={avaliacao.notaQualidade} />
+            <CriteriaCard label="Metodologia Ativa" description="O aluno atuou como protagonista?" fieldName="notaMetodologia" value={avaliacao.notaMetodologia} />
+            <CriteriaCard label="Critérios de Avaliação" description="Existem formas claras de verificar o aprendizado?" fieldName="notaAvaliacao" value={avaliacao.notaAvaliacao} />
+            <CriteriaCard label="Inclusão" description="A prática é acessível a todos os alunos?" fieldName="notaInclusao" value={avaliacao.notaInclusao} />
+            <CriteriaCard label="Inovação e Criatividade" description="Apresenta ideias originais para a disciplina?" fieldName="notaInovacao" value={avaliacao.notaInovacao} />
           </div>
 
-          <div style={styles.feedbackGrid}>
-            <div style={styles.feedbackBoxSuccess}>
-              <label style={styles.feedbackLabelSuccess}>
-                <ThumbsUp size={14} /> Pontos Fortes
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
+            <div className="bg-emerald-50 dark:bg-emerald-900/10 border-l-4 border-emerald-500 p-5 rounded-r-xl">
+              <label className="flex items-center gap-2 text-xs font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest mb-3">
+                <ThumbsUp size={16} /> Pontos Fortes
               </label>
               <textarea
-                style={styles.textareaWhite}
-                placeholder="O que se destacou positivamente?"
+                className="w-full bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-800/50 rounded-xl p-4 text-sm focus:border-emerald-500 outline-none transition-all dark:text-emerald-100 placeholder-emerald-700/50 dark:placeholder-emerald-400/50 resize-y min-h-[100px]"
+                placeholder="O que se destacou positivamente nesta prática?"
                 value={avaliacao.pontosFortes}
-                onChange={(e) =>
-                  setAvaliacao({ ...avaliacao, pontosFortes: e.target.value })
-                }
+                onChange={(e) => setAvaliacao({ ...avaliacao, pontosFortes: e.target.value })}
               />
             </div>
-            <div style={styles.feedbackBoxDanger}>
-              <label style={styles.feedbackLabelDanger}>
-                <AlertTriangle size={14} /> Sugestões de Melhoria
+            <div className="bg-red-50 dark:bg-red-900/10 border-l-4 border-red-500 p-5 rounded-r-xl">
+              <label className="flex items-center gap-2 text-xs font-black text-red-700 dark:text-red-400 uppercase tracking-widest mb-3">
+                <AlertTriangle size={16} /> Sugestões de Melhoria
               </label>
               <textarea
-                style={styles.textareaWhite}
-                placeholder="O que precisa ser ajustado?"
+                className="w-full bg-white dark:bg-slate-900 border border-red-200 dark:border-red-800/50 rounded-xl p-4 text-sm focus:border-red-500 outline-none transition-all dark:text-red-100 placeholder-red-700/50 dark:placeholder-red-400/50 resize-y min-h-[100px]"
+                placeholder="O que precisa ser ajustado antes da publicação?"
                 value={avaliacao.pontosMelhoria}
-                onChange={(e) =>
-                  setAvaliacao({ ...avaliacao, pontosMelhoria: e.target.value })
-                }
+                onChange={(e) => setAvaliacao({ ...avaliacao, pontosMelhoria: e.target.value })}
               />
             </div>
           </div>
 
-          <div style={styles.actionButtonsRow}>
+          {/* BOTÕES DE ENVIO */}
+          <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-slate-100 dark:border-slate-800">
             {!isFormComplete ? (
-              <button disabled style={styles.btnDisabled}>
-                <Lock size={16} /> Preencha todos os critérios acima para
-                liberar a decisão
+              <button disabled className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl font-bold text-sm text-slate-400 dark:text-slate-500 cursor-not-allowed">
+                <Lock size={18} /> Preencha todas as 6 notas (estrelas) para liberar a decisão
               </button>
             ) : (
               <>
                 <button
                   onClick={() => handleSubmit(false)}
                   disabled={isSubmitting}
-                  style={
-                    hasCriticalFail
-                      ? styles.btnRejectPrimary
-                      : styles.btnRejectSecondary
-                  }
+                  className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 rounded-xl font-extrabold text-sm transition-all ${
+                    hasCriticalFail 
+                    ? "bg-red-600 hover:bg-red-700 text-white shadow-md shadow-red-600/20" 
+                    : "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40"
+                  }`}
                 >
-                  <ShieldAlert size={18} /> Rejeitar
+                  <ShieldAlert size={20} /> REJEITAR
                 </button>
                 <button
                   onClick={() => handleSubmit(true)}
                   disabled={isSubmitting || hasCriticalFail}
-                  style={
-                    !hasCriticalFail
-                      ? styles.btnApprovePrimary
-                      : styles.btnApproveSecondary
-                  }
+                  className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 rounded-xl font-extrabold text-sm transition-all ${
+                    !hasCriticalFail 
+                    ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20" 
+                    : "bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/50 text-emerald-600/50 dark:text-emerald-400/50 cursor-not-allowed"
+                  }`}
                 >
-                  <CheckCircle2 size={18} /> Aprovar
+                  <CheckCircle2 size={20} /> APROVAR
                 </button>
               </>
             )}
@@ -464,36 +355,33 @@ const Revisao = () => {
   )
 }
 
-const ParecerTecnico = ({ producao }) => {
-  if (
-    !producao ||
-    !producao.avaliacoes_detalhadas ||
-    producao.avaliacoes_detalhadas.length === 0
-  ) {
-    return null
-  }
+// -------------------------------------------------------------
+// COMPONENTES AUXILIARES DA REVISÃO
+// -------------------------------------------------------------
 
+const ParecerTecnico = ({ producao }) => {
+  if (!producao || !producao.avaliacoes_detalhadas || producao.avaliacoes_detalhadas.length === 0) return null
   const avaliacoes = producao.avaliacoes_detalhadas
 
   return (
-    <div style={styles.ptContainer}>
-      <div style={styles.ptMainHeader}>
-        <BarChart3 size={24} color="#1565C0" />
+    <div className="mt-10 border-t border-slate-200 dark:border-slate-800 pt-8">
+      <div className="flex items-center gap-3 mb-6">
+        <BarChart3 size={24} className="text-[#1565C0] dark:text-blue-400" />
         <div>
-          <h3 style={styles.ptMainTitle}>Histórico de Revisão</h3>
-          <p style={styles.ptMainSubtitle}>
-            Detalhamento dos avaliadores sobre esta prática.
-          </p>
+          <h3 className="text-xl font-extrabold text-slate-800 dark:text-white">Histórico de Revisão</h3>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Detalhamento dos avaliadores sobre esta prática.</p>
         </div>
       </div>
-      <div style={styles.ptCardsWrapper}>
-        {avaliacoes.map((aval) => (
-          <ReviewCard key={aval.ordem} avaliacao={aval} />
-        ))}
-
-        {producao.total_avaliacoes === 1 &&
-          (producao.is_dono || producao.is_admin) &&
-          !producao.status.toLowerCase().includes("rejeitado") && <GhostCard />}
+      
+      <div className="flex flex-col gap-6">
+        {avaliacoes.map((aval) => <ReviewCard key={aval.ordem} avaliacao={aval} />)}
+        {producao.total_avaliacoes === 1 && (producao.is_dono || producao.is_admin) && !producao.status.toLowerCase().includes("rejeitado") && (
+          <div className="bg-slate-50 dark:bg-slate-800/30 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 p-6 text-center">
+            <Clock size={24} className="mx-auto text-slate-400 mb-3" />
+            <h4 className="font-bold text-slate-600 dark:text-slate-300 mb-1">Aguardando 2º Avaliador</h4>
+            <p className="text-sm text-slate-500">Aguardando o parecer de mais um colega para finalização.</p>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -502,46 +390,49 @@ const ParecerTecnico = ({ producao }) => {
 const ReviewCard = ({ avaliacao }) => {
   const isAprovado = avaliacao.aprovado
   const { notas, pontos_fortes, pontos_melhoria, ordem } = avaliacao
+  
   return (
-    <div style={styles.rcCard(isAprovado)}>
-      <div style={styles.rcHeader(isAprovado)}>
-        <div style={styles.rcHeaderTitle(isAprovado)}>
-          {isAprovado ? (
-            <CheckCircle2 size={22} />
-          ) : (
-            <AlertTriangle size={22} />
-          )}
+    <div className={`rounded-xl border overflow-hidden ${isAprovado ? 'bg-white dark:bg-slate-900 border-emerald-200 dark:border-emerald-800/50' : 'bg-white dark:bg-slate-900 border-red-200 dark:border-red-800/50'}`}>
+      <div className={`px-6 py-4 flex justify-between items-center ${isAprovado ? 'bg-emerald-50 dark:bg-emerald-900/20 border-b border-emerald-200 dark:border-emerald-800/50' : 'bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800/50'}`}>
+        <div className={`flex items-center gap-2 font-black text-sm ${isAprovado ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-700 dark:text-red-400'}`}>
+          {isAprovado ? <CheckCircle2 size={20} /> : <AlertTriangle size={20} />}
           <span>PARECER DO {ordem}º AVALIADOR</span>
         </div>
-        <div style={styles.rcBadge(isAprovado)}>
+        <div className={`px-3 py-1 rounded-full text-[10px] font-black tracking-widest border ${isAprovado ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700' : 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400 border-red-300 dark:border-red-700'}`}>
           {isAprovado ? "APROVADO" : "AJUSTES"}
         </div>
       </div>
-      <div style={styles.rcContent}>
-        <div style={styles.rcGridScores}>
-          <ScoreItem label="Pedagógico" valor={notas.coerencia} />
-          <ScoreItem label="Prompt" valor={notas.qualidade} />
-          <ScoreItem label="Metodologia" valor={notas.metodologia} />
-          <ScoreItem label="Avaliação" valor={notas.avaliacao} />
+      
+      <div className="p-6">
+        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2"><BarChart3 size={16}/> Notas Atribuídas</h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <ScoreItem label="Coerência Pedagógica" valor={notas.coerencia} />
+          <ScoreItem label="Qualidade do Prompt" valor={notas.qualidade} />
+          <ScoreItem label="Metodologia Ativa" valor={notas.metodologia} />
+          <ScoreItem label="Critérios de Avaliação" valor={notas.avaliacao} />
           <ScoreItem label="Inclusão" valor={notas.inclusao} />
           <ScoreItem label="Inovação" valor={notas.inovacao} />
         </div>
-        <hr style={styles.rcDivider} />
-        <div style={styles.rcFeedbackGrid}>
+        
+        <hr className="border-slate-100 dark:border-slate-800 mb-6" />
+        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2"><User size={16}/> Comentários do Revisor</h4>
+        
+        <div className="flex flex-col gap-4">
           {pontos_fortes && (
-            <div style={styles.rcFeedbackBoxSuccess}>
-              <div style={styles.rcFeedbackLabelSuccess}>
-                <ThumbsUp size={16} /> Pontos Fortes
-              </div>
-              <div style={styles.rcFeedbackTextSuccess}>{pontos_fortes}</div>
+            <div className="bg-emerald-50 dark:bg-emerald-900/10 border-l-4 border-emerald-500 p-4 rounded-r-lg">
+              <div className="flex items-center gap-2 text-xs font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest mb-2"><ThumbsUp size={16}/> Pontos Fortes</div>
+              <p className="text-sm text-emerald-800 dark:text-emerald-300">{pontos_fortes}</p>
             </div>
           )}
           {pontos_melhoria && (
-            <div style={styles.rcFeedbackBoxDanger}>
-              <div style={styles.rcFeedbackLabelDanger}>
-                <AlertTriangle size={16} /> Melhorias
-              </div>
-              <div style={styles.rcFeedbackTextDanger}>{pontos_melhoria}</div>
+            <div className="bg-red-50 dark:bg-red-900/10 border-l-4 border-red-500 p-4 rounded-r-lg">
+              <div className="flex items-center gap-2 text-xs font-black text-red-700 dark:text-red-400 uppercase tracking-widest mb-2"><AlertTriangle size={16}/> Melhorias</div>
+              <p className="text-sm text-red-800 dark:text-red-300">{pontos_melhoria}</p>
+            </div>
+          )}
+          {!pontos_fortes && !pontos_melhoria && avaliacao.feedback_texto && (
+            <div className="bg-slate-50 dark:bg-slate-800/50 border-l-4 border-slate-400 p-4 rounded-r-lg">
+              <p className="text-sm text-slate-600 dark:text-slate-300">{avaliacao.feedback_texto}</p>
             </div>
           )}
         </div>
@@ -550,574 +441,18 @@ const ReviewCard = ({ avaliacao }) => {
   )
 }
 
-const GhostCard = () => (
-  <div style={styles.gcCard}>
-    <div style={styles.gcHeader}>
-      <div style={styles.gcTitle}>
-        <Clock size={22} color="#90A4AE" />
-        <span>AGUARDANDO 2º AVALIADOR</span>
-      </div>
-    </div>
-    <div style={styles.gcContent}>
-      <p style={styles.gcText}>
-        Aguardando o parecer de mais um colega para finalização.
-      </p>
-    </div>
-  </div>
-)
-
 const ScoreItem = ({ label, valor }) => (
-  <div style={styles.rcScoreRow}>
-    <span style={styles.rcLabel}>{label}</span>
-    <div style={styles.rcStarsContainer}>
-      {[1, 2, 3, 4, 5].map((star) => (
-        <Star
-          key={star}
-          size={12}
-          fill={star <= valor ? "#EF5350" : "#E0E0E0"}
-          color="transparent"
-        />
-      ))}
-      <span style={styles.rcNumberValue}>{valor}/5</span>
+  <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700">
+    <span className="text-xs font-bold text-slate-600 dark:text-slate-300">{label}</span>
+    <div className="flex items-center gap-2">
+      <div className="flex">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <Star key={star} size={14} className={star <= valor ? (valor <= 2 ? "fill-red-500 text-red-500" : "fill-amber-400 text-amber-400") : "fill-slate-200 text-slate-200 dark:fill-slate-700 dark:text-slate-700"} />
+        ))}
+      </div>
+      <span className={`text-xs font-black ${valor <= 2 ? 'text-red-600' : 'text-emerald-600'}`}>{valor}/5</span>
     </div>
   </div>
 )
-
-const styles = {
-  fullPageWrapper: {
-    backgroundColor: "var(--bg-main)",
-    minHeight: "100vh",
-    padding: "20px",
-  },
-  container: { maxWidth: "1000px", margin: "0 auto", paddingBottom: "60px" },
-  topBar: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: "20px",
-  },
-  backButton: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    background: "none",
-    border: "none",
-    cursor: "pointer",
-    color: "var(--text-secondary)",
-    fontWeight: "700",
-  },
-  pageTitle: {
-    fontSize: "24px",
-    fontWeight: "800",
-    color: "var(--text-primary)",
-    margin: 0,
-  },
-  pageSubtitle: { fontSize: "14px", color: "var(--text-muted)", margin: 0 },
-  materialCard: {
-    backgroundColor: "var(--bg-card)",
-    borderRadius: "16px",
-    padding: "40px",
-    border: "1px solid var(--border-color)",
-    marginBottom: "30px",
-  },
-  materialHeader: {
-    marginBottom: "25px",
-    borderBottom: "1px solid var(--border-color)",
-    paddingBottom: "20px",
-  },
-  badgesRow: { display: "flex", gap: "10px", marginBottom: "12px" },
-  badgeDisc: {
-    backgroundColor: "var(--bg-info)",
-    color: "var(--text-info)",
-    padding: "5px 10px",
-    borderRadius: "6px",
-    fontSize: "11px",
-    fontWeight: "800",
-  },
-  badgeLevel: {
-    backgroundColor: "var(--bg-alt)",
-    color: "var(--text-secondary)",
-    padding: "5px 10px",
-    borderRadius: "6px",
-    fontSize: "11px",
-    fontWeight: "700",
-  },
-  materialTitle: {
-    fontSize: "28px",
-    fontWeight: "800",
-    color: "var(--text-primary)",
-    margin: "0 0 10px 0",
-    wordBreak: "break-word",
-  },
-  metaInfo: {
-    display: "flex",
-    gap: "15px",
-    color: "var(--text-muted)",
-    fontSize: "13px",
-  },
-  metaItem: { display: "flex", alignItems: "center", gap: "5px" },
-  techSheet: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-    gap: "20px",
-    marginBottom: "30px",
-    padding: "15px",
-    backgroundColor: "var(--bg-alt)",
-    borderRadius: "10px",
-  },
-  techItem: { display: "flex", gap: "10px", alignItems: "flex-start" },
-  techLabel: {
-    display: "block",
-    fontSize: "10px",
-    textTransform: "uppercase",
-    color: "var(--text-muted)",
-    fontWeight: "800",
-  },
-  techValue: {
-    fontSize: "14px",
-    color: "var(--text-primary)",
-    fontWeight: "600",
-    wordBreak: "break-word",
-  },
-  section: { marginBottom: "30px" },
-  sectionTitle: {
-    fontSize: "16px",
-    fontWeight: "800",
-    color: "var(--text-primary)",
-    marginBottom: "10px",
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-  },
-
-  bnccBox: {
-    backgroundColor: "var(--bg-warning)",
-    borderLeft: "4px solid var(--border-warning)",
-    padding: "15px",
-    borderRadius: "6px",
-    wordBreak: "break-word",
-  },
-  bnccText: {
-    margin: 0,
-    fontSize: "15px",
-    color: "var(--text-primary)",
-    lineHeight: "1.6",
-    whiteSpace: "pre-wrap",
-  },
-  textBody: {
-    fontSize: "15px",
-    lineHeight: "1.6",
-    color: "var(--text-secondary)",
-    whiteSpace: "pre-wrap",
-    wordBreak: "break-word",
-  },
-  promptBox: {
-    backgroundColor: "var(--bg-main)",
-    padding: "15px",
-    borderRadius: "8px",
-    borderLeft: "4px solid var(--border-info)",
-    fontStyle: "italic",
-    wordBreak: "break-word",
-    color: "var(--text-secondary)",
-    fontSize: "15px",
-    whiteSpace: "pre-wrap",
-    lineHeight: "1.6",
-  },
-  resultsBox: {
-    backgroundColor: "var(--bg-success)",
-    border: "1px solid var(--border-success)",
-    padding: "15px",
-    borderRadius: "8px",
-    fontStyle: "italic",
-    wordBreak: "break-word",
-    color: "var(--text-success)",
-    fontSize: "15px",
-    whiteSpace: "pre-wrap",
-    lineHeight: "1.6",
-  },
-
-  stepSeparator: {
-    display: "flex",
-    alignItems: "center",
-    gap: "15px",
-    marginBottom: "30px",
-    opacity: 0.8,
-  },
-  stepLine: { flex: 1, height: "1px", backgroundColor: "var(--border-color)" },
-  stepLabel: {
-    fontSize: "14px",
-    fontWeight: "700",
-    color: "var(--text-muted)",
-    textTransform: "uppercase",
-    letterSpacing: "1px",
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-  },
-
-  reviewSection: {
-    backgroundColor: "var(--bg-card)",
-    borderRadius: "16px",
-    padding: "40px",
-    boxShadow: "0 4px 20px rgba(0,0,0,0.05)",
-    border: "1px solid var(--border-color)",
-  },
-  reviewTitle: {
-    fontSize: "18px",
-    fontWeight: "800",
-    color: "var(--text-primary)",
-    marginBottom: "20px",
-  },
-
-  criteriaGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-    gap: "15px",
-    marginBottom: "30px",
-  },
-  criteriaCard: {
-    border: "1px solid var(--border-color)",
-    borderRadius: "10px",
-    padding: "15px",
-    backgroundColor: "var(--bg-alt)",
-  },
-  criteriaHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: "5px",
-  },
-  criteriaTitle: {
-    fontSize: "13px",
-    fontWeight: "700",
-    color: "var(--text-primary)",
-  },
-  criteriaDesc: {
-    fontSize: "11px",
-    color: "var(--text-muted)",
-    margin: "0 0 10px 0",
-    minHeight: "32px",
-  },
-  starsWrapper: {
-    display: "flex",
-    justifyContent: "center",
-    gap: "4px",
-    marginTop: "auto",
-  },
-  starBtn: {
-    background: "none",
-    border: "none",
-    cursor: "pointer",
-    padding: "2px",
-    transition: "transform 0.1s",
-  },
-  scoreBadge: {
-    fontSize: "14px",
-    fontWeight: "800",
-    minWidth: "20px",
-    textAlign: "center",
-  },
-
-  feedbackGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-    gap: "20px",
-    marginBottom: "30px",
-  },
-  feedbackBoxSuccess: {
-    backgroundColor: "var(--bg-success)",
-    border: "1px solid var(--border-success)",
-    borderRadius: "10px",
-    padding: "15px",
-  },
-  feedbackLabelSuccess: {
-    color: "var(--text-success)",
-    fontSize: "12px",
-    fontWeight: "800",
-    display: "flex",
-    alignItems: "center",
-    gap: "6px",
-    marginBottom: "10px",
-  },
-  feedbackBoxDanger: {
-    backgroundColor: "var(--bg-danger)",
-    border: "1px solid var(--border-danger)",
-    borderRadius: "10px",
-    padding: "15px",
-  },
-  feedbackLabelDanger: {
-    color: "var(--text-danger)",
-    fontSize: "12px",
-    fontWeight: "800",
-    display: "flex",
-    alignItems: "center",
-    gap: "6px",
-    marginBottom: "10px",
-  },
-
-  textareaWhite: {
-    width: "100%",
-    padding: "12px",
-    border: "1px solid var(--border-color)",
-    borderRadius: "6px",
-    fontSize: "13px",
-    outline: "none",
-    resize: "vertical",
-    minHeight: "80px",
-    fontFamily: "inherit",
-    boxSizing: "border-box",
-    backgroundColor: "var(--input-bg)",
-    color: "var(--input-text)",
-  },
-
-  actionButtonsRow: {
-    display: "flex",
-    gap: "15px",
-    paddingTop: "20px",
-    borderTop: "1px solid var(--border-color)",
-  },
-  btnDisabled: {
-    width: "100%",
-    padding: "16px",
-    borderRadius: "8px",
-    border: "1px solid var(--border-color)",
-    backgroundColor: "var(--bg-alt)",
-    color: "var(--text-muted)",
-    fontWeight: "700",
-    fontSize: "14px",
-    cursor: "not-allowed",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "8px",
-  },
-
-  btnApprovePrimary: {
-    flex: 1,
-    padding: "14px",
-    borderRadius: "8px",
-    border: "none",
-    backgroundColor: "#2E7D32",
-    color: "white",
-    fontWeight: "800",
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "8px",
-    fontSize: "14px",
-    boxShadow: "0 4px 12px rgba(46, 125, 50, 0.3)",
-  },
-  btnApproveSecondary: {
-    flex: 1,
-    padding: "14px",
-    borderRadius: "8px",
-    border: "1px solid var(--border-success)",
-    backgroundColor: "var(--bg-success)",
-    color: "var(--text-success)",
-    fontWeight: "700",
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "8px",
-    fontSize: "14px",
-    opacity: 0.6,
-  },
-  btnRejectPrimary: {
-    flex: 1,
-    padding: "14px",
-    borderRadius: "8px",
-    border: "none",
-    backgroundColor: "#C62828",
-    color: "white",
-    fontWeight: "800",
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "8px",
-    fontSize: "14px",
-    boxShadow: "0 4px 12px rgba(198, 40, 40, 0.3)",
-  },
-  btnRejectSecondary: {
-    flex: 1,
-    padding: "14px",
-    borderRadius: "8px",
-    border: "1px solid var(--border-danger)",
-    backgroundColor: "var(--bg-danger)",
-    color: "var(--text-danger)",
-    fontWeight: "700",
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "8px",
-    fontSize: "14px",
-    opacity: 0.6,
-  },
-
-  // Parecer Técnico Area
-  ptContainer: {
-    marginTop: "40px",
-    borderTop: "1px solid var(--border-color)",
-    paddingTop: "30px",
-  },
-  ptMainHeader: {
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-    marginBottom: "20px",
-  },
-  ptMainTitle: {
-    fontSize: "20px",
-    fontWeight: "800",
-    color: "var(--text-primary)",
-    margin: "0 0 4px 0",
-  },
-  ptMainSubtitle: { fontSize: "14px", color: "var(--text-muted)", margin: 0 },
-  ptCardsWrapper: { display: "flex", flexDirection: "column", gap: "20px" },
-  rcCard: (aprovado) => ({
-    backgroundColor: "var(--bg-card)",
-    borderRadius: "12px",
-    border: aprovado
-      ? "1px solid var(--border-success)"
-      : "1px solid var(--border-danger)",
-    overflow: "hidden",
-  }),
-  rcHeader: (aprovado) => ({
-    backgroundColor: aprovado ? "var(--bg-success)" : "var(--bg-danger)",
-    padding: "15px 25px",
-    borderBottom: aprovado
-      ? "1px solid var(--border-success)"
-      : "1px solid var(--border-danger)",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: "10px",
-  }),
-  rcHeaderTitle: (aprovado) => ({
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    fontSize: "15px",
-    fontWeight: "900",
-    color: aprovado ? "var(--text-success)" : "var(--text-danger)",
-  }),
-  rcBadge: (aprovado) => ({
-    fontSize: "11px",
-    fontWeight: "800",
-    backgroundColor: aprovado ? "var(--bg-success)" : "var(--bg-danger)",
-    color: aprovado ? "var(--text-success)" : "var(--text-danger)",
-    padding: "6px 12px",
-    borderRadius: "20px",
-    border: `1px solid ${aprovado ? "var(--text-success)" : "var(--text-danger)"}`,
-  }),
-  rcContent: { padding: "25px" },
-  rcGridScores: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-    gap: "12px 30px",
-  },
-  rcScoreRow: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: "var(--bg-alt)",
-    padding: "8px 12px",
-    borderRadius: "8px",
-    border: "1px solid var(--border-color)",
-  },
-  rcLabel: {
-    fontSize: "13px",
-    color: "var(--text-secondary)",
-    fontWeight: "600",
-  },
-  rcStarsContainer: { display: "flex", alignItems: "center" },
-  rcNumberValue: {
-    fontSize: "13px",
-    fontWeight: "800",
-    marginLeft: "8px",
-    color: "var(--text-primary)",
-  },
-  rcDivider: {
-    border: "none",
-    borderTop: "1px dashed var(--border-color)",
-    margin: "25px 0",
-  },
-  rcFeedbackGrid: { display: "flex", flexDirection: "column", gap: "15px" },
-  rcFeedbackBoxSuccess: {
-    backgroundColor: "var(--bg-success)",
-    borderRadius: "8px",
-    padding: "15px",
-    borderLeft: "4px solid var(--text-success)",
-  },
-  rcFeedbackLabelSuccess: {
-    display: "flex",
-    alignItems: "center",
-    gap: "6px",
-    fontSize: "13px",
-    fontWeight: "800",
-    color: "var(--text-success)",
-    marginBottom: "8px",
-  },
-  rcFeedbackTextSuccess: {
-    fontSize: "14px",
-    color: "var(--text-success)",
-    lineHeight: "1.6",
-    whiteSpace: "pre-wrap",
-  },
-  rcFeedbackBoxDanger: {
-    backgroundColor: "var(--bg-danger)",
-    borderRadius: "8px",
-    padding: "15px",
-    borderLeft: "4px solid var(--text-danger)",
-  },
-  rcFeedbackLabelDanger: {
-    display: "flex",
-    alignItems: "center",
-    gap: "6px",
-    fontSize: "13px",
-    fontWeight: "800",
-    color: "var(--text-danger)",
-    marginBottom: "8px",
-  },
-  rcFeedbackTextDanger: {
-    fontSize: "14px",
-    color: "var(--text-danger)",
-    lineHeight: "1.6",
-    whiteSpace: "pre-wrap",
-  },
-  gcCard: {
-    backgroundColor: "var(--bg-card)",
-    borderRadius: "12px",
-    border: "2px dashed var(--border-color)",
-    overflow: "hidden",
-    opacity: 0.8,
-  },
-  gcHeader: {
-    backgroundColor: "var(--bg-alt)",
-    padding: "15px 25px",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  gcTitle: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    fontSize: "15px",
-    fontWeight: "900",
-    color: "var(--text-muted)",
-  },
-  gcContent: { padding: "25px", textAlign: "center" },
-  gcText: {
-    margin: 0,
-    fontSize: "14px",
-    color: "var(--text-secondary)",
-    lineHeight: "1.6",
-  },
-}
 
 export default Revisao

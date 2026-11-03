@@ -2,15 +2,8 @@ import React, { useState, useEffect } from "react"
 import { useNavigate, useOutletContext } from "react-router-dom"
 import api from "../services/api"
 import {
-  Trophy,
-  Medal,
-  Star,
-  MessageSquare,
-  ShieldCheck,
-  Award,
-  Loader2,
-  ArrowLeft,
-  Crown,
+  Trophy, Medal, Star, MessageSquare, ShieldCheck, 
+  Award, Loader2, ArrowLeft, Crown
 } from "lucide-react"
 
 export default function Ranking() {
@@ -19,32 +12,29 @@ export default function Ranking() {
   const isMobile = context ? context.isMobile : false
 
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState("xp") // 'xp', 'revisores', 'forum'
+  const [activeTab, setActiveTab] = useState("xp")
 
   const [rankingData, setRankingData] = useState({
-    top_xp: [],
-    top_revisores: [],
-    top_forum: [],
+    top_xp: [], top_revisores: [], top_forum: [],
   })
 
   useEffect(() => {
+    const carregarRanking = async () => {
+      try {
+        const response = await api.get("api/ranking/")
+        setRankingData({
+          top_xp: response.data.top_xp || [],
+          top_revisores: response.data.top_revisores || [],
+          top_forum: response.data.top_forum || [],
+        })
+      } catch (error) {
+        console.error("Erro ao carregar ranking", error)
+      } finally {
+        setLoading(false)
+      }
+    }
     carregarRanking()
   }, [])
-
-  const carregarRanking = async () => {
-    try {
-      const response = await api.get("api/ranking/")
-      setRankingData({
-        top_xp: response.data.top_xp || [],
-        top_revisores: response.data.top_revisores || [],
-        top_forum: response.data.top_forum || [],
-      })
-    } catch (error) {
-      console.error("Erro ao carregar ranking", error)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const getCurrentList = () => {
     if (activeTab === "xp") return rankingData.top_xp
@@ -57,44 +47,33 @@ export default function Ranking() {
   const podium = currentList.slice(0, 3)
   const restOfList = currentList.slice(3)
 
-  if (loading)
-    return (
-      <div style={styles.loadingContainer}>
-        <Loader2 className="spin" size={32} color="var(--text-warning)" />
-        <p style={{ marginTop: "10px", color: "var(--text-muted)" }}>
-          Carregando Hall da Fama...
-        </p>
-        <style>{`@keyframes spin { 100% { transform: rotate(360deg); } } .spin { animation: spin 1s linear infinite; }`}</style>
+  if (loading) return (
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex justify-center items-center">
+      <div className="animate-pulse text-slate-400 font-bold flex items-center gap-2">
+        <Loader2 className="animate-spin" size={24} /> Carregando Hall da Fama...
       </div>
-    )
+    </div>
+  )
 
   return (
-    <div
-      style={{
-        ...styles.wrapper,
-        padding: isMobile ? "20px 10px" : "40px 20px",
-      }}
-    >
-      <div style={styles.container}>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-200 p-4 md:p-8 pb-20">
+      <div className="max-w-[1000px] mx-auto">
+        
         {/* CABEÇALHO */}
-        <header style={styles.header}>
-          <button onClick={() => navigate("/dashboard")} style={styles.backBtn}>
-            <ArrowLeft size={16} /> Voltar
+        <header className="mb-10">
+          <button onClick={() => navigate("/dashboard")} className="flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-[#1565C0] dark:hover:text-blue-400 font-bold text-sm transition-colors mb-6">
+            <ArrowLeft size={18} /> Voltar
           </button>
-          <div style={styles.titleGroup}>
-            <div style={styles.iconCircleOrange}>
-              <Trophy size={28} color="var(--text-warning)" />
+          
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div className="w-14 h-14 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-xl flex items-center justify-center shrink-0 border border-amber-200 dark:border-amber-800/50">
+              <Trophy size={28} />
             </div>
             <div>
-              <h1
-                style={{
-                  ...styles.title,
-                  fontSize: isMobile ? "24px" : "32px",
-                }}
-              >
+              <h1 className="text-3xl md:text-4xl font-black text-slate-900 dark:text-white tracking-tight mb-1">
                 Hall da Fama T.E.I.A
               </h1>
-              <p style={styles.subtitle}>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
                 Os professores que mais impactam a nossa comunidade educativa.
               </p>
             </div>
@@ -102,152 +81,81 @@ export default function Ranking() {
         </header>
 
         {/* NAVEGAÇÃO DE ABAS */}
-        <div style={styles.tabsContainer}>
+        <div className="flex gap-4 border-b border-slate-200 dark:border-slate-800 pb-5 mb-10 overflow-x-auto scrollbar-hide">
           <button
-            style={activeTab === "xp" ? styles.tabActive : styles.tabInactive}
             onClick={() => setActiveTab("xp")}
+            className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-sm transition-all whitespace-nowrap ${activeTab === "xp" ? "bg-[#1565C0] text-white shadow-md" : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"}`}
           >
             <Star size={18} /> Mestres em XP
           </button>
           <button
-            style={
-              activeTab === "revisores" ? styles.tabActive : styles.tabInactive
-            }
             onClick={() => setActiveTab("revisores")}
+            className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-sm transition-all whitespace-nowrap ${activeTab === "revisores" ? "bg-[#1565C0] text-white shadow-md" : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"}`}
           >
             <ShieldCheck size={18} /> Top Revisores
           </button>
           <button
-            style={
-              activeTab === "forum" ? styles.tabActive : styles.tabInactive
-            }
             onClick={() => setActiveTab("forum")}
+            className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-sm transition-all whitespace-nowrap ${activeTab === "forum" ? "bg-[#1565C0] text-white shadow-md" : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"}`}
           >
             <MessageSquare size={18} /> Vozes do Fórum
           </button>
         </div>
 
         {/* CONTEÚDO DO RANKING */}
-        <div style={styles.rankingContent}>
+        <div>
           {currentList.length === 0 ? (
-            <div style={styles.emptyState}>
-              <Award
-                size={48}
-                color="var(--border-color)"
-                style={{ marginBottom: "15px" }}
-              />
-              <h3
-                style={{ color: "var(--text-primary)", margin: "0 0 10px 0" }}
-              >
-                O pódio ainda está vazio!
-              </h3>
-              <p style={{ color: "var(--text-muted)", margin: 0 }}>
-                Nenhuma pontuação registrada nesta categoria até o momento.
-              </p>
+            <div className="text-center py-20 bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-slate-300 dark:border-slate-800 flex flex-col items-center">
+              <Award size={56} className="text-slate-300 dark:text-slate-700 mb-4" />
+              <h3 className="text-xl font-black text-slate-800 dark:text-white mb-2">O pódio ainda está vazio!</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Nenhuma pontuação registrada nesta categoria até o momento.</p>
             </div>
           ) : (
             <>
               {/* PÓDIO (TOP 3) */}
-              <div
-                style={{
-                  ...styles.podiumContainer,
-                  flexDirection: isMobile ? "column" : "row",
-                }}
-              >
+              <div className="flex flex-col md:flex-row justify-center items-stretch gap-4 md:gap-6 mb-10">
+                
                 {/* 2º LUGAR */}
                 {podium[1] && (
-                  <div
-                    style={{
-                      ...styles.podiumCard,
-                      marginTop: isMobile ? "0" : "30px",
-                    }}
-                  >
-                    <div
-                      style={{
-                        ...styles.medalCircle,
-                        backgroundColor: "#F1F5F9",
-                        border: "3px solid #CBD5E1",
-                      }}
-                    >
-                      <Medal size={28} color="#64748B" />
+                  <div className="flex-1 bg-white dark:bg-slate-900 p-6 md:p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col items-center text-center relative md:mt-10 hover:-translate-y-1 transition-transform">
+                    <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 border-4 border-slate-300 dark:border-slate-600 flex items-center justify-center mb-4 z-10 shadow-sm">
+                      <Medal size={28} className="text-slate-500 dark:text-slate-400" />
                     </div>
-                    <div style={styles.podiumPos}>2º Lugar</div>
-                    <h3 style={styles.podiumName}>{podium[1].nome}</h3>
-                    <p style={styles.podiumDisc}>{podium[1].disciplina}</p>
-                    <div style={styles.podiumScore}>
-                      {activeTab === "xp"
-                        ? `${podium[1].pontos} XP`
-                        : `${podium[1].total} Interações`}
+                    <div className="text-xs font-black uppercase text-slate-400 tracking-widest mb-1.5">2º Lugar</div>
+                    <h3 className="text-lg font-black text-slate-900 dark:text-white mb-1 leading-tight">{podium[1].nome}</h3>
+                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-4">{podium[1].disciplina}</p>
+                    <div className="mt-auto bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 px-4 py-1.5 rounded-full text-sm font-black border border-slate-200 dark:border-slate-700">
+                      {activeTab === "xp" ? `${podium[1].pontos} XP` : `${podium[1].total} Interações`}
                     </div>
                   </div>
                 )}
 
                 {/* 1º LUGAR */}
                 {podium[0] && (
-                  <div
-                    style={{
-                      ...styles.podiumCard,
-                      transform: isMobile ? "scale(1)" : "scale(1.05)",
-                      zIndex: 10,
-                      border: "2px solid var(--border-warning)",
-                    }}
-                  >
-                    <div
-                      style={{
-                        ...styles.medalCircle,
-                        backgroundColor: "#FFFBEB",
-                        border: "3px solid #FCD34D",
-                        width: "70px",
-                        height: "70px",
-                      }}
-                    >
-                      <Crown size={36} color="#D97706" />
+                  <div className="flex-1 bg-gradient-to-b from-amber-50 to-white dark:from-amber-900/10 dark:to-slate-900 p-6 md:p-8 rounded-2xl border-2 border-amber-300 dark:border-amber-700/50 shadow-lg flex flex-col items-center text-center relative md:-mt-4 hover:-translate-y-1 transition-transform z-10 scale-100 md:scale-105">
+                    <div className="w-20 h-20 rounded-full bg-amber-100 dark:bg-amber-900/40 border-4 border-amber-400 dark:border-amber-600 flex items-center justify-center mb-4 z-10 shadow-md">
+                      <Crown size={36} className="text-amber-600 dark:text-amber-400" />
                     </div>
-                    <div style={{ ...styles.podiumPos, color: "#D97706" }}>
-                      1º Lugar
-                    </div>
-                    <h3 style={{ ...styles.podiumName, fontSize: "18px" }}>
-                      {podium[0].nome}
-                    </h3>
-                    <p style={styles.podiumDisc}>{podium[0].disciplina}</p>
-                    <div
-                      style={{
-                        ...styles.podiumScore,
-                        backgroundColor: "var(--bg-warning)",
-                        color: "var(--text-warning)",
-                      }}
-                    >
-                      {activeTab === "xp"
-                        ? `${podium[0].pontos} XP`
-                        : `${podium[0].total} Interações`}
+                    <div className="text-xs font-black uppercase text-amber-600 dark:text-amber-500 tracking-widest mb-1.5">1º Lugar</div>
+                    <h3 className="text-xl font-black text-slate-900 dark:text-white mb-1 leading-tight">{podium[0].nome}</h3>
+                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-5">{podium[0].disciplina}</p>
+                    <div className="mt-auto bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 px-5 py-2 rounded-full text-sm font-black border border-amber-200 dark:border-amber-800/50">
+                      {activeTab === "xp" ? `${podium[0].pontos} XP` : `${podium[0].total} Interações`}
                     </div>
                   </div>
                 )}
 
                 {/* 3º LUGAR */}
                 {podium[2] && (
-                  <div
-                    style={{
-                      ...styles.podiumCard,
-                      marginTop: isMobile ? "0" : "40px",
-                    }}
-                  >
-                    <div
-                      style={{
-                        ...styles.medalCircle,
-                        backgroundColor: "#FFF7ED",
-                        border: "3px solid #FDBA74",
-                      }}
-                    >
-                      <Medal size={28} color="#B45309" />
+                  <div className="flex-1 bg-white dark:bg-slate-900 p-6 md:p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col items-center text-center relative md:mt-14 hover:-translate-y-1 transition-transform">
+                    <div className="w-16 h-16 rounded-full bg-orange-50 dark:bg-orange-900/20 border-4 border-orange-300 dark:border-orange-800/50 flex items-center justify-center mb-4 z-10 shadow-sm">
+                      <Medal size={28} className="text-orange-600 dark:text-orange-500" />
                     </div>
-                    <div style={styles.podiumPos}>3º Lugar</div>
-                    <h3 style={styles.podiumName}>{podium[2].nome}</h3>
-                    <p style={styles.podiumDisc}>{podium[2].disciplina}</p>
-                    <div style={styles.podiumScore}>
-                      {activeTab === "xp"
-                        ? `${podium[2].pontos} XP`
-                        : `${podium[2].total} Interações`}
+                    <div className="text-xs font-black uppercase text-orange-500/80 tracking-widest mb-1.5">3º Lugar</div>
+                    <h3 className="text-lg font-black text-slate-900 dark:text-white mb-1 leading-tight">{podium[2].nome}</h3>
+                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-4">{podium[2].disciplina}</p>
+                    <div className="mt-auto bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 px-4 py-1.5 rounded-full text-sm font-black border border-slate-200 dark:border-slate-700">
+                      {activeTab === "xp" ? `${podium[2].pontos} XP` : `${podium[2].total} Interações`}
                     </div>
                   </div>
                 )}
@@ -255,20 +163,20 @@ export default function Ranking() {
 
               {/* LISTA RESTANTE (4 AO 10) */}
               {restOfList.length > 0 && (
-                <div style={styles.listContainer}>
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 md:p-6 flex flex-col gap-2 shadow-sm">
                   {restOfList.map((user, index) => (
-                    <div key={user.id} style={styles.listItem}>
-                      <div style={styles.listPos}>{index + 4}º</div>
-                      <div style={styles.listInfo}>
-                        <h4 style={styles.listName}>{user.nome}</h4>
-                        <span style={styles.listDisc}>
+                    <div key={user.id} className="flex items-center gap-4 p-4 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors border border-transparent hover:border-slate-100 dark:hover:border-slate-700">
+                      <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 flex items-center justify-center font-black text-sm shrink-0 border border-slate-200 dark:border-slate-700">
+                        {index + 4}º
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-extrabold text-slate-900 dark:text-white text-base leading-tight mb-0.5 truncate">{user.nome}</h4>
+                        <span className="text-xs font-medium text-slate-500 dark:text-slate-400 truncate block">
                           {user.disciplina} • {user.nivel}
                         </span>
                       </div>
-                      <div style={styles.listScoreBadge}>
-                        {activeTab === "xp"
-                          ? `${user.pontos} XP`
-                          : `${user.total}Pts`}
+                      <div className="bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 px-3 py-1.5 rounded-lg text-sm font-black border border-slate-200 dark:border-slate-700 whitespace-nowrap">
+                        {activeTab === "xp" ? `${user.pontos} XP` : `${user.total} Pts`}
                       </div>
                     </div>
                   ))}
@@ -280,202 +188,4 @@ export default function Ranking() {
       </div>
     </div>
   )
-}
-
-const styles = {
-  wrapper: {
-    backgroundColor: "var(--bg-main)",
-    minHeight: "100vh",
-    fontFamily: "Inter, sans-serif",
-  },
-  container: { maxWidth: "900px", margin: "0 auto" },
-  loadingContainer: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    height: "80vh",
-  },
-
-  header: { marginBottom: "40px" },
-  backBtn: {
-    display: "flex",
-    alignItems: "center",
-    gap: "6px",
-    border: "none",
-    background: "none",
-    cursor: "pointer",
-    color: "var(--text-secondary)",
-    marginBottom: "15px",
-    fontWeight: "700",
-    padding: 0,
-  },
-  titleGroup: { display: "flex", alignItems: "center", gap: "15px" },
-  iconCircleOrange: {
-    width: "50px",
-    height: "50px",
-    backgroundColor: "var(--bg-warning)",
-    borderRadius: "12px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-  },
-  title: { fontWeight: "900", color: "var(--text-primary)", margin: 0 },
-  subtitle: { color: "var(--text-muted)", marginTop: "5px", fontSize: "14px" },
-
-  tabsContainer: {
-    display: "flex",
-    gap: "10px",
-    borderBottom: "1px solid var(--border-color)",
-    paddingBottom: "20px",
-    marginBottom: "30px",
-    overflowX: "auto",
-  },
-  tabActive: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    padding: "12px 20px",
-    borderRadius: "10px",
-    border: "none",
-    backgroundColor: "#1565C0",
-    color: "white",
-    fontWeight: "bold",
-    cursor: "pointer",
-    whiteSpace: "nowrap",
-    transition: "all 0.2s",
-  },
-  tabInactive: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    padding: "12px 20px",
-    borderRadius: "10px",
-    border: "1px solid var(--border-color)",
-    backgroundColor: "var(--bg-card)",
-    color: "var(--text-secondary)",
-    fontWeight: "600",
-    cursor: "pointer",
-    whiteSpace: "nowrap",
-    transition: "all 0.2s",
-  },
-
-  rankingContent: { display: "flex", flexDirection: "column", gap: "40px" },
-  emptyState: {
-    backgroundColor: "var(--bg-card)",
-    padding: "60px 20px",
-    borderRadius: "16px",
-    border: "1px dashed var(--border-color)",
-    textAlign: "center",
-  },
-
-  // Pódio
-  podiumContainer: {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "stretch",
-    gap: "15px",
-  },
-  podiumCard: {
-    flex: 1,
-    backgroundColor: "var(--bg-card)",
-    padding: "30px 20px",
-    borderRadius: "16px",
-    border: "1px solid var(--border-color)",
-    boxShadow: "0 4px 6px rgba(0,0,0,0.02)",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    textAlign: "center",
-    position: "relative",
-  },
-  medalCircle: {
-    width: "60px",
-    height: "60px",
-    borderRadius: "50%",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: "15px",
-    zIndex: 2,
-  },
-  podiumPos: {
-    fontSize: "12px",
-    fontWeight: "800",
-    textTransform: "uppercase",
-    color: "var(--text-muted)",
-    marginBottom: "5px",
-    letterSpacing: "1px",
-  },
-  podiumName: {
-    margin: "0 0 5px 0",
-    color: "var(--text-primary)",
-    fontSize: "16px",
-    fontWeight: "800",
-  },
-  podiumDisc: {
-    margin: "0 0 15px 0",
-    color: "var(--text-secondary)",
-    fontSize: "12px",
-  },
-  podiumScore: {
-    backgroundColor: "var(--bg-alt)",
-    color: "var(--text-primary)",
-    padding: "6px 12px",
-    borderRadius: "20px",
-    fontSize: "13px",
-    fontWeight: "800",
-    marginTop: "auto",
-  },
-
-  // Lista Restante
-  listContainer: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "10px",
-    backgroundColor: "var(--bg-card)",
-    padding: "20px",
-    borderRadius: "16px",
-    border: "1px solid var(--border-color)",
-    boxShadow: "0 2px 4px rgba(0,0,0,0.02)",
-  },
-  listItem: {
-    display: "flex",
-    alignItems: "center",
-    gap: "15px",
-    padding: "15px",
-    borderRadius: "10px",
-    borderBottom: "1px solid var(--bg-main)",
-    transition: "background-color 0.2s",
-  },
-  listPos: {
-    width: "35px",
-    height: "35px",
-    borderRadius: "50%",
-    backgroundColor: "var(--bg-alt)",
-    color: "var(--text-secondary)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontWeight: "800",
-    fontSize: "14px",
-    flexShrink: 0,
-  },
-  listInfo: { flex: 1 },
-  listName: {
-    margin: "0 0 4px 0",
-    color: "var(--text-primary)",
-    fontSize: "15px",
-    fontWeight: "700",
-  },
-  listDisc: { margin: 0, color: "var(--text-muted)", fontSize: "12px" },
-  listScoreBadge: {
-    backgroundColor: "var(--bg-alt)",
-    color: "var(--text-primary)",
-    padding: "6px 12px",
-    borderRadius: "8px",
-    fontSize: "13px",
-    fontWeight: "800",
-  },
 }

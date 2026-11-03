@@ -1,80 +1,36 @@
 import React, { useState, useEffect } from "react"
-import {
-  ArrowLeft,
-  Trophy,
-  History,
-  Plus,
-  TrendingUp,
-  Award,
-  User,
-  Trash2,
-  ShieldCheck,
-  Loader2,
-  Star,
-  Zap,
-  Crown,
-  Flame,
-  Target,
-  Book,
-  Lightbulb,
-  Medal,
-  ThumbsUp,
-  Heart,
-  Rocket,
-  Shield,
-} from "lucide-react"
 import { useNavigate, useOutletContext } from "react-router-dom"
 import api from "../services/api"
 import Swal from "sweetalert2"
+import {
+  ArrowLeft, Trophy, History, Plus, TrendingUp, Award, User,
+  Trash2, ShieldCheck, Loader2, Star, Zap, Crown, Flame, Target,
+  Book, Lightbulb, Medal, ThumbsUp, Heart, Rocket, Shield,
+} from "lucide-react"
 
 const ICONS_DISPONIVEIS = [
-  "award",
-  "star",
-  "zap",
-  "crown",
-  "flame",
-  "target",
-  "book",
-  "lightbulb",
-  "medal",
-  "thumbsup",
-  "heart",
-  "rocket",
-  "shield",
-  "trophy",
+  "award", "star", "zap", "crown", "flame", "target", "book",
+  "lightbulb", "medal", "thumbsup", "heart", "rocket", "shield", "trophy",
 ]
 
-const getIcon = (name, size = 18, color = "var(--text-warning)") => {
+const getIcon = (name, size = 18, colorClass = "text-amber-500") => {
+  const props = { size, className: `shrink-0 ${colorClass}` }
   switch (name) {
-    case "star":
-      return <Star size={size} color={color} style={{ flexShrink: 0 }} />
-    case "zap":
-      return <Zap size={size} color={color} style={{ flexShrink: 0 }} />
-    case "crown":
-      return <Crown size={size} color={color} style={{ flexShrink: 0 }} />
-    case "flame":
-      return <Flame size={size} color={color} style={{ flexShrink: 0 }} />
-    case "target":
-      return <Target size={size} color={color} style={{ flexShrink: 0 }} />
-    case "book":
-      return <Book size={size} color={color} style={{ flexShrink: 0 }} />
-    case "lightbulb":
-      return <Lightbulb size={size} color={color} style={{ flexShrink: 0 }} />
-    case "medal":
-      return <Medal size={size} color={color} style={{ flexShrink: 0 }} />
-    case "thumbsup":
-      return <ThumbsUp size={size} color={color} style={{ flexShrink: 0 }} />
-    case "heart":
-      return <Heart size={size} color={color} style={{ flexShrink: 0 }} />
-    case "rocket":
-      return <Rocket size={size} color={color} style={{ flexShrink: 0 }} />
-    case "shield":
-      return <Shield size={size} color={color} style={{ flexShrink: 0 }} />
-    case "trophy":
-      return <Trophy size={size} color={color} style={{ flexShrink: 0 }} />
+    case "star": return <Star {...props} />
+    case "zap": return <Zap {...props} />
+    case "crown": return <Crown {...props} />
+    case "flame": return <Flame {...props} />
+    case "target": return <Target {...props} />
+    case "book": return <Book {...props} />
+    case "lightbulb": return <Lightbulb {...props} />
+    case "medal": return <Medal {...props} />
+    case "thumbsup": return <ThumbsUp {...props} />
+    case "heart": return <Heart {...props} />
+    case "rocket": return <Rocket {...props} />
+    case "shield": return <Shield {...props} />
+    case "trophy": return <Trophy {...props} />
     case "award":
-    default:
-      return <Award size={size} color={color} style={{ flexShrink: 0 }} />
+    default: return <Award {...props} />
   }
 }
 
@@ -86,21 +42,10 @@ export default function GamificacaoAdmin() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isAssigning, setIsAssigning] = useState(false)
 
-  const [dados, setDados] = useState({
-    conquistas_disponiveis: [],
-    auditoria_xp: [],
-  })
+  const [dados, setDados] = useState({ conquistas_disponiveis: [], auditoria_xp: [] })
   const [usuarios, setUsuarios] = useState([])
-  const [novaConquista, setNovaConquista] = useState({
-    nome: "",
-    descricao: "",
-    xp_bonus: 50,
-    icone: "award",
-  })
-  const [atribuicao, setAtribuicao] = useState({
-    usuario_id: "",
-    conquista_id: "",
-  })
+  const [novaConquista, setNovaConquista] = useState({ nome: "", descricao: "", xp_bonus: 50, icone: "award" })
+  const [atribuicao, setAtribuicao] = useState({ usuario_id: "", conquista_id: "" })
 
   useEffect(() => {
     fetchDados()
@@ -132,19 +77,9 @@ export default function GamificacaoAdmin() {
     setIsSubmitting(true)
     try {
       await api.post("api/admin/gamificacao/", novaConquista)
-      Swal.fire({
-        icon: "success",
-        title: "Badge Criada!",
-        timer: 1500,
-        showConfirmButton: false,
-      })
+      Swal.fire({ icon: "success", title: "Badge Criada!", timer: 1500, showConfirmButton: false })
       fetchDados()
-      setNovaConquista({
-        nome: "",
-        descricao: "",
-        xp_bonus: 50,
-        icone: "award",
-      })
+      setNovaConquista({ nome: "", descricao: "", xp_bonus: 50, icone: "award" })
     } catch (err) {
       Swal.fire("Erro", "Erro ao criar badge.", "error")
     } finally {
@@ -154,18 +89,11 @@ export default function GamificacaoAdmin() {
 
   const handleAtribuirBadge = async (e) => {
     e.preventDefault()
-    if (!atribuicao.usuario_id || !atribuicao.conquista_id)
-      return Swal.fire("Atenção", "Selecione usuário e medalha.", "warning")
+    if (!atribuicao.usuario_id || !atribuicao.conquista_id) return Swal.fire("Atenção", "Selecione usuário e medalha.", "warning")
     setIsAssigning(true)
     try {
       await api.post("api/admin/gamificacao/atribuir/", atribuicao)
-      Swal.fire({
-        icon: "success",
-        title: "Atribuída!",
-        text: "Concedido ao professor.",
-        timer: 2000,
-        showConfirmButton: false,
-      })
+      Swal.fire({ icon: "success", title: "Atribuída!", text: "Concedido ao professor.", timer: 2000, showConfirmButton: false })
       fetchDados()
       setAtribuicao({ usuario_id: "", conquista_id: "" })
     } catch (err) {
@@ -177,11 +105,8 @@ export default function GamificacaoAdmin() {
 
   const handleDeleteBadge = async (id) => {
     const confirm = await Swal.fire({
-      title: "Deletar Badge?",
-      text: "Isso removerá a medalha do sistema.",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#DC2626",
+      title: "Deletar Badge?", text: "Isso removerá a medalha do sistema.",
+      icon: "warning", showCancelButton: true, confirmButtonColor: "#DC2626"
     })
     if (!confirm.isConfirmed) return
     try {
@@ -192,705 +117,185 @@ export default function GamificacaoAdmin() {
     }
   }
 
-  if (loading)
-    return (
-      <div style={styles.loadingContainer}>
-        <Loader2 className="spin" size={32} color="var(--text-warning)" />
-        <p style={{ marginTop: "10px", color: "var(--text-muted)" }}>
-          Carregando Hall da Fama...
-        </p>
-        <style>{`@keyframes spin { 100% { transform: rotate(360deg); } } .spin { animation: spin 1s linear infinite; }`}</style>
-      </div>
-    )
+  if (loading) return (
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center transition-colors duration-200">
+      <Loader2 className="animate-spin text-amber-500 mb-4" size={32} />
+      <p className="text-slate-500 dark:text-slate-400 font-bold">Carregando Hall da Fama...</p>
+    </div>
+  )
+
+  const inputClass = "w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-3 text-sm focus:border-amber-500 outline-none transition-all dark:text-white placeholder-slate-400"
+  const labelClass = "block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 mt-4 uppercase tracking-wide"
 
   return (
-    <div
-      style={{
-        ...styles.wrapper,
-        padding: isMobile ? "20px 10px" : "40px 20px",
-      }}
-    >
-      <style>{`
-        input::placeholder, textarea::placeholder { color: var(--text-muted) !important; opacity: 1 !important; }
-        ::-webkit-input-placeholder { color: var(--text-muted) !important; opacity: 1 !important; }
-        :-moz-placeholder { color: var(--text-muted) !important; opacity: 1 !important; }
-      `}</style>
-
-      <div style={styles.container}>
-        <header style={styles.header}>
-          <button
-            onClick={() => navigate("/dashboard/central-admin")}
-            style={styles.backBtn}
-          >
+    <div className="w-full min-h-screen bg-slate-50 dark:bg-slate-950 p-4 md:p-8 pb-20 transition-colors duration-200">
+      <div className="max-w-[1200px] mx-auto">
+        
+        <header className="mb-8">
+          <button onClick={() => navigate("/dashboard/central-admin")} className="flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-[#1565C0] dark:hover:text-blue-400 font-bold text-sm mb-4 transition-colors">
             <ArrowLeft size={16} /> Voltar à Central
           </button>
-          <div style={styles.titleGroup}>
-            <div style={styles.iconCircleOrange}>
-              <Trophy size={28} color="var(--text-warning)" />
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center shrink-0 border border-amber-200 dark:border-amber-800/50">
+              <Trophy size={28} className="text-amber-600 dark:text-amber-500" />
             </div>
             <div>
-              <h1
-                style={{
-                  ...styles.title,
-                  fontSize: isMobile ? "22px" : "28px",
-                }}
-              >
-                Gestão do Hall da Fama
-              </h1>
-              <p style={styles.subtitle}>
-                Gerencie a economia de XP e distribua medalhas.
-              </p>
+              <h1 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight">Gestão do Hall da Fama</h1>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Gerencie a economia de XP e distribua medalhas.</p>
             </div>
           </div>
         </header>
 
-        <div style={styles.statsGrid}>
-          <StatCard
-            icon={<Trophy color="var(--text-warning)" />}
-            label="Total de Badges"
-            value={dados.conquistas_disponiveis.length}
-          />
-          <StatCard
-            icon={<TrendingUp color="var(--text-success)" />}
-            label="Movimentações de XP"
-            value={dados.auditoria_xp.length}
-          />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl shadow-sm flex items-center gap-4">
+            <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-700"><Trophy className="text-amber-500" size={24}/></div>
+            <div>
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Total de Badges</p>
+              <h3 className="text-2xl font-black text-slate-900 dark:text-white">{dados.conquistas_disponiveis.length}</h3>
+            </div>
+          </div>
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-2xl shadow-sm flex items-center gap-4">
+            <div className="bg-emerald-50 dark:bg-emerald-900/20 p-3 rounded-xl border border-emerald-100 dark:border-emerald-800/30"><TrendingUp className="text-emerald-600 dark:text-emerald-500" size={24}/></div>
+            <div>
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Movimentações de XP</p>
+              <h3 className="text-2xl font-black text-slate-900 dark:text-white">{dados.auditoria_xp.length}</h3>
+            </div>
+          </div>
         </div>
 
-        <div
-          style={{
-            ...styles.mainGrid,
-            flexDirection: isMobile ? "column" : "row",
-          }}
-        >
-          <div style={styles.columnLeft}>
-            <section style={styles.section}>
-              <div style={styles.sectionHeader}>
-                <ShieldCheck size={20} color="var(--text-warning)" />
-                <h2 style={styles.sectionTitle}>Conceder Medalha e XP</h2>
+        <div className="flex flex-col lg:flex-row gap-8 items-start">
+          
+          <div className="flex-1 w-full flex flex-col gap-8">
+            <section className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 md:p-8">
+              <div className="flex items-center gap-3 mb-4 pb-4 border-b border-slate-100 dark:border-slate-800">
+                <ShieldCheck size={20} className="text-amber-500" />
+                <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">Conceder Medalha e XP</h2>
               </div>
-              <p
-                style={{
-                  fontSize: "13px",
-                  color: "var(--text-secondary)",
-                  marginBottom: "15px",
-                }}
-              >
-                Reconheça professores manualmente concedendo uma badge
-                específica e seu respectivo bônus de XP.
-              </p>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">Reconheça professores manualmente concedendo uma badge específica e seu respectivo bônus de XP.</p>
 
-              <form onSubmit={handleAtribuirBadge} style={styles.formRow}>
-                <div style={styles.inputGroupFlex}>
-                  <label style={styles.label}>Professor</label>
-                  <select
-                    style={styles.select}
-                    value={atribuicao.usuario_id}
-                    onChange={(e) =>
-                      setAtribuicao({
-                        ...atribuicao,
-                        usuario_id: e.target.value,
-                      })
-                    }
-                    required
-                  >
+              <form onSubmit={handleAtribuirBadge} className="bg-slate-50 dark:bg-slate-800/30 p-5 rounded-xl border border-slate-200 dark:border-slate-700/50 flex flex-col md:flex-row gap-4 items-end">
+                <div className="flex-1 w-full">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wide">Professor</label>
+                  <select value={atribuicao.usuario_id} onChange={(e) => setAtribuicao({ ...atribuicao, usuario_id: e.target.value })} required className={`${inputClass} bg-white dark:bg-slate-900 cursor-pointer`}>
                     <option value="">Selecione o professor...</option>
-                    {usuarios.map((u) => (
-                      <option key={u.id} value={u.id}>
-                        {u.username} ({u.disciplina})
-                      </option>
-                    ))}
+                    {usuarios.map((u) => <option key={u.id} value={u.id}>{u.username} ({u.disciplina})</option>)}
                   </select>
                 </div>
-                <div style={styles.inputGroupFlex}>
-                  <label style={styles.label}>Medalha</label>
-                  <select
-                    style={styles.select}
-                    value={atribuicao.conquista_id}
-                    onChange={(e) =>
-                      setAtribuicao({
-                        ...atribuicao,
-                        conquista_id: e.target.value,
-                      })
-                    }
-                    required
-                  >
+                <div className="flex-1 w-full">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wide">Medalha</label>
+                  <select value={atribuicao.conquista_id} onChange={(e) => setAtribuicao({ ...atribuicao, conquista_id: e.target.value })} required className={`${inputClass} bg-white dark:bg-slate-900 cursor-pointer`}>
                     <option value="">Selecione a medalha...</option>
-                    {dados.conquistas_disponiveis.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.nome} (+{c.xp_bonus} XP)
-                      </option>
-                    ))}
+                    {dados.conquistas_disponiveis.map((c) => <option key={c.id} value={c.id}>{c.nome} (+{c.xp_bonus} XP)</option>)}
                   </select>
                 </div>
-                <button
-                  type="submit"
-                  disabled={isAssigning}
-                  style={{
-                    ...styles.submitBtn,
-                    backgroundColor: "#EA580C",
-                    alignSelf: "flex-end",
-                    height: "42px",
-                    padding: "0 20px",
-                  }}
-                >
-                  {isAssigning ? (
-                    <Loader2 size={16} className="spin" />
-                  ) : (
-                    <Award size={16} />
-                  )}{" "}
-                  Atribuir
+                <button type="submit" disabled={isAssigning} className="w-full md:w-auto h-[46px] flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-6 rounded-lg font-bold text-sm transition-colors shadow-md shadow-amber-500/20">
+                  {isAssigning ? <Loader2 size={16} className="animate-spin" /> : <Award size={16} />} Atribuir
                 </button>
               </form>
             </section>
 
-            <section style={styles.section}>
-              <div style={styles.sectionHeader}>
-                <History size={20} color="var(--text-info)" />
-                <h2 style={styles.sectionTitle}>Auditoria de XP</h2>
+            <section className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
+              <div className="flex items-center gap-3 p-6 md:p-8 pb-4 border-b border-slate-100 dark:border-slate-800">
+                <History size={20} className="text-[#1565C0] dark:text-blue-400" />
+                <h2 className="text-lg font-extrabold text-slate-900 dark:text-white">Auditoria de XP</h2>
               </div>
-
-              <div style={styles.tableContainer}>
-                {isMobile ? (
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "10px",
-                    }}
-                  >
+              
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
+                      <th className="p-4 text-xs font-black text-slate-500 uppercase tracking-widest">Professor</th>
+                      <th className="p-4 text-xs font-black text-slate-500 uppercase tracking-widest">Ação</th>
+                      <th className="p-4 text-xs font-black text-slate-500 uppercase tracking-widest">Valor</th>
+                      <th className="p-4 text-xs font-black text-slate-500 uppercase tracking-widest">Data</th>
+                    </tr>
+                  </thead>
+                  <tbody>
                     {dados.auditoria_xp.map((log, i) => (
-                      <div key={i} style={styles.mobileLogCard}>
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            marginBottom: "8px",
-                          }}
-                        >
-                          <span style={styles.userName}>
-                            <User size={14} /> {log.usuario}
-                          </span>
-                          <span
-                            style={{
-                              color: "var(--text-success)",
-                              fontWeight: "bold",
-                              fontSize: "14px",
-                            }}
-                          >
-                            +{log.quantidade} XP
-                          </span>
-                        </div>
-                        <p
-                          style={{
-                            margin: "0 0 5px 0",
-                            fontSize: "13px",
-                            color: "var(--text-secondary)",
-                          }}
-                        >
-                          {log.descricao}
-                        </p>
-                        <span
-                          style={{
-                            fontSize: "11px",
-                            color: "var(--text-muted)",
-                          }}
-                        >
-                          {log.data}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <table style={styles.table}>
-                    <thead>
-                      <tr>
-                        <th style={styles.th}>Professor</th>
-                        <th style={styles.th}>Ação</th>
-                        <th style={styles.th}>Valor</th>
-                        <th style={styles.th}>Data</th>
+                      <tr key={i} className="border-b border-slate-100 dark:border-slate-800/80 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                        <td className="p-4 text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2"><User size={14} className="text-slate-400"/> {log.usuario}</td>
+                        <td className="p-4 text-sm text-slate-600 dark:text-slate-400">{log.descricao}</td>
+                        <td className="p-4 text-sm font-black text-emerald-600 dark:text-emerald-400">+{log.quantidade}</td>
+                        <td className="p-4 text-xs font-medium text-slate-500 dark:text-slate-500">{log.data}</td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {dados.auditoria_xp.map((log, i) => (
-                        <tr key={i} style={styles.tr}>
-                          <td style={styles.td}>
-                            <span style={styles.userName}>
-                              <User size={14} /> {log.usuario}
-                            </span>
-                          </td>
-                          <td style={styles.td}>{log.descricao}</td>
-                          <td
-                            style={{
-                              ...styles.td,
-                              color: "var(--text-success)",
-                              fontWeight: "bold",
-                            }}
-                          >
-                            +{log.quantidade}
-                          </td>
-                          <td style={styles.td}>{log.data}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
+                    ))}
+                    {dados.auditoria_xp.length === 0 && (
+                      <tr><td colSpan="4" className="p-8 text-center text-slate-500 text-sm">Nenhuma movimentação registrada.</td></tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             </section>
           </div>
 
-          <aside style={styles.sidebar}>
-            <div style={styles.formCard}>
-              <div style={styles.sectionHeader}>
-                <Plus size={20} color="var(--text-info)" />
-                <h2 style={styles.sectionTitle}>Nova Badge</h2>
+          <aside className="w-full lg:w-[320px] shrink-0 flex flex-col gap-6">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-6">
+              <div className="flex items-center gap-2 mb-4 pb-4 border-b border-slate-100 dark:border-slate-800">
+                <Plus size={18} className="text-[#1565C0] dark:text-blue-400" />
+                <h2 className="text-base font-extrabold text-slate-900 dark:text-white">Nova Badge</h2>
               </div>
-              <form onSubmit={handleCreateBadge} style={styles.form}>
-                <div style={styles.inputGroup}>
-                  <label style={styles.label}>Nome da Medalha</label>
-                  <input
-                    style={styles.input}
-                    placeholder="Ex: Curador Mestre"
-                    value={novaConquista.nome}
-                    onChange={(e) =>
-                      setNovaConquista({
-                        ...novaConquista,
-                        nome: e.target.value,
-                      })
-                    }
-                    required
-                  />
+              <form onSubmit={handleCreateBadge} className="flex flex-col gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wide">Nome da Medalha</label>
+                  <input type="text" value={novaConquista.nome} onChange={(e) => setNovaConquista({ ...novaConquista, nome: e.target.value })} required placeholder="Ex: Curador Mestre" className={inputClass} />
                 </div>
-                <div style={styles.inputGroup}>
-                  <label style={styles.label}>Descrição</label>
-                  <textarea
-                    style={styles.textarea}
-                    placeholder="Para o que serve essa medalha?"
-                    value={novaConquista.descricao}
-                    onChange={(e) =>
-                      setNovaConquista({
-                        ...novaConquista,
-                        descricao: e.target.value,
-                      })
-                    }
-                    required
-                  />
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wide">Descrição</label>
+                  <textarea value={novaConquista.descricao} onChange={(e) => setNovaConquista({ ...novaConquista, descricao: e.target.value })} required rows="2" placeholder="Para que serve?" className={inputClass} />
                 </div>
-                <div style={styles.inputGroup}>
-                  <label style={styles.label}>Escolha o Ícone</label>
-                  <div style={styles.iconSelectorGrid}>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wide">Escolha o Ícone</label>
+                  <div className="flex flex-wrap gap-2 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
                     {ICONS_DISPONIVEIS.map((iconName) => {
                       const isSelected = novaConquista.icone === iconName
                       return (
                         <button
-                          type="button"
-                          key={iconName}
-                          onClick={() =>
-                            setNovaConquista({
-                              ...novaConquista,
-                              icone: iconName,
-                            })
-                          }
-                          title={iconName}
-                          style={{
-                            ...styles.iconSelectBtn,
-                            backgroundColor: isSelected
-                              ? "var(--bg-warning)"
-                              : "var(--bg-card)",
-                            borderColor: isSelected
-                              ? "var(--text-warning)"
-                              : "var(--border-color)",
-                          }}
+                          type="button" key={iconName} onClick={() => setNovaConquista({ ...novaConquista, icone: iconName })}
+                          className={`w-9 h-9 rounded-lg flex items-center justify-center border transition-all ${
+                            isSelected ? "bg-amber-100 dark:bg-amber-900/30 border-amber-400 dark:border-amber-600" : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:border-slate-300"
+                          }`}
                         >
-                          {getIcon(
-                            iconName,
-                            20,
-                            isSelected
-                              ? "var(--text-warning)"
-                              : "var(--text-muted)",
-                          )}
+                          {getIcon(iconName, 18, isSelected ? "text-amber-600 dark:text-amber-500" : "text-slate-400")}
                         </button>
                       )
                     })}
                   </div>
                 </div>
-                <div style={styles.inputGroup}>
-                  <label style={styles.label}>XP Bônus (Recompensa)</label>
-                  <input
-                    type="number"
-                    style={styles.input}
-                    value={novaConquista.xp_bonus}
-                    onChange={(e) =>
-                      setNovaConquista({
-                        ...novaConquista,
-                        xp_bonus: e.target.value,
-                      })
-                    }
-                  />
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wide">XP Bônus</label>
+                  <input type="number" value={novaConquista.xp_bonus} onChange={(e) => setNovaConquista({ ...novaConquista, xp_bonus: e.target.value })} className={inputClass} />
                 </div>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  style={styles.submitBtn}
-                >
-                  {isSubmitting ? (
-                    <Loader2 size={16} className="spin" />
-                  ) : (
-                    <Plus size={16} />
-                  )}{" "}
-                  Criar Badge
+                <button type="submit" disabled={isSubmitting} className="w-full mt-2 flex items-center justify-center gap-2 bg-[#1565C0] hover:bg-blue-700 text-white py-3 rounded-xl font-bold text-sm transition-colors shadow-md shadow-blue-500/20">
+                  {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />} Criar Badge
                 </button>
               </form>
             </div>
 
-            <div style={styles.listCard}>
-              <h3 style={styles.miniTitle}>Badges Ativas</h3>
-              {dados.conquistas_disponiveis.map((c) => (
-                <div key={c.id} style={styles.badgeItem}>
-                  {getIcon(c.icone, 22, "var(--text-warning)")}
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      flex: 1,
-                      overflow: "hidden",
-                      marginLeft: "6px",
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: "14px",
-                        fontWeight: "800",
-                        color: "var(--text-primary)",
-                        whiteSpace: "nowrap",
-                        textOverflow: "ellipsis",
-                        overflow: "hidden",
-                      }}
-                    >
-                      {c.nome}
-                    </span>
-                    <small
-                      style={{ color: "var(--text-muted)", fontWeight: "600" }}
-                    >
-                      +{c.xp_bonus} XP
-                    </small>
+            <div className="bg-slate-100 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-800 p-6">
+              <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-4">Badges Ativas</h3>
+              <div className="flex flex-col gap-3">
+                {dados.conquistas_disponiveis.map((c) => (
+                  <div key={c.id} className="flex items-center gap-3 p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <div className="bg-slate-50 dark:bg-slate-800 p-2 rounded-lg border border-slate-100 dark:border-slate-700">
+                      {getIcon(c.icone, 20, "text-amber-500")}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate">{c.nome}</p>
+                      <p className="text-xs font-bold text-emerald-600 dark:text-emerald-500">+{c.xp_bonus} XP</p>
+                    </div>
+                    <button onClick={() => handleDeleteBadge(c.id)} className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors shrink-0">
+                      <Trash2 size={16} />
+                    </button>
                   </div>
-                  <button
-                    onClick={() => handleDeleteBadge(c.id)}
-                    style={styles.deleteBtn}
-                    title="Excluir Medalha"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              ))}
-              {dados.conquistas_disponiveis.length === 0 && (
-                <p style={styles.emptyText}>Nenhuma badge criada ainda.</p>
-              )}
+                ))}
+                {dados.conquistas_disponiveis.length === 0 && (
+                  <p className="text-center text-sm text-slate-500 py-4 border border-dashed border-slate-300 dark:border-slate-700 rounded-xl">Nenhuma badge criada.</p>
+                )}
+              </div>
             </div>
           </aside>
         </div>
       </div>
     </div>
   )
-}
-
-const StatCard = ({ icon, label, value }) => (
-  <div style={styles.statCard}>
-    <div style={styles.statIcon}>{icon}</div>
-    <div>
-      <p style={styles.statLabel}>{label}</p>
-      <h3 style={styles.statValue}>{value}</h3>
-    </div>
-  </div>
-)
-
-const styles = {
-  wrapper: {
-    backgroundColor: "var(--bg-main)",
-    minHeight: "100vh",
-    fontFamily: "Inter, sans-serif",
-  },
-  container: { maxWidth: "1100px", margin: "0 auto" },
-  loadingContainer: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    height: "80vh",
-  },
-  header: { marginBottom: "30px" },
-  backBtn: {
-    display: "flex",
-    alignItems: "center",
-    gap: "6px",
-    border: "none",
-    background: "none",
-    cursor: "pointer",
-    color: "var(--text-secondary)",
-    marginBottom: "15px",
-    fontWeight: "700",
-    padding: 0,
-  },
-  titleGroup: { display: "flex", alignItems: "center", gap: "15px" },
-  iconCircleOrange: {
-    width: "50px",
-    height: "50px",
-    backgroundColor: "var(--bg-warning)",
-    borderRadius: "12px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-  },
-  title: { fontWeight: "900", color: "var(--text-primary)", margin: 0 },
-  subtitle: { color: "var(--text-muted)", marginTop: "5px", fontSize: "14px" },
-  statsGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-    gap: "20px",
-    marginBottom: "30px",
-  },
-  statCard: {
-    backgroundColor: "var(--bg-card)",
-    padding: "20px",
-    borderRadius: "16px",
-    display: "flex",
-    alignItems: "center",
-    gap: "15px",
-    border: "1px solid var(--border-color)",
-    boxShadow: "0 2px 4px rgba(0,0,0,0.02)",
-  },
-  statIcon: {
-    width: "48px",
-    height: "48px",
-    borderRadius: "12px",
-    backgroundColor: "var(--bg-alt)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  statLabel: {
-    margin: 0,
-    fontSize: "13px",
-    color: "var(--text-secondary)",
-    fontWeight: "600",
-  },
-  statValue: {
-    margin: 0,
-    fontSize: "24px",
-    fontWeight: "800",
-    color: "var(--text-primary)",
-  },
-  mainGrid: { display: "flex", gap: "30px", alignItems: "flex-start" },
-  columnLeft: {
-    flex: 1,
-    display: "flex",
-    flexDirection: "column",
-    gap: "30px",
-    minWidth: 0,
-  },
-  section: {
-    backgroundColor: "var(--bg-card)",
-    borderRadius: "20px",
-    padding: "25px",
-    border: "1px solid var(--border-color)",
-    boxShadow: "0 4px 6px rgba(0,0,0,0.02)",
-  },
-  sectionHeader: {
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-    marginBottom: "15px",
-  },
-  sectionTitle: {
-    fontSize: "18px",
-    fontWeight: "800",
-    color: "var(--text-primary)",
-    margin: 0,
-  },
-  formRow: {
-    display: "flex",
-    gap: "15px",
-    flexWrap: "wrap",
-    backgroundColor: "var(--bg-main)",
-    padding: "15px",
-    borderRadius: "12px",
-    border: "1px solid var(--border-color)",
-  },
-  inputGroupFlex: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "6px",
-    flex: 1,
-    minWidth: "150px",
-  },
-  select: {
-    width: "100%",
-    padding: "10px 12px",
-    borderRadius: "8px",
-    border: "1px solid var(--border-color)",
-    backgroundColor: "var(--input-bg)",
-    color: "var(--input-text)",
-    fontSize: "14px",
-    outline: "none",
-    boxSizing: "border-box",
-  },
-  tableContainer: { overflowX: "auto" },
-  table: { width: "100%", borderCollapse: "collapse", textAlign: "left" },
-  th: {
-    padding: "12px",
-    borderBottom: "2px solid var(--bg-main)",
-    color: "var(--text-muted)",
-    fontSize: "12px",
-    textTransform: "uppercase",
-  },
-  td: {
-    padding: "12px",
-    borderBottom: "1px solid var(--bg-main)",
-    fontSize: "14px",
-    color: "var(--text-secondary)",
-  },
-  tr: { transition: "background 0.2s" },
-  userName: {
-    display: "flex",
-    alignItems: "center",
-    gap: "6px",
-    fontWeight: "600",
-    color: "var(--text-primary)",
-  },
-  mobileLogCard: {
-    backgroundColor: "var(--bg-main)",
-    padding: "15px",
-    borderRadius: "10px",
-    border: "1px solid var(--border-color)",
-  },
-  sidebar: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "20px",
-    width: "100%",
-    maxWidth: "350px",
-  },
-  formCard: {
-    backgroundColor: "var(--bg-card)",
-    padding: "25px",
-    borderRadius: "16px",
-    border: "1px solid var(--border-color)",
-    boxShadow: "0 4px 6px rgba(0,0,0,0.02)",
-  },
-  form: { display: "flex", flexDirection: "column", gap: "15px" },
-  inputGroup: { display: "flex", flexDirection: "column", gap: "6px", flex: 1 },
-  label: {
-    fontSize: "13px",
-    color: "var(--text-secondary)",
-    fontWeight: "600",
-  },
-  input: {
-    width: "100%",
-    padding: "10px 12px",
-    borderRadius: "8px",
-    border: "1px solid var(--border-color)",
-    backgroundColor: "var(--input-bg)",
-    color: "var(--input-text)",
-    fontSize: "14px",
-    outline: "none",
-    boxSizing: "border-box",
-  },
-  textarea: {
-    width: "100%",
-    padding: "10px 12px",
-    borderRadius: "8px",
-    border: "1px solid var(--border-color)",
-    backgroundColor: "var(--input-bg)",
-    color: "var(--input-text)",
-    fontSize: "14px",
-    outline: "none",
-    minHeight: "80px",
-    boxSizing: "border-box",
-    fontFamily: "inherit",
-  },
-  iconSelectorGrid: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: "8px",
-    padding: "12px",
-    backgroundColor: "var(--bg-main)",
-    borderRadius: "8px",
-    border: "1px solid var(--border-color)",
-  },
-  iconSelectBtn: {
-    width: "38px",
-    height: "38px",
-    borderRadius: "8px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    border: "1px solid",
-    cursor: "pointer",
-    transition: "all 0.2s",
-  },
-  submitBtn: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "8px",
-    padding: "12px",
-    borderRadius: "8px",
-    border: "none",
-    backgroundColor: "#1565C0",
-    color: "white",
-    fontWeight: "bold",
-    cursor: "pointer",
-    transition: "filter 0.2s",
-    marginTop: "10px",
-    boxSizing: "border-box",
-  },
-  listCard: {
-    backgroundColor: "var(--bg-main)",
-    padding: "20px",
-    borderRadius: "16px",
-    border: "1px solid var(--border-color)",
-  },
-  miniTitle: {
-    fontSize: "14px",
-    fontWeight: "800",
-    color: "var(--text-secondary)",
-    marginBottom: "15px",
-    marginTop: 0,
-    textTransform: "uppercase",
-  },
-  badgeItem: {
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-    padding: "12px",
-    backgroundColor: "var(--bg-card)",
-    borderRadius: "12px",
-    marginBottom: "10px",
-    border: "1px solid var(--border-color)",
-    boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
-  },
-  deleteBtn: {
-    background: "var(--bg-danger)",
-    border: "1px solid var(--border-danger)",
-    color: "var(--text-danger)",
-    cursor: "pointer",
-    padding: "6px",
-    borderRadius: "8px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    transition: "all 0.2s ease",
-    flexShrink: 0,
-  },
-  emptyText: {
-    color: "var(--text-muted)",
-    fontSize: "14px",
-    width: "100%",
-    padding: "20px",
-    textAlign: "center",
-    border: "1px dashed var(--border-color)",
-    borderRadius: "12px",
-  },
 }

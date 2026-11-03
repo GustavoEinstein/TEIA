@@ -137,6 +137,7 @@ class Producao(models.Model):
     experiencia = models.TextField(blank=True, null=True)
     resultados = models.TextField(blank=True, null=True) 
     arquivo = models.FileField(upload_to='producoes/', blank=True, null=True)
+    anonimo = models.BooleanField(default=True, help_text="Se True, oculta o nome do autor publicamente.")
     
     link_material = models.URLField(max_length=500, null=True, blank=True, verbose_name="Link Externo do Material")
     
@@ -316,3 +317,7 @@ def create_user_profile(sender, instance, created, **kwargs):
 def save_user_profile(sender, instance, **kwargs):
     if hasattr(instance, 'profile'):
         instance.profile.save()
+
+
+
+        

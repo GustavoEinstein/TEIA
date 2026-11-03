@@ -2,13 +2,7 @@ import React, { useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import api from "../../services/api"
 import {
-  ArrowLeft,
-  Download,
-  CheckCircle,
-  Trash2,
-  Loader2,
-  Send,
-  Link2,
+  ArrowLeft, Download, CheckCircle, Trash2, Loader2, Send, Link2, CheckCircle2, User, MessageSquare
 } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 import Swal from "sweetalert2"
@@ -19,18 +13,13 @@ export default function TopicoDetalhe() {
   const [topico, setTopico] = useState(null)
   const [novoComentario, setNovoComentario] = useState("")
   const [loading, setLoading] = useState(true)
-
   const [pausarPolling, setPausarPolling] = useState(false)
 
   useEffect(() => {
     carregarDetalhes()
-
     const intervalo = setInterval(() => {
-      if (!pausarPolling) {
-        carregarDetalhes()
-      }
+      if (!pausarPolling) carregarDetalhes()
     }, 5000)
-
     return () => clearInterval(intervalo)
   }, [id, pausarPolling])
 
@@ -50,31 +39,22 @@ export default function TopicoDetalhe() {
     if (!novoComentario.trim()) return
     try {
       await api.post(`api/forum/topicos/${id}/`, { conteudo: novoComentario })
-
-      // --- AVISANDO O RADAR DE NOTIFICAÇÕES (XP INSTANTÂNEO) ---
       window.dispatchEvent(new Event("perfilAtualizado"))
-
       setNovoComentario("")
       carregarDetalhes()
     } catch (error) {
-      Swal.fire({
-        icon: "error",
-        title: "Ops...",
-        text: "Erro ao enviar comentário.",
-        confirmButtonColor: "#2563EB",
-      })
+      Swal.fire({ icon: "error", title: "Ops...", text: "Erro ao enviar comentário.", confirmButtonColor: "#1565C0" })
     }
   }
 
   const handleResolver = async (e) => {
     e.preventDefault()
-
     const result = await Swal.fire({
       title: "Marcar como resolvido?",
       text: "Deseja marcar esta discussão como resolvida? Isso impedirá novos comentários.",
       icon: "question",
       showCancelButton: true,
-      confirmButtonColor: "#059669",
+      confirmButtonColor: "#10B981",
       cancelButtonColor: "#94A3B8",
       confirmButtonText: "Sim, marcar como resolvido!",
       cancelButtonText: "Cancelar",
@@ -84,13 +64,7 @@ export default function TopicoDetalhe() {
       try {
         await api.put(`api/forum/topicos/${id}/`)
         carregarDetalhes()
-        Swal.fire({
-          icon: "success",
-          title: "Resolvido!",
-          text: "O tópico foi marcado como resolvido.",
-          confirmButtonColor: "#2563EB",
-          timer: 2000,
-        })
+        Swal.fire({ icon: "success", title: "Resolvido!", text: "O tópico foi marcado como resolvido.", confirmButtonColor: "#1565C0", timer: 2000 })
       } catch (error) {
         Swal.fire("Erro!", "Erro ao fechar o tópico.", "error")
       }
@@ -103,25 +77,19 @@ export default function TopicoDetalhe() {
 
     const result = await Swal.fire({
       title: "Você tem certeza?",
-      text: "Esta ação excluirá permanentemente o tópico e todos os seus comentários. Não é possível desfazer!",
+      text: "Esta ação excluirá permanentemente o tópico e todos os comentários. Não é possível desfazer!",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#DC2626",
       cancelButtonColor: "#94A3B8",
-      confirmButtonText: "Sim, excluir permanentemente!",
+      confirmButtonText: "Sim, excluir!",
       cancelButtonText: "Cancelar",
     })
 
     if (result.isConfirmed) {
       try {
         await api.delete(`api/forum/topicos/${id}/`)
-        await Swal.fire({
-          icon: "success",
-          title: "Excluído!",
-          text: "O tópico foi apagado com sucesso.",
-          confirmButtonColor: "#2563EB",
-          timer: 2000,
-        })
+        await Swal.fire({ icon: "success", title: "Excluído!", text: "O tópico foi apagado com sucesso.", confirmButtonColor: "#1565C0", timer: 2000 })
         navigate("/dashboard/forum")
       } catch (error) {
         Swal.fire("Erro!", "Erro ao excluir tópico.", "error")
@@ -145,511 +113,190 @@ export default function TopicoDetalhe() {
       if (diffSegundos < 60) return "agora mesmo"
       if (diffSegundos < 3600) return `há ${Math.floor(diffSegundos / 60)} min`
       if (diffSegundos < 86400) return `há ${Math.floor(diffSegundos / 3600)}h`
-      if (diffSegundos < 604800)
-        return `há ${Math.floor(diffSegundos / 86400)} dias`
+      if (diffSegundos < 604800) return `há ${Math.floor(diffSegundos / 86400)} dias`
       return dataString
     } catch (e) {
       return dataString
     }
   }
 
-  const getCategoriaStyle = (cat) => {
-    const catStyles = {
-      "Dúvida BNCC": { bg: "var(--bg-info)", color: "var(--text-info)" },
-      Metodologia: { bg: "var(--bg-warning)", color: "var(--text-warning)" },
-      "Uso de IA": { bg: "rgba(168, 85, 247, 0.1)", color: "#C084FC" },
-      Sugestão: { bg: "var(--bg-success)", color: "var(--text-success)" },
-      Geral: { bg: "var(--bg-alt)", color: "var(--text-secondary)" },
+  const getCategoriaClass = (cat) => {
+    switch(cat) {
+      case "Dúvida BNCC": return "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400 border-blue-200 dark:border-blue-800"
+      case "Metodologia": return "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 border-amber-200 dark:border-amber-800"
+      case "Uso de IA": return "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400 border-purple-200 dark:border-purple-800"
+      case "Sugestão": return "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800"
+      default: return "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-700"
     }
-    return catStyles[cat] || catStyles["Geral"]
   }
 
-  if (loading && !topico)
-    return (
-      <div style={styles.loadingContainer}>
-        <Loader2 size={32} color="#2563EB" className="spin" />
-        <p style={{ marginTop: "10px", color: "var(--text-muted)" }}>
-          Carregando discussão...
-        </p>
-        <style>{`@keyframes spin { 100% { transform: rotate(360deg); } } .spin { animation: spin 1s linear infinite; }`}</style>
-      </div>
-    )
+  if (loading && !topico) return (
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center transition-colors duration-200">
+      <Loader2 size={32} className="animate-spin text-[#1565C0] dark:text-blue-500 mb-4" />
+      <p className="text-slate-500 dark:text-slate-400 font-bold">Carregando discussão...</p>
+    </div>
+  )
 
   if (!topico) return null
 
-  const catStyle = getCategoriaStyle(topico.categoria)
-  const authorInitial = topico.autor
-    ? topico.autor.charAt(0).toUpperCase()
-    : "P"
+  const authorInitial = topico.autor ? topico.autor.charAt(0).toUpperCase() : "P"
 
   return (
-    <div style={styles.container}>
-      <button
-        type="button"
-        onClick={() => navigate(-1)}
-        style={styles.btnVoltar}
-      >
-        <ArrowLeft size={16} /> Voltar para o Fórum
-      </button>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-200 p-4 md:p-8 pb-24">
+      <div className="max-w-[900px] mx-auto">
+        
+        {/* Voltar */}
+        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-[#1565C0] dark:hover:text-blue-400 font-bold text-sm mb-6 transition-colors">
+          <ArrowLeft size={18} /> Voltar para o Fórum
+        </button>
 
-      {/* --- CABEÇALHO DO TÓPICO --- */}
-      <div style={styles.topicCard}>
-        <div style={styles.topicHeaderRow}>
-          <div style={{ flex: 1 }}>
-            <div style={styles.tagsContainer}>
-              <span
-                style={{
-                  ...styles.tag,
-                  backgroundColor: catStyle.bg,
-                  color: catStyle.color,
-                }}
-              >
-                {topico.categoria}
-              </span>
-              {topico.resolvido && (
-                <span style={styles.tagResolved}>
-                  <CheckCircle size={14} /> Tópico Resolvido
+        {/* --- TÓPICO PRINCIPAL --- */}
+        <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 md:p-10 mb-10">
+          
+          {/* Header do Tópico */}
+          <div className="flex flex-col md:flex-row justify-between items-start gap-6 mb-8 border-b border-slate-100 dark:border-slate-800 pb-8">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-3 mb-4 flex-wrap">
+                <span className={`px-3 py-1.5 rounded-md text-[10px] font-black uppercase tracking-wider border ${getCategoriaClass(topico.categoria)}`}>
+                  {topico.categoria}
                 </span>
-              )}
+                {topico.resolvido && (
+                  <span className="flex items-center gap-1.5 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 px-3 py-1.5 rounded-md text-[10px] font-black uppercase tracking-wider">
+                    <CheckCircle size={14} /> Resolvido
+                  </span>
+                )}
+              </div>
+              
+              <h1 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white leading-tight mb-4">
+                {topico.titulo}
+              </h1>
+
+              <div className="flex items-center gap-3 text-sm text-slate-500 dark:text-slate-400 font-medium">
+                <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 font-black text-xs shrink-0">
+                  {authorInitial}
+                </div>
+                <span>
+                  Por <strong className="text-slate-800 dark:text-slate-200">Prof. {topico.autor}</strong> • {calcularTempoAtras(topico.data)}
+                </span>
+              </div>
             </div>
 
-            <h1 style={styles.topicTitle}>{topico.titulo}</h1>
-
-            <div style={styles.authorInfo}>
-              <div style={styles.avatarMini}>{authorInitial}</div>
-              <span>
-                Publicado por Prof. <strong>{topico.autor}</strong> •{" "}
-                {calcularTempoAtras(topico.data)}
-              </span>
-            </div>
+            {/* Ações do Dono */}
+            {topico.is_dono_topico && (
+              <div className="flex flex-row md:flex-col gap-3 shrink-0 w-full md:w-auto">
+                {!topico.resolvido && (
+                  <button onClick={handleResolver} className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors">
+                    <CheckCircle size={16} /> Resolver
+                  </button>
+                )}
+                <button onClick={handleExcluir} className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800/50 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors">
+                  <Trash2 size={16} /> Excluir
+                </button>
+              </div>
+            )}
           </div>
 
-          {/* AÇÕES DO DONO DO TÓPICO */}
-          {topico.is_dono_topico && (
-            <div style={styles.actionButtons}>
-              {!topico.resolvido && (
-                <button
-                  type="button"
-                  onClick={handleResolver}
-                  style={styles.btnResolve}
-                >
-                  <CheckCircle size={16} /> Resolver
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={handleExcluir}
-                style={styles.btnDelete}
-              >
-                <Trash2 size={16} /> Excluir
-              </button>
+          {/* Prática Base Vinculada */}
+          {topico.producao_base && (
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 p-5 rounded-xl mb-8 flex flex-col sm:flex-row items-start sm:items-center gap-4 shadow-sm">
+              <div className="bg-white dark:bg-slate-800 p-2.5 rounded-full shrink-0 shadow-sm border border-slate-100 dark:border-slate-700">
+                <Link2 size={20} className="text-[#1565C0] dark:text-blue-400" />
+              </div>
+              <div>
+                <p className="text-[10px] font-black text-[#1565C0] dark:text-blue-400 uppercase tracking-widest mb-1">Prática de Referência</p>
+                <p className="text-sm font-bold text-slate-800 dark:text-slate-200 leading-tight mb-1">
+                  {topico.producao_base.titulo}
+                </p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {topico.producao_base.disciplina} • Por {topico.producao_base.autor}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Corpo do Tópico (Markdown) */}
+          <div className="text-[15px] text-slate-700 dark:text-slate-300 leading-relaxed font-normal whitespace-pre-wrap [&>p]:mb-4 [&>ul]:list-disc [&>ul]:pl-5 [&>h1]:text-2xl [&>h1]:font-bold [&>h2]:text-xl [&>h2]:font-bold">
+            <ReactMarkdown>{topico.conteudo}</ReactMarkdown>
+          </div>
+
+          {/* Anexo */}
+          {topico.arquivo && (
+            <div className="mt-8 pt-6 border-t border-slate-100 dark:border-slate-800">
+              <a href={topico.arquivo} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-sm rounded-lg transition-colors border border-slate-200 dark:border-slate-700">
+                <Download size={18} /> Baixar Material Anexo
+              </a>
             </div>
           )}
         </div>
 
-        {/* --- CAIXA DE PRÁTICA BASE (SE EXISTIR) --- */}
-        {topico.producao_base && (
-          <div style={styles.basePracticeBox}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                color: "var(--text-info)",
-                fontWeight: "800",
-                fontSize: "12px",
-                textTransform: "uppercase",
-                marginBottom: "8px",
-              }}
-            >
-              <Link2 size={16} /> Prática de Referência
-            </div>
-            <div
-              style={{
-                fontWeight: "700",
-                color: "var(--text-primary)",
-                fontSize: "16px",
-                marginBottom: "4px",
-              }}
-            >
-              {topico.producao_base.titulo}
-            </div>
-            <div style={{ fontSize: "14px", color: "var(--text-muted)" }}>
-              {topico.producao_base.disciplina} • Por{" "}
-              {topico.producao_base.autor}
-            </div>
-          </div>
-        )}
+        {/* --- SESSÃO DE COMENTÁRIOS --- */}
+        <div className="mb-8">
+          <h3 className="flex items-center gap-2 text-lg font-extrabold text-slate-800 dark:text-white mb-6">
+            <MessageSquare size={20} className="text-[#1565C0] dark:text-blue-400" />
+            Discussão ({topico.comentarios.length})
+          </h3>
 
-        <div style={styles.markdownContent}>
-          <ReactMarkdown>{topico.conteudo}</ReactMarkdown>
-        </div>
-
-        {topico.arquivo && (
-          <div style={styles.attachmentBox}>
-            <a
-              href={topico.arquivo}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ textDecoration: "none" }}
-            >
-              <button type="button" style={styles.btnDownload}>
-                <Download size={18} /> Baixar Material de Apoio
-              </button>
-            </a>
-          </div>
-        )}
-      </div>
-
-      <h3 style={styles.commentsSectionTitle}>
-        Discussão ({topico.comentarios.length})
-      </h3>
-
-      {/* --- LISTA DE COMENTÁRIOS --- */}
-      <div style={styles.commentsList}>
-        {topico.comentarios.map((comentario) => {
-          const commentInitial = comentario.autor
-            ? comentario.autor.charAt(0).toUpperCase()
-            : "U"
-
-          return (
-            <div
-              key={comentario.id}
-              style={{
-                ...styles.commentCard,
-                borderColor: comentario.is_autor_topico
-                  ? "var(--border-info)"
-                  : "var(--border-color)",
-                backgroundColor: comentario.is_autor_topico
-                  ? "var(--bg-info)"
-                  : "var(--bg-card)",
-              }}
-            >
-              <div style={styles.commentHeader}>
-                <div
-                  style={{
-                    ...styles.avatarMini,
-                    backgroundColor: comentario.is_autor_topico
-                      ? "#2563EB"
-                      : "var(--bg-alt)",
-                    color: comentario.is_autor_topico
-                      ? "white"
-                      : "var(--text-secondary)",
-                  }}
+          <div className="flex flex-col gap-5 mb-10">
+            {topico.comentarios.map((comentario) => {
+              const isAutor = comentario.is_autor_topico
+              return (
+                <div 
+                  key={comentario.id} 
+                  className={`p-6 rounded-2xl border transition-colors ${
+                    isAutor 
+                    ? "bg-blue-50/50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800/50" 
+                    : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm"
+                  }`}
                 >
-                  {commentInitial}
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-black text-xs shrink-0 ${
+                      isAutor ? "bg-[#1565C0] text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700"
+                    }`}>
+                      {comentario.autor ? comentario.autor.charAt(0).toUpperCase() : "U"}
+                    </div>
+                    <span className="font-bold text-sm text-slate-800 dark:text-slate-200">{comentario.autor}</span>
+                    {isAutor && (
+                      <span className="bg-[#1565C0]/10 dark:bg-blue-500/20 text-[#1565C0] dark:text-blue-400 border border-[#1565C0]/20 dark:border-blue-500/30 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider">Autor</span>
+                    )}
+                    <span className="text-xs text-slate-400 dark:text-slate-500 font-medium ml-auto">
+                      {calcularTempoAtras(comentario.data)}
+                    </span>
+                  </div>
+                  <div className="text-[15px] text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
+                    <ReactMarkdown>{comentario.conteudo}</ReactMarkdown>
+                  </div>
                 </div>
-                <span style={styles.commentAuthor}>{comentario.autor}</span>
-                {comentario.is_autor_topico && (
-                  <span style={styles.badgeAuthor}>AUTOR</span>
-                )}
-                <span style={styles.commentTime}>
-                  {calcularTempoAtras(comentario.data)}
-                </span>
-              </div>
-              <div style={styles.commentBody}>
-                <ReactMarkdown>{comentario.conteudo}</ReactMarkdown>
-              </div>
-            </div>
-          )
-        })}
-      </div>
-
-      {/* --- ÁREA DE RESPOSTA --- */}
-      {topico.resolvido ? (
-        <div style={styles.resolvedNotice}>
-          <CheckCircle size={28} style={{ marginBottom: "10px" }} />
-          <p style={{ margin: 0, fontSize: "15px" }}>
-            Esta discussão foi marcada como resolvida pelo autor e está fechada
-            para novos comentários.
-          </p>
-        </div>
-      ) : (
-        <form onSubmit={handleComentar} style={styles.commentForm}>
-          <h4 style={styles.formTitle}>Adicionar um comentário</h4>
-          <textarea
-            value={novoComentario}
-            onChange={(e) => setNovoComentario(e.target.value)}
-            placeholder="Escreva sua sugestão ou dúvida..."
-            required
-            rows="4"
-            style={styles.textArea}
-          />
-          <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <button type="submit" style={styles.btnSubmitComment}>
-              <Send size={16} /> Enviar Comentário
-            </button>
+              )
+            })}
           </div>
-        </form>
-      )}
+
+          {/* --- FORMULÁRIO DE RESPOSTA --- */}
+          {topico.resolvido ? (
+            <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/50 text-emerald-700 dark:text-emerald-400 p-8 rounded-2xl text-center flex flex-col items-center shadow-sm">
+              <CheckCircle2 size={36} className="mb-4 text-emerald-500" />
+              <p className="font-bold text-lg mb-1">Tópico Resolvido</p>
+              <p className="text-sm">Esta discussão foi encerrada pelo autor e não recebe mais comentários.</p>
+            </div>
+          ) : (
+            <form onSubmit={handleComentar} className="bg-white dark:bg-slate-900 p-6 md:p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+              <h4 className="font-extrabold text-slate-800 dark:text-white mb-4">Adicionar um comentário</h4>
+              <textarea
+                value={novoComentario}
+                onChange={(e) => setNovoComentario(e.target.value)}
+                placeholder="Escreva sua sugestão, dúvida ou resposta..."
+                required
+                rows="4"
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-4 text-[15px] focus:border-[#1565C0] dark:focus:border-blue-500 outline-none transition-all dark:text-white placeholder-slate-400 mb-4 resize-y"
+              />
+              <div className="flex justify-end">
+                <button type="submit" className="flex items-center gap-2 bg-[#1565C0] hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-lg transition-colors shadow-md shadow-blue-500/20">
+                  <Send size={16} /> Enviar Comentário
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+      </div>
     </div>
   )
-}
-
-// --- ESTILOS ---
-const styles = {
-  container: {
-    padding: "30px 20px",
-    maxWidth: "900px",
-    margin: "0 auto",
-    fontFamily: "Inter, sans-serif",
-  },
-  loadingContainer: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    height: "60vh",
-  },
-
-  btnVoltar: {
-    display: "flex",
-    alignItems: "center",
-    gap: "6px",
-    background: "none",
-    border: "none",
-    color: "var(--text-muted)",
-    cursor: "pointer",
-    marginBottom: "25px",
-    fontWeight: "600",
-    fontSize: "14px",
-    transition: "color 0.2s",
-  },
-
-  // Tópico Principal
-  topicCard: {
-    backgroundColor: "var(--bg-card)",
-    padding: "35px",
-    borderRadius: "12px",
-    border: "1px solid var(--border-color)",
-    marginBottom: "40px",
-    boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)",
-  },
-  topicHeaderRow: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    flexWrap: "wrap",
-    gap: "20px",
-  },
-  tagsContainer: {
-    display: "flex",
-    gap: "10px",
-    alignItems: "center",
-    marginBottom: "16px",
-  },
-  tag: {
-    fontSize: "11px",
-    fontWeight: "700",
-    padding: "4px 12px",
-    borderRadius: "20px",
-    textTransform: "uppercase",
-    letterSpacing: "0.5px",
-  },
-  tagResolved: {
-    display: "flex",
-    alignItems: "center",
-    gap: "4px",
-    fontSize: "11px",
-    fontWeight: "700",
-    color: "var(--text-success)",
-    backgroundColor: "var(--bg-success)",
-    padding: "4px 12px",
-    borderRadius: "20px",
-    textTransform: "uppercase",
-  },
-  topicTitle: {
-    margin: "0 0 15px 0",
-    color: "var(--text-primary)",
-    fontSize: "28px",
-    fontWeight: "900",
-    lineHeight: "1.2",
-  },
-  authorInfo: {
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-    color: "var(--text-muted)",
-    fontSize: "14px",
-  },
-  avatarMini: {
-    width: "28px",
-    height: "28px",
-    backgroundColor: "var(--bg-alt)",
-    color: "var(--text-secondary)",
-    borderRadius: "50%",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontWeight: "bold",
-    fontSize: "13px",
-  },
-
-  // Ações do Dono
-  actionButtons: { display: "flex", gap: "10px" },
-  btnResolve: {
-    padding: "8px 14px",
-    backgroundColor: "var(--bg-success)",
-    color: "var(--text-success)",
-    border: "1px solid var(--border-success)",
-    borderRadius: "8px",
-    cursor: "pointer",
-    fontWeight: "700",
-    display: "flex",
-    alignItems: "center",
-    gap: "6px",
-    fontSize: "13px",
-    transition: "filter 0.2s",
-  },
-  btnDelete: {
-    padding: "8px 14px",
-    backgroundColor: "var(--bg-danger)",
-    color: "var(--text-danger)",
-    border: "1px solid var(--border-danger)",
-    borderRadius: "8px",
-    cursor: "pointer",
-    fontWeight: "700",
-    display: "flex",
-    alignItems: "center",
-    gap: "6px",
-    fontSize: "13px",
-    transition: "filter 0.2s",
-  },
-
-  // Prática Base (NOVO ESTILO)
-  basePracticeBox: {
-    backgroundColor: "var(--bg-info)",
-    border: "1px dashed var(--border-info)",
-    borderRadius: "10px",
-    padding: "18px 20px",
-    marginTop: "25px",
-  },
-
-  // Conteúdo
-  markdownContent: {
-    color: "var(--text-secondary)",
-    lineHeight: "1.8",
-    marginTop: "25px",
-    borderTop: "1px solid var(--border-color)",
-    paddingTop: "25px",
-    fontSize: "16px",
-  },
-  attachmentBox: {
-    marginTop: "30px",
-    padding: "20px",
-    backgroundColor: "var(--bg-main)",
-    borderRadius: "10px",
-    display: "inline-block",
-    border: "1px dashed var(--border-color)",
-  },
-  btnDownload: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    padding: "10px 18px",
-    backgroundColor: "#10B981",
-    color: "#fff",
-    border: "none",
-    borderRadius: "8px",
-    cursor: "pointer",
-    fontWeight: "700",
-    fontSize: "14px",
-  },
-
-  // Comentários
-  commentsSectionTitle: {
-    color: "var(--text-primary)",
-    marginBottom: "20px",
-    fontSize: "20px",
-    fontWeight: "800",
-  },
-  commentsList: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "16px",
-    marginBottom: "40px",
-  },
-  commentCard: { padding: "20px", borderRadius: "12px", border: "1px solid" },
-  commentHeader: {
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-    marginBottom: "12px",
-  },
-  commentAuthor: {
-    fontWeight: "700",
-    color: "var(--text-primary)",
-    fontSize: "15px",
-  },
-  badgeAuthor: {
-    fontSize: "10px",
-    fontWeight: "800",
-    backgroundColor: "var(--bg-info)",
-    color: "var(--text-info)",
-    padding: "2px 8px",
-    borderRadius: "12px",
-    letterSpacing: "0.5px",
-  },
-  commentTime: { fontSize: "12px", color: "var(--text-muted)" },
-  commentBody: {
-    margin: 0,
-    color: "var(--text-secondary)",
-    lineHeight: "1.6",
-    fontSize: "15px",
-  },
-
-  // Área de Resposta
-  resolvedNotice: {
-    backgroundColor: "var(--bg-success)",
-    padding: "30px",
-    borderRadius: "12px",
-    textAlign: "center",
-    color: "var(--text-success)",
-    fontWeight: "600",
-    border: "1px solid var(--border-success)",
-  },
-  commentForm: {
-    backgroundColor: "var(--bg-card)",
-    padding: "25px",
-    borderRadius: "12px",
-    border: "1px solid var(--border-color)",
-    boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)",
-  },
-  formTitle: {
-    marginTop: 0,
-    marginBottom: "15px",
-    color: "var(--text-primary)",
-    fontSize: "18px",
-    fontWeight: "800",
-  },
-
-  // --- CORREÇÃO APLICADA: backgroundColor: '#FFFFFF' FIXO ---
-  textArea: {
-    width: "100%",
-    padding: "15px",
-    borderRadius: "10px",
-    border: "1px solid var(--border-color)",
-    marginBottom: "15px",
-    fontFamily: "inherit",
-    fontSize: "15px",
-    outline: "none",
-    resize: "vertical",
-    boxSizing: "border-box",
-    backgroundColor: "var(--input-bg)",
-    color: "var(--input-text)",
-  },
-
-  btnSubmitComment: {
-    padding: "12px 24px",
-    backgroundColor: "#2563EB",
-    color: "#fff",
-    border: "none",
-    borderRadius: "8px",
-    cursor: "pointer",
-    fontWeight: "700",
-    fontSize: "15px",
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-  },
 }

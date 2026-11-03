@@ -1,34 +1,23 @@
 import React, { useState } from 'react';
 import api from '../services/api';
-import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Mail, CheckCircle2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, Mail, CheckCircle2, AlertCircle } from 'lucide-react';
 
-// --- ÍCONE DO SISTEMA (Mesmo do Login) ---
-const SpiderWebIcon = ({ size = 24, color = "currentColor" }) => (
-  <svg
-    width={size}
-    height={size}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke={color}
-    strokeWidth="1.5"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M12 2v20" />
-    <path d="M2 12h20" />
-    <path d="M4.93 4.93l14.14 14.14" />
-    <path d="M19.07 4.93L4.93 19.07" />
+const SpiderWebIcon = ({ size = 32, className = "" }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M12 2v10" /> <path d="M2 12h20" /> <path d="M4.93 4.93l14.14 14.14" /> <path d="M19.07 4.93L4.93 19.07" />
     <path d="M12 7 L15.53 8.47 L17 12 L15.53 15.53 L12 17 L8.47 15.53 L7 12 L8.47 8.47 Z" />
     <path d="M12 3 L18.36 5.64 L21 12 L18.36 18.36 L12 21 L5.64 18.36 L3 12 L5.64 5.64 Z" />
+    <path d="M12 12 v7" strokeDasharray="2 2" className="animate-pulse opacity-70" />
+    <circle cx="12" cy="19" r="1.5" fill="currentColor" />
+    <path d="M10 18l1 1 M14 18l-1 1 M10 20l1-1 M14 20l-1-1" />
   </svg>
-);
+)
 
 const EsqueceuSenha = () => {
     const [email, setEmail] = useState('');
-    const [status, setStatus] = useState('idle'); // idle, loading, success, error
+    const [status, setStatus] = useState('idle'); 
     const [errorMessage, setErrorMessage] = useState('');
-    const [hover, setHover] = useState(false);
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
@@ -47,65 +36,71 @@ const EsqueceuSenha = () => {
     };
 
     return (
-        <div style={styles.pageBackground}>
-            <div style={styles.card}>
-                
-                <button onClick={() => navigate('/login')} style={styles.backButton}>
-                    <ArrowLeft size={18} /> Voltar
-                </button>
+        <div className="min-h-screen flex flex-col justify-center items-center bg-slate-50 dark:bg-slate-950 p-4 relative overflow-hidden transition-colors duration-300">
+            
+            <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] rounded-full bg-blue-500/10 dark:bg-blue-600/5 blur-3xl pointer-events-none"></div>
 
-                <div style={styles.header}>
-                    <div style={styles.logoCircle}>
-                        <span><SpiderWebIcon size={32} color="#1565C0" /></span>
+            <div className="w-full max-w-[420px] z-10 mb-6">
+                <button 
+                  onClick={() => navigate('/login')} 
+                  className="flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-[#1565C0] dark:hover:text-blue-400 font-semibold text-sm transition-colors"
+                >
+                  <ArrowLeft size={16} /> Voltar ao Login
+                </button>
+            </div>
+
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl w-full max-w-[420px] p-8 md:p-10">
+                
+                <div className="text-center mb-8">
+                    <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 text-[#1565C0] dark:text-blue-400 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-100 dark:border-blue-800/50">
+                        <SpiderWebIcon size={32} />
                     </div>
-                    <h2 style={styles.title}>Recuperar Senha</h2>
-                    <p style={styles.subtitle}>
+                    <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2 tracking-tight">Recuperar Senha</h2>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
                         Informe seu e-mail cadastrado para receber as instruções de redefinição.
                     </p>
                 </div>
 
                 {status === 'success' ? (
-                    <div style={styles.successBox}>
-                        <CheckCircle2 size={40} color="#166534" style={{ marginBottom: '10px' }} />
-                        <h3 style={{ margin: '0 0 10px 0', color: '#166534', fontSize: '18px' }}>E-mail Enviado!</h3>
-                        <p style={{ margin: 0, fontSize: '14px', lineHeight: '1.5' }}>
-                            Se o e-mail <strong>{email}</strong> estiver em nossa base de dados, você receberá um link para criar uma nova senha em instantes.
+                    <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/50 text-emerald-700 dark:text-emerald-400 p-6 rounded-xl flex flex-col items-center text-center animate-in fade-in zoom-in">
+                        <CheckCircle2 size={40} className="mb-4 text-emerald-500" />
+                        <h3 className="font-extrabold text-lg mb-2">E-mail Enviado!</h3>
+                        <p className="text-sm leading-relaxed mb-4">
+                            Se o e-mail <strong>{email}</strong> estiver em nossa base de dados, você receberá um link em instantes.
                         </p>
-                        <p style={{ margin: '15px 0 0 0', fontSize: '13px', fontWeight: 'bold' }}>
-                            Não se esqueça de verificar também sua caixa de spam.
+                        <p className="text-[11px] font-black uppercase tracking-widest opacity-80">
+                            Não se esqueça da caixa de spam.
                         </p>
                     </div>
                 ) : (
-                    <form onSubmit={handleSubmit} style={styles.form}>
-                        <div style={styles.inputGroup}>
-                            <label style={styles.label}>E-mail</label>
-                            <div style={styles.inputWrapper}>
-                                <Mail size={18} color="#90A4AE" style={{marginLeft: '12px'}}/>
+                    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+                        <div>
+                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2 uppercase tracking-wide">E-mail Cadastrado</label>
+                            <div className="relative group">
+                                <Mail size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#1565C0] dark:group-focus-within:text-blue-400 transition-colors" />
                                 <input 
                                     type="email" 
                                     required 
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    style={styles.input}
                                     placeholder="ex: professor@escola.com"
+                                    disabled={status === 'loading'}
+                                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl pl-10 pr-4 py-3 text-sm focus:border-[#1565C0] dark:focus:border-blue-500 outline-none transition-all dark:text-white placeholder-slate-400"
                                 />
                             </div>
                         </div>
 
                         {status === 'error' && (
-                            <div style={styles.errorBox}>{errorMessage}</div>
+                            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/50 text-red-600 dark:text-red-400 p-3 rounded-lg text-sm font-medium flex items-center gap-2">
+                                <AlertCircle size={16} className="shrink-0" />
+                                <span>{errorMessage}</span>
+                            </div>
                         )}
 
                         <button 
                             type="submit" 
-                            style={{
-                                ...styles.button,
-                                ...(hover ? styles.buttonHover : {}),
-                                ...(status === 'loading' ? styles.buttonDisabled : {}),
-                            }}
-                            onMouseEnter={() => setHover(true)}
-                            onMouseLeave={() => setHover(false)}
                             disabled={status === 'loading'}
+                            className="w-full bg-[#1565C0] hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl transition-all shadow-md shadow-blue-500/20 disabled:opacity-70 disabled:cursor-not-allowed mt-2"
                         >
                             {status === 'loading' ? 'Processando...' : 'Enviar Link de Recuperação'}
                         </button>
@@ -114,128 +109,6 @@ const EsqueceuSenha = () => {
             </div>
         </div>
     );
-};
-
-const styles = {
-    pageBackground: {
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100vw',
-        height: '100vh',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        background: 'linear-gradient(135deg, #1565C0 0%, #64B5F6 100%)',
-        fontFamily: 'Arial, sans-serif',
-        margin: 0,
-        padding: '20px',
-        boxSizing: 'border-box'
-    },
-    card: {
-        width: '100%',
-        maxWidth: '420px',
-        padding: '35px 40px',
-        backgroundColor: 'white',
-        borderRadius: '12px',
-        boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
-        display: 'flex',
-        flexDirection: 'column',
-        position: 'relative'
-    },
-    backButton: { 
-        background: 'none', 
-        border: 'none', 
-        color: '#64748B', 
-        cursor: 'pointer', 
-        display: 'inline-flex', 
-        alignItems: 'center', 
-        gap: '5px', 
-        fontSize: '14px', 
-        fontWeight: '600',
-        padding: 0,
-        position: 'absolute',
-        top: '25px',
-        left: '25px',
-        transition: 'color 0.2s'
-    },
-    header: { textAlign: 'center', marginBottom: '25px', marginTop: '20px' },
-    logoCircle: {
-        width: '60px',
-        height: '60px',
-        backgroundColor: '#E3F2FD',
-        borderRadius: '50%',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        margin: '0 auto 15px auto',
-    },
-    title: {
-        color: '#1565C0',
-        fontSize: '22px',
-        margin: '0 0 8px 0',
-        fontWeight: 'bold',
-    },
-    subtitle: { color: '#546E7A', fontSize: '14px', margin: 0, lineHeight: '1.5' },
-    form: { display: 'flex', flexDirection: 'column', gap: '20px' },
-    inputGroup: { display: 'flex', flexDirection: 'column', gap: '6px' },
-    label: {
-        display: 'block',
-        fontSize: '13px',
-        fontWeight: '600',
-        color: '#334155',
-    },
-    inputWrapper: {
-        display: 'flex',
-        alignItems: 'center',
-        border: '1px solid #E2E8F0',
-        borderRadius: '8px',
-        backgroundColor: '#F8FAFC',
-        transition: 'border-color 0.2s',
-    },
-    input: {
-        width: '100%',
-        padding: '12px 10px',
-        border: 'none',
-        background: 'transparent',
-        outline: 'none',
-        color: '#334155',
-        fontSize: '14px'
-    },
-    button: {
-        padding: '14px',
-        backgroundColor: '#1565C0',
-        color: 'white',
-        border: 'none',
-        borderRadius: '8px',
-        fontSize: '15px',
-        fontWeight: 'bold',
-        cursor: 'pointer',
-        transition: 'background 0.3s',
-        marginTop: '5px'
-    },
-    buttonHover: { backgroundColor: '#0D47A1' },
-    buttonDisabled: { backgroundColor: '#90CAF9', cursor: 'not-allowed' },
-    errorBox: {
-        backgroundColor: '#FFEBEE',
-        color: '#D32F2F',
-        padding: '12px',
-        borderRadius: '6px',
-        fontSize: '13px',
-        textAlign: 'center',
-        border: '1px solid #FFCDD2'
-    },
-    successBox: { 
-        backgroundColor: '#F0FDF4', 
-        padding: '25px', 
-        borderRadius: '10px', 
-        textAlign: 'center', 
-        color: '#166534', 
-        border: '1px solid #BBF7D0',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center'
-    }
 };
 
 export default EsqueceuSenha;

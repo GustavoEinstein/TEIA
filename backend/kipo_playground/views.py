@@ -676,15 +676,16 @@ def api_submit_review(request, pk):
         else:
             total_aprovacoes = p.avaliacoes.filter(aprovado=True).count()
             
-            if total_aprovacoes >= 2:
+            # Alterado para >= 1 para aprovar logo com a primeira validação
+            if total_aprovacoes >= 1:
                 p.status = 'Aprovado'
-                msg_response = f'Revisão registrada! Você ganhou +{config_xp.xp_revisao} XP. A produção alcançou 2 aprovações e foi publicada na comunidade.'
+                msg_response = f'Revisão registrada! Você ganhou +{config_xp.xp_revisao} XP. A produção foi aprovada e publicada na comunidade.'
                 
                 perfil_autor = p.user.profile
                 adicionar_xp(perfil_autor, config_xp.xp_aprovacao, f"Produção aprovada pela comunidade: {p.titulo}")
             else:
                 p.status = 'Em revisão'
-                msg_response = f'Revisão registrada! Você ganhou +{config_xp.xp_revisao} XP. Esta produção agora possui {total_aprovacoes} aprovação(ões). Aguardando o segundo revisor.'
+                msg_response = f'Revisão registrada! Você ganhou +{config_xp.xp_revisao} XP.'
 
         p.save()
         return Response({'mensagem': msg_response, 'xp_ganho': config_xp.xp_revisao})

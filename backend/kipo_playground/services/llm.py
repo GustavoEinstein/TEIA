@@ -79,6 +79,7 @@ class LocalOllamaProvider(BaseLLMProvider):
         self.client = OpenAI(
             api_key=self.api_key,
             base_url=self.base_url,
+            timeout=120.0,
         )
 
     def catalog_production(self, raw_text: str) -> dict:

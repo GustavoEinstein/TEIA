@@ -137,7 +137,9 @@ class Producao(models.Model):
     experiencia = models.TextField(blank=True, null=True)
     resultados = models.TextField(blank=True, null=True) 
     arquivo = models.FileField(upload_to='producoes/', blank=True, null=True)
-    anonimo = models.BooleanField(default=True, help_text="Se True, oculta o nome do autor publicamente.")
+    
+    # --- CAMPO CORRIGIDO AQUI ---
+    exibir_autor = models.BooleanField(default=True, help_text="Se True, exibe o nome do autor publicamente.")
     
     link_material = models.URLField(max_length=500, null=True, blank=True, verbose_name="Link Externo do Material")
     
@@ -152,6 +154,7 @@ class Producao(models.Model):
         related_name='derivacoes',
         help_text="Indica se esta prática foi baseada na produção de outro professor."
     )
+    
     def __str__(self):
         return f"{self.titulo} - {self.user.username} ({self.status})"
 
@@ -317,7 +320,3 @@ def create_user_profile(sender, instance, created, **kwargs):
 def save_user_profile(sender, instance, **kwargs):
     if hasattr(instance, 'profile'):
         instance.profile.save()
-
-
-
-        

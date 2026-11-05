@@ -767,7 +767,7 @@ def api_list_public_feed(request):
 @authentication_classes([])
 @permission_classes([AllowAny])
 def api_password_reset_request(request):
-    email = request.data.get('email', '').strip().lower()
+    email = request.data.get('email')
     if not email:
         return Response({'erro': 'E-mail é obrigatório.'}, status=400)
 
@@ -778,8 +778,6 @@ def api_password_reset_request(request):
 
     token = default_token_generator.make_token(user)
     uid = urlsafe_base64_encode(force_bytes(user.pk))
-    
-    # DICA: Quando for colocar no servidor oficial, troque esse localhost pelo domínio final (ex: teia.cic.unb.br)
     reset_link = f"http://localhost:5173/reset-password/{uid}/{token}"
 
     subject = "Redefinição de Senha - T.E.I.A"
@@ -803,7 +801,7 @@ def api_password_reset_request(request):
         msg.attach_alternative(html_content, "text/html")
         msg.send(fail_silently=False)
 
-        return Response({'mensagem': 'E-mail enviado! Se não achar, verifique a pasta Spam ou Quarentena.'})
+        return Response({'mensagem': 'E-mail enviado com sucesso!'})
         
     except Exception as e:
         print(f"ERRO AO ENVIAR E-MAIL: {e}")

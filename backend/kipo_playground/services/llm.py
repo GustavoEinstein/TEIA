@@ -5,7 +5,6 @@ from abc import ABC, abstractmethod
 from dotenv import load_dotenv
 from django.conf import settings
 from openai import OpenAI
-import google.generativeai as genai
 
 # Garante que o arquivo .env seja lido
 load_dotenv()
@@ -116,6 +115,9 @@ class GeminiProvider(BaseLLMProvider):
     """Provedor Google Gemini (mantido como segurança)."""
 
     def __init__(self):
+        # O import fica escopado aqui para evitar checagem de sockets na inicialização do servidor offline
+        import google.generativeai as genai
+
         raw_key = getattr(settings, 'GEMINI_API_KEY', None) or os.getenv('GEMINI_API_KEY')
         api_key = _clean_env(raw_key)
 
@@ -126,6 +128,7 @@ class GeminiProvider(BaseLLMProvider):
         self.model = genai.GenerativeModel('gemini-flash-latest')
 
     def catalog_production(self, raw_text: str) -> dict:
+        import google.generativeai as genai
         prompt = self.build_prompt(raw_text)
 
         try:

@@ -15,6 +15,7 @@ const BuscarBase = () => {
       setResultados([])
       return
     }
+
     setLoading(true)
     const delayBusca = setTimeout(async () => {
       try {
@@ -27,6 +28,7 @@ const BuscarBase = () => {
         setLoading(false)
       }
     }, 500)
+
     return () => clearTimeout(delayBusca)
   }, [busca])
 
@@ -50,12 +52,10 @@ const BuscarBase = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-6 flex flex-col items-center pt-12 md:pt-20 transition-colors duration-200">
-      
       <div className="w-full max-w-3xl flex flex-col items-center">
-        
         {/* Voltar */}
         <div className="w-full mb-8">
-          <button 
+          <button
             onClick={() => navigate("/dashboard/catalogar")}
             className="flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-[#1565C0] dark:hover:text-blue-400 font-bold text-sm transition-colors"
           >
@@ -69,13 +69,17 @@ const BuscarBase = () => {
             Buscar Prática Base
           </h2>
           <p className="text-base text-slate-500 dark:text-slate-400 leading-relaxed">
-            Digite palavras-chave para encontrar a prática que servirá de inspiração para a sua releitura.
+            Digite palavras-chave para encontrar a prática que servirá de
+            inspiração para a sua releitura.
           </p>
         </div>
 
         {/* Barra de Pesquisa Grande */}
         <div className="w-full max-w-2xl relative mb-10 group">
-          <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#1565C0] dark:group-focus-within:text-blue-400 transition-colors" />
+          <Search
+            size={20}
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#1565C0] dark:group-focus-within:text-blue-400 transition-colors"
+          />
           <input
             type="text"
             placeholder="Buscar por título, disciplina, modelo de IA..."
@@ -92,9 +96,8 @@ const BuscarBase = () => {
 
         {/* Lista de Resultados */}
         <div className="w-full max-w-2xl flex flex-col gap-4">
-          
           {resultados.map((prod) => (
-            <div 
+            <div
               key={prod.id}
               className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:shadow-md transition-shadow"
             >
@@ -103,7 +106,9 @@ const BuscarBase = () => {
                   {prod.titulo}
                 </h4>
                 <p className="text-sm font-medium text-slate-500 dark:text-slate-400 flex items-center gap-2">
-                  <span className="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">{prod.disciplina}</span>
+                  <span className="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">
+                    {prod.disciplina}
+                  </span>
                   • {prod.nivel}
                 </p>
               </div>
@@ -124,13 +129,13 @@ const BuscarBase = () => {
 
           {resultados.length === 0 && !loading && busca.trim() !== "" && (
             <div className="text-center py-12 bg-white dark:bg-slate-900 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400">
-              <p className="font-semibold text-lg mb-1">Nenhuma prática encontrada.</p>
+              <p className="font-semibold text-lg mb-1">
+                Nenhuma prática encontrada.
+              </p>
               <p className="text-sm">Tente usar outros termos de busca.</p>
             </div>
           )}
-
         </div>
-
       </div>
     </div>
   )

@@ -29,6 +29,10 @@ import {
   Plus,
   Save,
   Sparkles,
+  FileDown,
+  ChevronDown,
+  ChevronUp,
+  File as FileIcon,
 } from "lucide-react"
 
 import bnccMat from "../../data/bncc_mat.json"
@@ -315,6 +319,15 @@ const FormularioManual = () => {
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  // Função fictícia de gerar PDF (adapte conforme sua lógica anterior do jsPDF)
+  const gerarPDF = () => {
+    Swal.fire(
+      "Gerando PDF",
+      "A lógica de geração do PDF deve ser implementada aqui.",
+      "info",
+    )
   }
 
   const inputClass =
@@ -844,175 +857,128 @@ const FormularioManual = () => {
           </div>
 
           {/* ======================= SESSÃO DE PDF (FULL WIDTH BOTTOM) ======================= */}
-          <div style={styles.pdfDividerLine}></div>
+          <div className="h-px bg-slate-200 dark:bg-slate-700 my-8 w-full"></div>
 
-          <div style={styles.pdfSectionContainer}>
+          <div className="w-full">
             <div
-              className="pdf-trigger-btn"
+              className={`flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 cursor-pointer transition-colors border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 ${showPdfMenu ? "rounded-t-xl border-b-0" : "rounded-xl"}`}
               onClick={() => setShowPdfMenu(!showPdfMenu)}
-              style={{
-                ...styles.pdfTriggerBtn,
-                borderBottom: showPdfMenu
-                  ? "none"
-                  : "1px solid var(--border-color)",
-                borderRadius: showPdfMenu ? "10px 10px 0 0" : "10px",
-              }}
             >
-              <div
-                style={{ display: "flex", alignItems: "center", gap: "12px" }}
-              >
-                <div
-                  style={{
-                    backgroundColor: "#1E40AF",
-                    padding: "8px",
-                    borderRadius: "8px",
-                    display: "flex",
-                  }}
-                >
+              <div className="flex items-center gap-3">
+                <div className="bg-[#1E40AF] p-2 rounded-lg flex">
                   <FileIcon size={20} color="white" />
                 </div>
                 <div>
-                  <h4
-                    style={{
-                      margin: 0,
-                      fontSize: "16px",
-                      color: "var(--text-primary)",
-                    }}
-                  >
+                  <h4 className="m-0 text-base text-slate-800 dark:text-slate-200">
                     Essa produção é um Plano de Aula?
                   </h4>
-                  <span
-                    style={{ fontSize: "13px", color: "var(--text-muted)" }}
-                  >
+                  <span className="text-sm text-slate-500 dark:text-slate-400">
                     Exporte um PDF oficial preenchendo apenas os campos
                     restantes.
                   </span>
                 </div>
               </div>
               {showPdfMenu ? (
-                <ChevronUp size={24} color="var(--text-secondary)" />
+                <ChevronUp size={24} className="text-slate-500" />
               ) : (
-                <ChevronDown size={24} color="var(--text-secondary)" />
+                <ChevronDown size={24} className="text-slate-500" />
               )}
             </div>
 
             {showPdfMenu && (
-              <div style={styles.pdfFormPanel}>
-                <p
-                  style={{
-                    margin: "0 0 25px 0",
-                    fontSize: "14px",
-                    color: "var(--text-secondary)",
-                    lineHeight: "1.6",
-                  }}
-                >
+              <div className="p-6 border border-slate-200 dark:border-slate-700 rounded-b-xl border-t-0 bg-white dark:bg-slate-900">
+                <p className="mb-6 text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
                   Preencha os campos abaixo exigidos pelas coordenações
                   pedagógicas. O sistema irá mesclar as informações preenchidas
                   acima com estes campos para gerar o seu documento.{" "}
-                  <strong>
+                  <strong className="text-slate-700 dark:text-slate-300">
                     Estes dados extras não serão enviados para a comunidade
                     pública.
                   </strong>
                 </p>
 
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
-                    gap: "20px",
-                  }}
-                >
-                  <div style={{ ...styles.inputGroup, marginBottom: 0 }}>
-                    <label style={styles.label}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-4">
+                  <div className="flex flex-col">
+                    <label className={labelClass}>
                       Instituição / Identificação
                     </label>
                     <input
                       type="text"
                       name="instituicao"
-                      value={formData.instituicao}
+                      value={formData.instituicao || ""}
                       onChange={handleChange}
-                      style={styles.input}
+                      className={inputClass}
                       placeholder="Ex: Universidade de Brasília / Centro Educacional 01"
                     />
                   </div>
 
-                  <div style={{ ...styles.inputGroup, marginBottom: 0 }}>
-                    <label style={styles.label}>Objetivo Geral</label>
+                  <div className="flex flex-col">
+                    <label className={labelClass}>Objetivo Geral</label>
                     <input
                       type="text"
                       name="objetivo_geral"
-                      value={formData.objetivo_geral}
+                      value={formData.objetivo_geral || ""}
                       onChange={handleChange}
-                      style={styles.input}
+                      className={inputClass}
                       placeholder="Ex: Compreender as causas da Revolução Industrial."
                     />
                   </div>
                 </div>
 
-                <div style={{ ...styles.inputGroup, marginTop: "20px" }}>
-                  <label style={styles.label}>Objetivos Específicos</label>
+                <div className="flex flex-col mb-4">
+                  <label className={labelClass}>Objetivos Específicos</label>
                   <textarea
                     name="objetivos_especificos"
-                    value={formData.objetivos_especificos}
+                    value={formData.objetivos_especificos || ""}
                     onChange={handleChange}
-                    style={{ ...styles.textarea, minHeight: "60px" }}
+                    className={`${inputClass} min-h-[60px] resize-y`}
                     placeholder="Se vazio, o sistema usará os códigos da BNCC preenchidos lá em cima."
                   />
                 </div>
 
-                <div style={styles.inputGroup}>
-                  <label style={styles.label}>Instrumentos de Avaliação</label>
+                <div className="flex flex-col mb-4">
+                  <label className={labelClass}>
+                    Instrumentos de Avaliação
+                  </label>
                   <textarea
                     name="instrumentos_avaliacao"
-                    value={formData.instrumentos_avaliacao}
+                    value={formData.instrumentos_avaliacao || ""}
                     onChange={handleChange}
-                    style={{ ...styles.textarea, minHeight: "60px" }}
+                    className={`${inputClass} min-h-[60px] resize-y`}
                     placeholder="Ex: Prova escrita, apresentação de seminário, rubrica..."
                   />
                 </div>
 
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
-                    gap: "20px",
-                  }}
-                >
-                  <div style={styles.inputGroup}>
-                    <label style={styles.label}>Bibliografia Básica</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-4">
+                  <div className="flex flex-col">
+                    <label className={labelClass}>Bibliografia Básica</label>
                     <textarea
                       name="bibliografia_basica"
-                      value={formData.bibliografia_basica}
+                      value={formData.bibliografia_basica || ""}
                       onChange={handleChange}
-                      style={styles.textarea}
+                      className={inputClass}
                       rows="2"
                     />
                   </div>
-                  <div style={styles.inputGroup}>
-                    <label style={styles.label}>
+                  <div className="flex flex-col">
+                    <label className={labelClass}>
                       Bibliografia Complementar
                     </label>
                     <textarea
                       name="bibliografia_complementar"
-                      value={formData.bibliografia_complementar}
+                      value={formData.bibliografia_complementar || ""}
                       onChange={handleChange}
-                      style={styles.textarea}
+                      className={inputClass}
                       rows="2"
                     />
                   </div>
                 </div>
 
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "flex-end",
-                    marginTop: "10px",
-                  }}
-                >
+                <div className="flex justify-end mt-4">
                   <button
                     onClick={gerarPDF}
                     type="button"
-                    style={styles.downloadPdfButton}
+                    className="flex items-center gap-2 bg-[#1565C0] hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-bold transition-colors cursor-pointer border-none"
                   >
                     <FileDown size={20} /> Gerar PDF Institucional
                   </button>

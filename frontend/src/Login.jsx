@@ -1,7 +1,7 @@
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import api from "./services/api" // Ajuste o caminho se necessário
-import { Link, useNavigate } from "react-router-dom"
-import { ArrowLeft, User, Lock, Loader2 } from "lucide-react"
+import { Link, useNavigate, useLocation } from "react-router-dom"
+import { ArrowLeft, User, Lock, Loader2, AlertCircle } from "lucide-react"
 
 // Novo Ícone Exclusivo: Teia com a aranha descendo!
 const SpiderWebIcon = ({ size = 32, className = "" }) => (
@@ -41,6 +41,10 @@ const Login = () => {
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const navigate = useNavigate()
+  const location = useLocation()
+
+  // Verifica se a URL contém o parâmetro indicando que a sessão expirou
+  const isExpired = new URLSearchParams(location.search).get("expired")
 
   const handleLogin = async (e) => {
     e.preventDefault()
@@ -95,7 +99,7 @@ const Login = () => {
       <div className="w-full max-w-[420px] z-10">
         <button
           onClick={() => navigate("/")}
-          className="flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-[#1565C0] dark:hover:text-blue-400 font-semibold text-sm mb-6 transition-colors"
+          className="flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-[#1565C0] dark:hover:text-blue-400 font-semibold text-sm mb-6 transition-colors bg-transparent border-none cursor-pointer"
         >
           <ArrowLeft size={16} /> Voltar ao Início
         </button>
@@ -112,6 +116,17 @@ const Login = () => {
               Tecendo Educação com Inteligência Artificial
             </p>
           </div>
+
+          {/* AVISO DE SESSÃO EXPIRADA */}
+          {isExpired && (
+            <div className="mb-6 flex items-start gap-3 bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 p-4 rounded-r-lg text-amber-800 dark:text-amber-300">
+              <AlertCircle size={20} className="shrink-0 mt-0.5" />
+              <p className="text-sm font-medium m-0 leading-relaxed">
+                Sua sessão expirou por inatividade. Por favor, faça login
+                novamente para continuar de onde parou.
+              </p>
+            </div>
+          )}
 
           <form onSubmit={handleLogin} className="flex flex-col gap-5">
             <div>
@@ -171,7 +186,7 @@ const Login = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full flex items-center justify-center gap-2 bg-[#1565C0] hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl transition-all shadow-md shadow-blue-500/20 disabled:opacity-70 disabled:cursor-not-allowed mt-2"
+              className="w-full flex items-center justify-center gap-2 bg-[#1565C0] hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl transition-all shadow-md shadow-blue-500/20 disabled:opacity-70 disabled:cursor-not-allowed mt-2 border-none cursor-pointer"
             >
               {isLoading ? (
                 <>
@@ -184,7 +199,7 @@ const Login = () => {
 
             <div className="text-center mt-4 border-t border-slate-100 dark:border-slate-800 pt-6">
               <span className="text-sm text-slate-500 dark:text-slate-400">
-                Não tem conta??
+                Não tem conta?{" "}
               </span>
               <Link
                 to="/register"

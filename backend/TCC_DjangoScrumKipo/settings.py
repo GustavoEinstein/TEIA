@@ -136,8 +136,8 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=8),  # Sessão de 8 horas (Estilo Aprender3)
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),  # Opcional: 7 dias para o token de renovação
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 

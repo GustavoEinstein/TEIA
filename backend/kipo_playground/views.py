@@ -1,3 +1,5 @@
+"""Módulo de Views de kipo_playground"""
+
 from multiprocessing import context
 from typing import final
 from django.shortcuts import render, redirect, get_object_or_404
@@ -317,9 +319,16 @@ def api_create_production(request):
         is_draft = str(is_draft_val).strip().lower() in ['true', '1', 't', 'y', 'yes']
         status_inicial = 'Rascunho' if is_draft else 'Em revisão'
 
-        # --- LÓGICA DE AUTORIA (ANONIMATO) ---
-        exibir_autor_val = data.get('exibir_autor', True)
-        exibir_autor = str(exibir_autor_val).strip().lower() not in ['false', '0', 'f', 'n']
+        # --- LÓGICA DE AUTORIA (PADRÃO ANÔNIMO: exibir_autor = False) ---
+        if 'anonimo' in data:
+            anonimo_val = data.get('anonimo')
+            is_anonimo = str(anonimo_val).strip().lower() in ['true', '1', 't', 'y', 'yes']
+            exibir_autor = not is_anonimo
+        elif 'exibir_autor' in data:
+            exibir_autor_val = data.get('exibir_autor')
+            exibir_autor = str(exibir_autor_val).strip().lower() in ['true', '1', 't', 'y', 'yes']
+        else:
+            exibir_autor = False
 
         # --- LÓGICA DE RELEITURA (HERANÇA) ---
         producao_base_id = data.get('producao_base')
@@ -442,7 +451,7 @@ def api_get_production_details(request, pk):
 
         dados_referencia = None
         if p.producao_base:
-            autor_exibicao_original = p.producao_base.get_nome_autor_exibicao()
+            autor_exibicao_original = (p.producao_base.user.get_full_name() or p.producao_base.user.username) if p.producao_base.exibir_autor else None
             
             dados_referencia = {
                 'id': p.producao_base.id,
@@ -459,6 +468,10 @@ def api_get_production_details(request, pk):
             avaliacoes_filtradas = [a for a in avaliacoes_detalhadas if a['revisor_id'] == request.user.id]
 
         notas = avaliacoes_filtradas[-1]['notas'] if avaliacoes_filtradas else None
+
+        # Só envia o nome do autor se a prática estiver APROVADA e exibir_autor for True
+        mostrar_autor = bool(p.exibir_autor and is_aprovado)
+        nome_autor_final = (p.user.get_full_name() or p.user.first_name or p.user.username) if mostrar_autor else None
 
         data = {
             'id': p.id,
@@ -480,9 +493,10 @@ def api_get_production_details(request, pk):
             'data': p.data_criacao.strftime('%d/%m/%Y'),
             'status': p.status,
             
-            # --- NOVA LÓGICA DE AUTORIA (BLINDAGEM PELO MODELS) ---
-            'autor': p.get_nome_autor_exibicao() if not (is_dono or is_admin) else (p.user.get_full_name() or p.user.username),
-            'exibir_autor': p.exibir_autor,
+            # --- LÓGICA DE AUTORIA ESTRITA ---
+            'autor': nome_autor_final,
+            'exibir_autor': mostrar_autor,
+            'anonimo': not mostrar_autor,
             
             'is_dono': is_dono,
             'is_admin': is_admin,
@@ -528,9 +542,13 @@ def api_update_production(request, pk):
         p.resultados = data.get('resultados', p.resultados)
         p.link_material = data.get('link_material', p.link_material)
 
-        if 'exibir_autor' in data:
+        if 'anonimo' in data:
+            anonimo_val = data.get('anonimo')
+            is_anonimo = str(anonimo_val).strip().lower() in ['true', '1', 't', 'y', 'yes']
+            p.exibir_autor = not is_anonimo
+        elif 'exibir_autor' in data:
             exibir_autor_val = data.get('exibir_autor')
-            p.exibir_autor = str(exibir_autor_val).strip().lower() not in ['false', '0', 'f', 'n']
+            p.exibir_autor = str(exibir_autor_val).strip().lower() in ['true', '1', 't', 'y', 'yes']
 
         recursos_input = data.getlist('recursos') if hasattr(data, 'getlist') else data.get('recursos')
         if recursos_input:
@@ -560,20 +578,25 @@ def api_update_production(request, pk):
 
 
 # ============================================================================
-# NOVO: CONTROLE DE VISIBILIDADE DO AUTOR (LIGA/DESLIGA)
+# CONTROLE DE VISIBILIDADE DO AUTOR (LIGA/DESLIGA)
 # ============================================================================
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])
 def api_toggle_author_visibility(request, pk):
-    """Permite que apenas o dono da prática ligue/desligue seu nome a qualquer momento"""
+    """Permite que apenas o dono da prática ligue/desligue seu nome após aprovada"""
     try:
         p = Producao.objects.get(id=pk, user=request.user)
         p.exibir_autor = not p.exibir_autor
         p.save()
+        
         status_msg = "visível" if p.exibir_autor else "oculto"
+        nome_autor = (p.user.get_full_name() or p.user.first_name or p.user.username) if p.exibir_autor else None
+        
         return Response({
             'mensagem': f'Seu nome agora está {status_msg} na comunidade.',
-            'exibir_autor': p.exibir_autor
+            'exibir_autor': p.exibir_autor,
+            'anonimo': not p.exibir_autor,
+            'autor': nome_autor
         })
     except Producao.DoesNotExist:
         return Response({'erro': 'Acesso negado ou prática não encontrada.'}, status=404)
@@ -732,8 +755,8 @@ def api_list_public_feed(request):
     
     lista = []
     for p in producoes:
-        # Usa a função do models.py para decidir se mostra ou não o nome no Feed Geral
-        autor_exibicao = p.get_nome_autor_exibicao()
+        # Só retorna o nome no Feed se o autor assinou explicitamente (senão retorna None e o card oculta)
+        autor_exibicao = (p.user.get_full_name() or p.user.first_name or p.user.username) if p.exibir_autor else None
 
         base_info = None
         if p.producao_base:
@@ -750,6 +773,7 @@ def api_list_public_feed(request):
             'modelo_ia': p.modelo_ia,
             'categoria': p.categoria,
             'autor': autor_exibicao,
+            'exibir_autor': p.exibir_autor,
             'producao_base': base_info,
             'resumo': p.experiencia[:150] + '...' if p.experiencia else '',
             'likes': 0
@@ -897,11 +921,12 @@ def api_forum_detalhe_comentarios(request, pk):
         
         dados_base = None
         if topico.producao_base:
+            autor_base = (topico.producao_base.user.get_full_name() or topico.producao_base.user.username) if topico.producao_base.exibir_autor else None
             dados_base = {
                 'id': topico.producao_base.id,
                 'titulo': topico.producao_base.titulo,
                 'disciplina': topico.producao_base.disciplina,
-                'autor': topico.producao_base.get_nome_autor_exibicao()
+                'autor': autor_base
             }
 
         dados_topico = {

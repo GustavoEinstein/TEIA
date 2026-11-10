@@ -138,7 +138,7 @@ class Producao(models.Model):
     resultados = models.TextField(blank=True, null=True) 
     arquivo = models.FileField(upload_to='producoes/', blank=True, null=True)
     
-    # --- CAMPO CORRIGIDO AQUI ---
+    # --- CONTROLE DE EXIBIÇÃO DE NOME ---
     exibir_autor = models.BooleanField(default=True, help_text="Se True, exibe o nome do autor publicamente.")
     
     link_material = models.URLField(max_length=500, null=True, blank=True, verbose_name="Link Externo do Material")
@@ -155,6 +155,15 @@ class Producao(models.Model):
         help_text="Indica se esta prática foi baseada na produção de outro professor."
     )
     
+    def get_nome_autor_exibicao(self):
+        """
+        Retorna o nome do autor ou 'Professor(a) Anônimo(a)' baseado 
+        na preferência definida no campo exibir_autor.
+        """
+        if not self.exibir_autor:
+            return "Professor(a) Anônimo(a)"
+        return self.user.get_full_name() or self.user.username
+
     def __str__(self):
         return f"{self.titulo} - {self.user.username} ({self.status})"
 

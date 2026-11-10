@@ -1,5 +1,3 @@
-"""Módulo de Views de kipo_playground"""
-
 from multiprocessing import context
 from typing import final
 from django.shortcuts import render, redirect, get_object_or_404
@@ -444,8 +442,7 @@ def api_get_production_details(request, pk):
 
         dados_referencia = None
         if p.producao_base:
-            autor_original = p.producao_base.user.first_name or p.producao_base.user.username
-            autor_exibicao_original = autor_original if p.producao_base.exibir_autor else "Professor(a) Anônimo(a)"
+            autor_exibicao_original = p.producao_base.get_nome_autor_exibicao()
             
             dados_referencia = {
                 'id': p.producao_base.id,
@@ -483,8 +480,8 @@ def api_get_production_details(request, pk):
             'data': p.data_criacao.strftime('%d/%m/%Y'),
             'status': p.status,
             
-            # --- NOVA LÓGICA DE AUTORIA ---
-            'autor': p.user.first_name or p.user.username if (p.exibir_autor or is_dono or is_admin) else "Professor(a) Anônimo(a)",
+            # --- NOVA LÓGICA DE AUTORIA (BLINDAGEM PELO MODELS) ---
+            'autor': p.get_nome_autor_exibicao() if not (is_dono or is_admin) else (p.user.get_full_name() or p.user.username),
             'exibir_autor': p.exibir_autor,
             
             'is_dono': is_dono,
@@ -735,8 +732,8 @@ def api_list_public_feed(request):
     
     lista = []
     for p in producoes:
-        nome_autor = p.user.first_name or p.user.username
-        autor_exibicao = nome_autor if p.exibir_autor else "Professor(a) Anônimo(a)"
+        # Usa a função do models.py para decidir se mostra ou não o nome no Feed Geral
+        autor_exibicao = p.get_nome_autor_exibicao()
 
         base_info = None
         if p.producao_base:
@@ -904,7 +901,7 @@ def api_forum_detalhe_comentarios(request, pk):
                 'id': topico.producao_base.id,
                 'titulo': topico.producao_base.titulo,
                 'disciplina': topico.producao_base.disciplina,
-                'autor': topico.producao_base.user.first_name or topico.producao_base.user.username
+                'autor': topico.producao_base.get_nome_autor_exibicao()
             }
 
         dados_topico = {

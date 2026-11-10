@@ -4,7 +4,6 @@ import {
   BarChart3,
   CheckCircle2,
   ShieldAlert,
-  Clock,
   ThumbsUp,
   AlertTriangle,
   User,
@@ -37,9 +36,6 @@ const ParecerTecnico = ({ producao }) => {
         {avaliacoes.map((aval) => (
           <ReviewCard key={aval.ordem} avaliacao={aval} />
         ))}
-
-        {avaliacoes.length === 1 &&
-          !producao.status.toLowerCase().includes("rejeitado") && <GhostCard />}
       </div>
     </div>
   )
@@ -106,24 +102,6 @@ const ReviewCard = ({ avaliacao }) => {
     </div>
   )
 }
-
-const GhostCard = () => (
-  <div style={styles.ghostCard}>
-    <div style={styles.ghostHeader}>
-      <div style={styles.ghostTitle}>
-        <Clock size={22} color="var(--text-muted)" />
-        <span>AGUARDANDO 2º AVALIADOR</span>
-      </div>
-      <div style={styles.ghostBadge}>NA FILA</div>
-    </div>
-    <div style={styles.ghostContent}>
-      <p style={styles.ghostText}>
-        Esta produção já recebeu a sua primeira avaliação e agora aguarda o
-        parecer de mais um colega.
-      </p>
-    </div>
-  </div>
-)
 
 const ScoreItem = ({ label, valor }) => (
   <div style={styles.scoreRow}>
@@ -321,46 +299,6 @@ const styles = {
     lineHeight: "1.6",
     whiteSpace: "pre-wrap",
     fontFamily: "inherit",
-  },
-  ghostCard: {
-    backgroundColor: "var(--bg-card)",
-    borderRadius: "12px",
-    border: "2px dashed var(--border-color)",
-    overflow: "hidden",
-    opacity: 0.8,
-  },
-  ghostHeader: {
-    backgroundColor: "var(--bg-alt)",
-    padding: "15px 25px",
-    borderBottom: "1px solid var(--border-color)",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  ghostTitle: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    fontSize: "15px",
-    fontWeight: "900",
-    letterSpacing: "0.5px",
-    color: "var(--text-muted)",
-  },
-  ghostBadge: {
-    fontSize: "11px",
-    fontWeight: "800",
-    letterSpacing: "1px",
-    backgroundColor: "var(--bg-main)",
-    color: "var(--text-muted)",
-    padding: "6px 12px",
-    borderRadius: "20px",
-  },
-  ghostContent: { padding: "25px", textAlign: "center" },
-  ghostText: {
-    margin: 0,
-    fontSize: "14px",
-    color: "var(--text-secondary)",
-    lineHeight: "1.6",
   },
 }
 

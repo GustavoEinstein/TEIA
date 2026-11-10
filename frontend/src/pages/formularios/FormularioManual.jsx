@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from "react"
 import api from "../../services/api"
-import { useNavigate, useOutletContext, useLocation } from "react-router-dom"
+import { useNavigate, useLocation } from "react-router-dom"
 import Swal from "sweetalert2"
-import { jsPDF } from "jspdf"
-import autoTable from "jspdf-autotable"
 import {
   ArrowLeft,
   UploadCloud,
@@ -19,7 +17,6 @@ import {
   Layers,
   X,
   Send,
-  Check,
   Search,
   Link as LinkIcon,
   Cpu,
@@ -29,10 +26,6 @@ import {
   Plus,
   Save,
   Sparkles,
-  FileDown,
-  ChevronDown,
-  ChevronUp,
-  File as FileIcon,
 } from "lucide-react"
 
 import bnccMat from "../../data/bncc_mat.json"
@@ -48,7 +41,7 @@ const FormularioManual = () => {
 
   const storedDisc = localStorage.getItem("user_disciplina") || "Geral"
   const baseDataInfo = location.state?.baseData || null
-  const initialDataInfo = location.state?.initialData || null // Dados vindos do CatalogarAssistido (IA)
+  const initialDataInfo = location.state?.initialData || null
 
   const [formData, setFormData] = useState(() => {
     // 1. Caso seja uma Releitura de colega
@@ -123,7 +116,6 @@ const FormularioManual = () => {
 
   const [customResource, setCustomResource] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [showPdfMenu, setShowPdfMenu] = useState(false)
 
   const [mostrarCampoComp, setMostrarCampoComp] = useState(() =>
     formData.bncc_computacao ? true : false,
@@ -178,7 +170,6 @@ const FormularioManual = () => {
   }
 
   useEffect(() => {
-    // Só restaura rascunho se NÃO vier de uma releitura E NÃO vier da IA
     if (!baseDataInfo && !initialDataInfo) {
       const savedDraft = localStorage.getItem("producao_autosave_draft")
       if (savedDraft) {
@@ -319,15 +310,6 @@ const FormularioManual = () => {
     } finally {
       setIsSubmitting(false)
     }
-  }
-
-  // Função fictícia de gerar PDF (adapte conforme sua lógica anterior do jsPDF)
-  const gerarPDF = () => {
-    Swal.fire(
-      "Gerando PDF",
-      "A lógica de geração do PDF deve ser implementada aqui.",
-      "info",
-    )
   }
 
   const inputClass =
@@ -856,135 +838,38 @@ const FormularioManual = () => {
             </div>
           </div>
 
-          {/* ======================= SESSÃO DE PDF (FULL WIDTH BOTTOM) ======================= */}
+          {/* ======================= INFORMATIVO DE PDF ======================= */}
           <div className="h-px bg-slate-200 dark:bg-slate-700 my-8 w-full"></div>
 
           <div className="w-full">
-            <div
-              className={`flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 cursor-pointer transition-colors border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 ${showPdfMenu ? "rounded-t-xl border-b-0" : "rounded-xl"}`}
-              onClick={() => setShowPdfMenu(!showPdfMenu)}
-            >
-              <div className="flex items-center gap-3">
-                <div className="bg-[#1E40AF] p-2 rounded-lg flex">
-                  <FileIcon size={20} color="white" />
-                </div>
-                <div>
-                  <h4 className="m-0 text-base text-slate-800 dark:text-slate-200">
-                    Essa produção é um Plano de Aula?
-                  </h4>
-                  <span className="text-sm text-slate-500 dark:text-slate-400">
-                    Exporte um PDF oficial preenchendo apenas os campos
-                    restantes.
-                  </span>
-                </div>
+            <div className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 border border-emerald-200 dark:border-emerald-800/60 rounded-xl p-6 md:p-8 flex flex-col sm:flex-row items-center sm:items-start gap-5 shadow-sm">
+              <div className="bg-emerald-100 dark:bg-emerald-900/50 p-4 rounded-full shrink-0 shadow-sm border border-emerald-200 dark:border-emerald-800">
+                <Sparkles
+                  size={32}
+                  className="text-emerald-600 dark:text-emerald-400"
+                />
               </div>
-              {showPdfMenu ? (
-                <ChevronUp size={24} className="text-slate-500" />
-              ) : (
-                <ChevronDown size={24} className="text-slate-500" />
-              )}
-            </div>
-
-            {showPdfMenu && (
-              <div className="p-6 border border-slate-200 dark:border-slate-700 rounded-b-xl border-t-0 bg-white dark:bg-slate-900">
-                <p className="mb-6 text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
-                  Preencha os campos abaixo exigidos pelas coordenações
-                  pedagógicas. O sistema irá mesclar as informações preenchidas
-                  acima com estes campos para gerar o seu documento.{" "}
-                  <strong className="text-slate-700 dark:text-slate-300">
-                    Estes dados extras não serão enviados para a comunidade
-                    pública.
+              <div className="text-center sm:text-left">
+                <h4 className="text-lg md:text-xl font-black text-slate-900 dark:text-white mb-2 m-0 tracking-tight">
+                  Sua prática é um Plano de Aula?
+                </h4>
+                <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed m-0 max-w-3xl">
+                  Que incrível! ✨ Não se preocupe com formatações complexas
+                  agora, apenas concentre-se em relatar a sua experiência com a
+                  turma. Assim que você{" "}
+                  <strong className="text-slate-900 dark:text-white font-extrabold">
+                    salvar sua produção
                   </strong>
+                  , o T.E.I.A. vai disponibilizar magicamente um botão especial
+                  lá nos detalhes da sua prática (na aba "Minhas Produções")
+                  para gerar e baixar na hora o seu documento em{" "}
+                  <strong className="text-slate-900 dark:text-white font-extrabold">
+                    PDF no padrão oficial (IFB / MEC)
+                  </strong>
+                  !
                 </p>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-4">
-                  <div className="flex flex-col">
-                    <label className={labelClass}>
-                      Instituição / Identificação
-                    </label>
-                    <input
-                      type="text"
-                      name="instituicao"
-                      value={formData.instituicao || ""}
-                      onChange={handleChange}
-                      className={inputClass}
-                      placeholder="Ex: Universidade de Brasília / Centro Educacional 01"
-                    />
-                  </div>
-
-                  <div className="flex flex-col">
-                    <label className={labelClass}>Objetivo Geral</label>
-                    <input
-                      type="text"
-                      name="objetivo_geral"
-                      value={formData.objetivo_geral || ""}
-                      onChange={handleChange}
-                      className={inputClass}
-                      placeholder="Ex: Compreender as causas da Revolução Industrial."
-                    />
-                  </div>
-                </div>
-
-                <div className="flex flex-col mb-4">
-                  <label className={labelClass}>Objetivos Específicos</label>
-                  <textarea
-                    name="objetivos_especificos"
-                    value={formData.objetivos_especificos || ""}
-                    onChange={handleChange}
-                    className={`${inputClass} min-h-[60px] resize-y`}
-                    placeholder="Se vazio, o sistema usará os códigos da BNCC preenchidos lá em cima."
-                  />
-                </div>
-
-                <div className="flex flex-col mb-4">
-                  <label className={labelClass}>
-                    Instrumentos de Avaliação
-                  </label>
-                  <textarea
-                    name="instrumentos_avaliacao"
-                    value={formData.instrumentos_avaliacao || ""}
-                    onChange={handleChange}
-                    className={`${inputClass} min-h-[60px] resize-y`}
-                    placeholder="Ex: Prova escrita, apresentação de seminário, rubrica..."
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-4">
-                  <div className="flex flex-col">
-                    <label className={labelClass}>Bibliografia Básica</label>
-                    <textarea
-                      name="bibliografia_basica"
-                      value={formData.bibliografia_basica || ""}
-                      onChange={handleChange}
-                      className={inputClass}
-                      rows="2"
-                    />
-                  </div>
-                  <div className="flex flex-col">
-                    <label className={labelClass}>
-                      Bibliografia Complementar
-                    </label>
-                    <textarea
-                      name="bibliografia_complementar"
-                      value={formData.bibliografia_complementar || ""}
-                      onChange={handleChange}
-                      className={inputClass}
-                      rows="2"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex justify-end mt-4">
-                  <button
-                    onClick={gerarPDF}
-                    type="button"
-                    className="flex items-center gap-2 bg-[#1565C0] hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-bold transition-colors cursor-pointer border-none"
-                  >
-                    <FileDown size={20} /> Gerar PDF Institucional
-                  </button>
-                </div>
               </div>
-            )}
+            </div>
           </div>
         </div>
       </div>

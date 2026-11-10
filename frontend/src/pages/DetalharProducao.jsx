@@ -6,7 +6,6 @@ import {
   useLocation,
   useOutletContext,
 } from "react-router-dom"
-import Swal from "sweetalert2"
 import {
   ArrowLeft,
   Calendar,
@@ -32,8 +31,6 @@ import {
   AlertTriangle,
   ExternalLink,
   Link2,
-  UserCheck,
-  EyeOff,
 } from "lucide-react"
 
 const DetalharProducao = () => {
@@ -45,7 +42,6 @@ const DetalharProducao = () => {
   const fromHistory = location.state?.fromHistory || false
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [togglingAuthor, setTogglingAuthor] = useState(false)
 
   const handleDownload = async () => {
     if (!data || !data.arquivo) return
@@ -65,36 +61,6 @@ const DetalharProducao = () => {
       window.URL.revokeObjectURL(urlBlob)
     } catch (error) {
       console.error("Erro no download:", error)
-    }
-  }
-
-  const handleToggleAuthorVisibility = async () => {
-    if (!data || togglingAuthor) return
-    setTogglingAuthor(true)
-    try {
-      const response = await api.put(`api/production/${id}/toggle-visibility/`)
-      setData((prev) => ({
-        ...prev,
-        exibir_autor: response.data.exibir_autor,
-        anonimo: response.data.anonimo,
-        autor: response.data.autor,
-      }))
-      Swal.fire({
-        icon: "success",
-        title: "Visibilidade Atualizada",
-        text: response.data.mensagem,
-        timer: 2000,
-        showConfirmButton: false,
-      })
-    } catch (error) {
-      console.error("Erro ao alterar visibilidade do autor:", error)
-      Swal.fire(
-        "Erro",
-        "Não foi possível alterar a visibilidade do seu nome.",
-        "error",
-      )
-    } finally {
-      setTogglingAuthor(false)
     }
   }
 
@@ -136,7 +102,7 @@ const DetalharProducao = () => {
       <div className="max-w-[1200px] mx-auto">
         <button
           onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-[#1565C0] dark:hover:text-blue-400 font-bold text-sm mb-6 transition-colors"
+          className="flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-[#1565C0] dark:hover:text-blue-400 font-bold text-sm mb-6 transition-colors border-none bg-transparent cursor-pointer"
         >
           <ArrowLeft size={18} /> Voltar
         </button>
@@ -150,8 +116,6 @@ const DetalharProducao = () => {
                 isRejected={isRejected}
                 isPending={isPending}
                 handleDownload={handleDownload}
-                handleToggleAuthorVisibility={handleToggleAuthorVisibility}
-                togglingAuthor={togglingAuthor}
               />
             </div>
           )}
@@ -247,7 +211,7 @@ const DetalharProducao = () => {
                   <BookOpen size={20} /> Alinhamento BNCC
                 </h3>
                 <div className="bg-slate-50 dark:bg-slate-800/50 border-l-4 border-[#1565C0] dark:border-blue-500 p-5 rounded-r-xl">
-                  <p className="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap text-sm">
+                  <p className="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap text-sm m-0">
                     {data.bncc || "Não informado."}
                   </p>
                 </div>
@@ -259,7 +223,7 @@ const DetalharProducao = () => {
                     <Cpu size={20} /> BNCC Computação
                   </h3>
                   <div className="bg-slate-50 dark:bg-slate-800/50 border-l-4 border-indigo-500 p-5 rounded-r-xl">
-                    <p className="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap text-sm">
+                    <p className="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap text-sm m-0">
                       {data.bncc_computacao}
                     </p>
                   </div>
@@ -270,7 +234,7 @@ const DetalharProducao = () => {
                 <h3 className="flex items-center gap-2 text-lg font-extrabold text-slate-700 dark:text-slate-400 mb-4">
                   <Terminal size={20} /> Prompts na IA
                 </h3>
-                <div className="bg-slate-50 dark:bg-slate-800/50 border-l-4 border-slate-400 p-5 rounded-r-xl font-mono text-sm text-slate-600 dark:text-slate-400 whitespace-pre-wrap">
+                <div className="bg-slate-50 dark:bg-slate-800/50 border-l-4 border-slate-400 p-5 rounded-r-xl font-mono text-sm text-slate-600 dark:text-slate-400 whitespace-pre-wrap m-0">
                   {data.prompts_ia || "Nenhum prompt registrado."}
                 </div>
               </div>
@@ -280,7 +244,7 @@ const DetalharProducao = () => {
                   <Lightbulb size={20} /> Relato de Experiência
                 </h3>
                 <div className="bg-slate-50 dark:bg-slate-800/50 border-l-4 border-amber-500 p-5 rounded-r-xl">
-                  <p className="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap text-[15px]">
+                  <p className="text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap text-[15px] m-0">
                     {data.experiencia || data.relato || "Não informado."}
                   </p>
                 </div>
@@ -291,7 +255,7 @@ const DetalharProducao = () => {
                   <Target size={20} /> Resultados
                 </h3>
                 <div className="bg-emerald-50 dark:bg-emerald-900/10 border-l-4 border-emerald-500 p-5 rounded-r-xl">
-                  <p className="text-emerald-800 dark:text-emerald-300 italic text-sm whitespace-pre-wrap">
+                  <p className="text-emerald-800 dark:text-emerald-300 italic text-sm whitespace-pre-wrap m-0">
                     {data.resultados || "Sem resultados registrados."}
                   </p>
                 </div>
@@ -309,8 +273,6 @@ const DetalharProducao = () => {
                 isRejected={isRejected}
                 isPending={isPending}
                 handleDownload={handleDownload}
-                handleToggleAuthorVisibility={handleToggleAuthorVisibility}
-                togglingAuthor={togglingAuthor}
               />
             </div>
           )}
@@ -326,59 +288,29 @@ const SidebarContent = ({
   isRejected,
   isPending,
   handleDownload,
-  handleToggleAuthorVisibility,
-  togglingAuthor,
 }) => {
-  // O card de autor SÓ aparece se a obra estiver assinada (exibir_autor === true e houver nome)
-  const mostrarCardAutor = Boolean(
-    data.exibir_autor && data.autor && data.autor !== "Professor(a) Anônimo(a)",
-  )
-  const initial = mostrarCardAutor ? data.autor.charAt(0).toUpperCase() : "A"
+  const isAnonimo = data.anonimo !== false
+  const initial = isAnonimo
+    ? "A"
+    : data.autor
+      ? data.autor.charAt(0).toUpperCase()
+      : "U"
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
-      {/* CARD DO AUTOR: Só aparece quando o autor optar por assinar a obra */}
-      {mostrarCardAutor && (
-        <div className="flex items-center gap-3 mb-4 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 p-3 rounded-lg">
-          <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/40 text-[#1565C0] dark:text-blue-400 flex items-center justify-center font-black text-sm shrink-0">
-            {initial}
-          </div>
-          <div>
-            <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-0.5">
-              Autor(a)
-            </p>
-            <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
-              {data.autor}
-            </p>
-          </div>
+      <div className="flex items-center gap-3 mb-6 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 p-3 rounded-lg">
+        <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center font-black text-sm shrink-0">
+          {initial}
         </div>
-      )}
-
-      {/* BOTÃO EXCLUSIVO PARA O DONO DA PRODUÇÃO (QUANDO APROVADA) */}
-      {data.is_dono && isApproved && (
-        <div className="mb-6">
-          <button
-            type="button"
-            disabled={togglingAuthor}
-            onClick={handleToggleAuthorVisibility}
-            className={`w-full py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 border transition-all cursor-pointer ${
-              data.exibir_autor
-                ? "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 dark:border-slate-700"
-                : "bg-blue-50 hover:bg-blue-100 text-[#1565C0] border-blue-200 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 dark:text-blue-400 dark:border-blue-800"
-            }`}
-          >
-            {data.exibir_autor ? (
-              <>
-                <EyeOff size={15} /> Ocultar meu nome nesta produção
-              </>
-            ) : (
-              <>
-                <UserCheck size={15} /> Assinar meu nome nesta produção
-              </>
-            )}
-          </button>
+        <div>
+          <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-0.5">
+            Autor(a)
+          </p>
+          <p className="text-sm font-bold text-slate-800 dark:text-slate-200 m-0">
+            {data.autor}
+          </p>
         </div>
-      )}
+      </div>
 
       <h3 className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4 border-b border-slate-100 dark:border-slate-800 pb-3">
         Status do Material
@@ -394,7 +326,7 @@ const SidebarContent = ({
             <span className="block font-black text-emerald-700 dark:text-emerald-400 mb-1">
               APROVADO
             </span>
-            <p className="text-xs text-emerald-800/70 dark:text-emerald-300/70 leading-relaxed">
+            <p className="text-xs text-emerald-800/70 dark:text-emerald-300/70 leading-relaxed m-0">
               Validado pela comunidade.
             </p>
           </div>
@@ -437,7 +369,7 @@ const SidebarContent = ({
         {data.arquivo && (
           <button
             onClick={handleDownload}
-            className="w-full flex items-center justify-center gap-2 bg-[#1565C0] hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-md shadow-blue-500/20"
+            className="w-full flex items-center justify-center gap-2 bg-[#1565C0] hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-md shadow-blue-500/20 border-none cursor-pointer"
           >
             <Download size={18} /> Baixar Roteiro
           </button>
@@ -448,14 +380,14 @@ const SidebarContent = ({
             href={data.link_material}
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-md shadow-purple-500/20"
+            className="w-full flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-md shadow-purple-500/20 no-underline"
           >
             <ExternalLink size={18} /> Acessar Link Externo
           </a>
         )}
 
         {!data.arquivo && !data.link_material && (
-          <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4 border border-dashed border-slate-300 dark:border-slate-700 rounded-xl">
+          <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-4 border border-dashed border-slate-300 dark:border-slate-700 rounded-xl m-0">
             Nenhum material anexado.
           </p>
         )}
@@ -478,10 +410,10 @@ const ParecerTecnico = ({ producao }) => {
       <div className="flex items-center gap-3 mb-6">
         <BarChart3 size={24} className="text-[#1565C0] dark:text-blue-400" />
         <div>
-          <h3 className="text-xl font-extrabold text-slate-800 dark:text-white">
+          <h3 className="text-xl font-extrabold text-slate-800 dark:text-white m-0">
             Histórico de Revisão
           </h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+          <p className="text-sm text-slate-500 dark:text-slate-400 m-0">
             Detalhamento dos avaliadores sobre esta prática.
           </p>
         </div>
@@ -491,19 +423,6 @@ const ParecerTecnico = ({ producao }) => {
         {avaliacoes.map((aval) => (
           <ReviewCard key={aval.ordem} avaliacao={aval} />
         ))}
-        {producao.total_avaliacoes === 1 &&
-          (producao.is_dono || producao.is_admin) &&
-          !producao.status.toLowerCase().includes("rejeitado") && (
-            <div className="bg-slate-50 dark:bg-slate-800/30 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 p-6 text-center">
-              <Clock size={24} className="mx-auto text-slate-400 mb-3" />
-              <h4 className="font-bold text-slate-600 dark:text-slate-300 mb-1">
-                Aguardando 2º Avaliador
-              </h4>
-              <p className="text-sm text-slate-500">
-                Aguardando o parecer de mais um colega para finalização.
-              </p>
-            </div>
-          )}
       </div>
     </div>
   )
@@ -561,7 +480,7 @@ const ReviewCard = ({ avaliacao }) => {
               <div className="flex items-center gap-2 text-xs font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest mb-2">
                 <ThumbsUp size={16} /> Pontos Fortes
               </div>
-              <p className="text-sm text-emerald-800 dark:text-emerald-300">
+              <p className="text-sm text-emerald-800 dark:text-emerald-300 m-0">
                 {pontos_fortes}
               </p>
             </div>
@@ -571,14 +490,14 @@ const ReviewCard = ({ avaliacao }) => {
               <div className="flex items-center gap-2 text-xs font-black text-red-700 dark:text-red-400 uppercase tracking-widest mb-2">
                 <AlertTriangle size={16} /> Melhorias
               </div>
-              <p className="text-sm text-red-800 dark:text-red-300">
+              <p className="text-sm text-red-800 dark:text-red-300 m-0">
                 {pontos_melhoria}
               </p>
             </div>
           )}
           {!pontos_fortes && !pontos_melhoria && avaliacao.feedback_texto && (
             <div className="bg-slate-50 dark:bg-slate-800/50 border-l-4 border-slate-400 p-4 rounded-r-lg">
-              <p className="text-sm text-slate-600 dark:text-slate-300">
+              <p className="text-sm text-slate-600 dark:text-slate-300 m-0">
                 {avaliacao.feedback_texto}
               </p>
             </div>

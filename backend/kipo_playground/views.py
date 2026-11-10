@@ -862,12 +862,14 @@ def api_list_pending_users(request):
     profiles = Profile.objects.filter(status_conta='Em análise').select_related('user')
     lista = []
     for p in profiles:
+        nome_completo = p.user.get_full_name() or p.user.first_name or p.user.username
         lista.append({
             'id': p.user.id,
-            'nome': p.user.first_name or p.user.username,
+            'nome': nome_completo,
+            'username': p.user.username,
             'email': p.user.email,
-            'escola': p.escola,
-            'disciplina': p.disciplina,
+            'escola': p.escola or 'Não informada',
+            'disciplina': p.disciplina or 'Não informada',
             'data_cadastro': p.user.date_joined.strftime('%d/%m/%Y')
         })
     return Response(lista)
@@ -1051,11 +1053,16 @@ def api_admin_list_users(request):
     users = User.objects.all().select_related('profile').order_by('-date_joined')
     lista = []
     for u in users:
-        disciplina = u.profile.disciplina if hasattr(u, 'profile') else 'N/A'
+        disciplina = u.profile.disciplina if hasattr(u, 'profile') else 'Não informada'
+        escola = u.profile.escola if hasattr(u, 'profile') else 'Não informada'
+        nome_completo = u.get_full_name() or u.first_name or u.username
+        
         lista.append({
             'id': u.id,
+            'nome': nome_completo,
             'username': u.username,
             'email': u.email,
+            'escola': escola,
             'disciplina': disciplina,
             'is_superuser': u.is_superuser
         })

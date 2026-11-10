@@ -138,8 +138,8 @@ class Producao(models.Model):
     resultados = models.TextField(blank=True, null=True) 
     arquivo = models.FileField(upload_to='producoes/', blank=True, null=True)
     
-    # --- CONTROLE DE EXIBIÇÃO DE NOME ---
-    exibir_autor = models.BooleanField(default=True, help_text="Se True, exibe o nome do autor publicamente.")
+    # --- CONTROLE DE EXIBIÇÃO DE NOME (PADRÃO OCULTO/ANÔNIMO) ---
+    exibir_autor = models.BooleanField(default=False, help_text="Se True, exibe o nome do autor publicamente após aprovação.")
     
     link_material = models.URLField(max_length=500, null=True, blank=True, verbose_name="Link Externo do Material")
     
@@ -157,12 +157,12 @@ class Producao(models.Model):
     
     def get_nome_autor_exibicao(self):
         """
-        Retorna o nome do autor ou 'Professor(a) Anônimo(a)' baseado 
-        na preferência definida no campo exibir_autor.
+        Retorna o nome do autor apenas se exibir_autor for True e a prática estiver aprovada.
+        Caso contrário, retorna None para que o frontend oculte o card de autoria.
         """
-        if not self.exibir_autor:
-            return "Professor(a) Anônimo(a)"
-        return self.user.get_full_name() or self.user.username
+        if self.exibir_autor and self.status in ['Aprovado', 'Concluído']:
+            return self.user.get_full_name() or self.user.first_name or self.user.username
+        return None
 
     def __str__(self):
         return f"{self.titulo} - {self.user.username} ({self.status})"

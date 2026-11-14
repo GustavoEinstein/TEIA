@@ -177,7 +177,7 @@ EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL')
 
 # Alternador de provedor ('gemini' ou 'local')
-LLM_PROVIDER = os.getenv('LLM_PROVIDER', 'local')
+LLM_PROVIDER = os.getenv('LLM_PROVIDER', 'unb')
 
 # Configurações do modelo local
 LOCAL_LLM_URL = os.getenv('LOCAL_LLM_URL', '[http://127.0.0.1:11434/v1](http://127.0.0.1:11434/v1)')

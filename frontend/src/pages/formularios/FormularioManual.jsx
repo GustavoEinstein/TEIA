@@ -31,9 +31,66 @@ import {
 import bnccMat from "../../data/bncc_mat.json"
 import bnccPort from "../../data/bncc_port.json"
 import bnccComp from "../../data/bncc_comp.json"
+import bnccHist from "../../data/bncc_hist.json"
+import bnccGeo from "../../data/bncc_geo.json"
+import bnccCie from "../../data/bncc_ciencias.json"
+// NOVO IMPORT ADICIONADO AQUI:
+import bnccChs from "../../data/bncc_chs.json"
 
-const BNCC_GERAL = [...bnccMat, ...bnccPort, ...bnccComp]
+// ADICIONAMOS bnccChs NA LISTA GERAL:
+const BNCC_GERAL = [
+  ...bnccMat,
+  ...bnccPort,
+  ...bnccComp,
+  ...bnccHist,
+  ...bnccGeo,
+  ...bnccCie,
+  ...bnccChs,
+]
 const BNCC_COMPUTACAO = [...bnccComp]
+
+// Função inteligente: cruza com o JSON local se existir, ou preserva o formato gerado pela IA
+const formatarCodigosBNCC = (textoIA, baseDeDados) => {
+  if (!textoIA) return ""
+
+  // Divide por quebras de linha ou por vírgulas (apenas quando a vírgula antecede outro código da BNCC)
+  const partes = String(textoIA)
+    .split(/\n+|,\s*(?=[A-Z]{2}\d{2}[A-Z0-9]+)/g)
+    .map((p) => p.trim())
+    .filter(Boolean)
+
+  const formatadas = partes.map((parte) => {
+    // Extrai o código no início da linha (ex: EF01MA01, EF07HI01, EM13CO01)
+    const matchCodigo = parte.match(
+      /^([A-Z]{2}\d{2}[A-Z0-9]+)\s*[-:]?\s*(.*)$/i,
+    )
+
+    if (matchCodigo) {
+      const codigo = matchCodigo[1].toUpperCase()
+      const descricaoIA = matchCodigo[2].trim()
+
+      // Se existir nos JSONs locais (Mat, Port, Comp, Hist, etc), usa o texto oficial do JSON
+      const itemLocal = baseDeDados.find(
+        (item) => item.id.toUpperCase() === codigo,
+      )
+      if (itemLocal) {
+        return `${itemLocal.id} - ${itemLocal.texto}`
+      }
+
+      // Se for de outra matéria e a IA trouxe a descrição, formata igual (com hífen)
+      if (descricaoIA) {
+        return `${codigo} - ${descricaoIA}`
+      }
+
+      return codigo
+    }
+
+    return parte
+  })
+
+  // Retorna com duas quebras de linha para ficar um abaixo do outro de forma limpa
+  return formatadas.join("\n\n")
+}
 
 const FormularioManual = () => {
   const navigate = useNavigate()
@@ -72,10 +129,14 @@ const FormularioManual = () => {
         disciplina: storedDisc !== "Outra" ? storedDisc : "Geral",
         nivel: initialDataInfo.nivel || "",
         categoria: initialDataInfo.categoria || "",
-        modelo_ia: initialDataInfo.modelo_ia || "",
+        modelo_ia: "IA DA UNB", // Auto-preenche com a IA da UnB
         prompts_ia: initialDataInfo.prompts_ia || "",
-        bncc: initialDataInfo.bncc || "",
-        bncc_computacao: initialDataInfo.bncc_computacao || "",
+        // Formata os códigos vindos da IA usando a função inteligente
+        bncc: formatarCodigosBNCC(initialDataInfo.bncc, BNCC_GERAL),
+        bncc_computacao: formatarCodigosBNCC(
+          initialDataInfo.bncc_computacao,
+          BNCC_COMPUTACAO,
+        ),
         metodologia: initialDataInfo.metodologia || "",
         duracao: initialDataInfo.duracao || "",
         recursos: Array.isArray(initialDataInfo.recursos)
@@ -130,9 +191,10 @@ const FormularioManual = () => {
   ).slice(0, 5)
 
   const adicionarBnccGeral = (item) => {
-    const novaCompetencia = `${item.id}: ${item.texto}`
-    const textoAtual = formData.bncc ? `\n${formData.bncc}` : ""
-    setFormData((prev) => ({ ...prev, bncc: novaCompetencia + textoAtual }))
+    // Usando hífen (-) em vez de dois-pontos
+    const novaCompetencia = `${item.id} - ${item.texto}`
+    const textoAtual = formData.bncc ? `${formData.bncc}\n\n` : ""
+    setFormData((prev) => ({ ...prev, bncc: textoAtual + novaCompetencia }))
     setBnccBuscaGeral("")
     setMostrarOpcoesGeral(false)
   }
@@ -147,13 +209,14 @@ const FormularioManual = () => {
   ).slice(0, 5)
 
   const adicionarBnccComp = (item) => {
-    const novaCompetencia = `${item.id}: ${item.texto}`
+    // Usando hífen (-) em vez de dois-pontos
+    const novaCompetencia = `${item.id} - ${item.texto}`
     const textoAtual = formData.bncc_computacao
-      ? `\n${formData.bncc_computacao}`
+      ? `${formData.bncc_computacao}\n\n`
       : ""
     setFormData((prev) => ({
       ...prev,
-      bncc_computacao: novaCompetencia + textoAtual,
+      bncc_computacao: textoAtual + novaCompetencia,
     }))
     setBnccBuscaComp("")
     setMostrarOpcoesComp(false)
@@ -595,7 +658,7 @@ const FormularioManual = () => {
                 name="bncc"
                 value={formData.bncc}
                 onChange={handleChange}
-                rows="3"
+                rows="4"
                 className={inputClass}
                 placeholder="Cite os códigos e objetivos de aprendizagem da BNCC relacionados..."
               />
@@ -666,7 +729,7 @@ const FormularioManual = () => {
                     name="bncc_computacao"
                     value={formData.bncc_computacao}
                     onChange={handleChange}
-                    rows="2"
+                    rows="3"
                     className={inputClass}
                     placeholder="Habilidades de computação..."
                   />

@@ -1,0 +1,486 @@
+[
+  {
+    "id": "EF01GE02",
+    "texto": "Identificar semelhanças e diferenças entre jogos e brincadeiras de diferentes épocas e lugares"
+  },
+  {
+    "id": "EF01GE03",
+    "texto": "Identificar e relatar semelhanças e diferenças de usos do espaço público (praças, parques) para o lazer e diferentes manifestações"
+  },
+  {
+    "id": "EF01GE04",
+    "texto": "Discutir e elaborar, coletivamente, regras de convívio em diferentes espaços (sala de aula, escola etc"
+  },
+  {
+    "id": "EF01GE05",
+    "texto": "Observar e descrever ritmos naturais (dia e noite, variação de temperatura e umidade etc"
+  },
+  {
+    "id": "EF01GE06",
+    "texto": "Descrever e comparar diferentes tipos de moradia ou objetos de uso cotidiano (brinquedos, roupas, mobiliários), considerando técnicas e materiais utilizados em sua produção"
+  },
+  {
+    "id": "EF01GE07",
+    "texto": "Descrever atividades de trabalho relacionadas com o dia a dia da sua comunidade"
+  },
+  {
+    "id": "EF01GE08",
+    "texto": "Criar mapas mentais e desenhos com base em itinerários, contos literários, histórias inventadas e brincadeiras"
+  },
+  {
+    "id": "EF01GE09",
+    "texto": "Elaborar e utilizar mapas simples para localizar elementos do local de vivência, considerando referenciais espaciais (frente e atrás, esquerda e direita, em cima e embaixo, dentro e fora) e tendo o corpo como referência"
+  },
+  {
+    "id": "EF01GE10",
+    "texto": "Descrever características de seus lugares de vivência relacionadas aos ritmos da natureza (chuva, vento, calor etc"
+  },
+  {
+    "id": "EF01GE11",
+    "texto": "Associar mudanças de vestuário e hábitos alimentares em sua comunidade ao longo do ano, decorrentes da variação de temperatura e umidade no ambiente"
+  },
+  {
+    "id": "EF02GE01",
+    "texto": "Descrever a história das migrações no bairro ou comunidade em que vive"
+  },
+  {
+    "id": "EF02GE02",
+    "texto": "Comparar costumes e tradições de diferentes populações inseridas no bairro ou comunidade em que vive, reconhecendo a importância do respeito às diferenças"
+  },
+  {
+    "id": "EF02GE03",
+    "texto": "Comparar diferentes meios de transporte e de comunicação, indicando o seu papel na conexão entre lugares, e discutir os riscos para a vida e para o ambiente e seu uso responsável"
+  },
+  {
+    "id": "EF02GE04",
+    "texto": "Reconhecer semelhanças e diferenças nos hábitos, nas relações com a natureza e no modo de viver de pessoas em diferentes lugares"
+  },
+  {
+    "id": "EF02GE05",
+    "texto": "Analisar mudanças e permanências, comparando imagens de um mesmo lugar em diferentes tempos"
+  },
+  {
+    "id": "EF02GE06",
+    "texto": "Relacionar o dia e a noite a diferentes tipos de atividades sociais (horário escolar, comercial, sono etc"
+  },
+  {
+    "id": "EF02GE07",
+    "texto": "Descrever as atividades extrativas (minerais, agropecuárias e industriais) de diferentes lugares, identificando os impactos ambientais"
+  },
+  {
+    "id": "EF02GE08",
+    "texto": "Identificar e elaborar diferentes formas de representação (desenhos, mapas mentais, maquetes) para representar componentes da paisagem dos lugares de vivência"
+  },
+  {
+    "id": "EF02GE09",
+    "texto": "Identificar objetos e lugares de vivência (escola e moradia) em imagens aéreas e mapas (visão vertical) e fotografias (visão oblíqua)"
+  },
+  {
+    "id": "EF02GE10",
+    "texto": "Aplicar princípios de localização e posição de objetos (referenciais espaciais, como frente e atrás, esquerda e direita, em cima e embaixo, dentro e fora) por meio de representações espaciais da sala de aula e da escola"
+  },
+  {
+    "id": "EF02GE11",
+    "texto": "Reconhecer a importância do solo e da água para a vida, identificando seus diferentes usos (plantação e extração de materiais, entre outras possibilidades) e os impactos desses usos no cotidiano da cidade e do campo"
+  },
+  {
+    "id": "EF03GE01",
+    "texto": "Identificar e comparar aspectos culturais dos grupos sociais de seus lugares de vivência, seja na cidade, seja no campo"
+  },
+  {
+    "id": "EF03GE02",
+    "texto": "Identificar, em seus lugares de vivência, marcas de contribuição cultural e econômica de grupos de diferentes origens"
+  },
+  {
+    "id": "EF03GE03",
+    "texto": "Reconhecer os diferentes modos de vida de povos e comunidades tradicionais em distintos lugares"
+  },
+  {
+    "id": "EF03GE04",
+    "texto": "Explicar como os processos naturais e históricos atuam na produção e na mudança das paisagens naturais e antrópicas nos seus lugares de vivência, comparando-os a outros lugares"
+  },
+  {
+    "id": "EF03GE05",
+    "texto": "Identificar alimentos, minerais e outros produtos cultivados e extraídos da natureza, comparando as atividades de trabalho em diferentes lugares"
+  },
+  {
+    "id": "EF03GE06",
+    "texto": "Identificar e interpretar imagens bidimensionais e tridimensionais em diferentes tipos de representação cartográfica"
+  },
+  {
+    "id": "EF03GE07",
+    "texto": "Reconhecer e elaborar legendas com símbolos de diversos tipos de representações em diferentes escalas cartográficas"
+  },
+  {
+    "id": "EF03GE08",
+    "texto": "Relacionar a produção de lixo doméstico ou da escola aos problemas causados pelo consumo excessivo e construir propostas para o consumo consciente, considerando a ampliação de hábitos de redução, reúso e reciclagem/descarte de materiais consumidos em casa, na escola e/ou no entorno"
+  },
+  {
+    "id": "EF03GE09",
+    "texto": "Investigar os usos dos recursos naturais, com destaque para os usos da água em atividades cotidianas (alimentação, higiene, cultivo de plantas etc"
+  },
+  {
+    "id": "EF03GE10",
+    "texto": "Identificar os cuidados necessários para utilização da água na agricultura e na geração de energia de modo a garantir a manutenção do provimento de água potável"
+  },
+  {
+    "id": "EF03GE11",
+    "texto": "Comparar impactos das atividades econômicas urbanas e rurais sobre o ambiente físico natural, assim como os riscos provenientes do uso de ferramentas e máquinas"
+  },
+  {
+    "id": "EF04GE01",
+    "texto": "Selecionar, em seus lugares de vivência e em suas histórias familiares e/ou da comunidade, elementos de distintas culturas (indígenas, afro-brasileiras, de outras regiões do país, latino-americanas, europeias, asiáticas etc"
+  },
+  {
+    "id": "EF04GE02",
+    "texto": "Descrever processos migratórios e suas contribuições para a formação da sociedade brasileira"
+  },
+  {
+    "id": "EF04GE03",
+    "texto": "Distinguir funções e papéis dos órgãos do poder público municipal e canais de participação social na gestão do Município, incluindo a Câmara de Vereadores e Conselhos Municipais"
+  },
+  {
+    "id": "EF04GE04",
+    "texto": "Reconhecer especificidades e analisar a interdependência do campo e da cidade, considerando fluxos econômicos, de informações, de ideias e de pessoas"
+  },
+  {
+    "id": "EF04GE05",
+    "texto": "Distinguir unidades político-administrativas oficiais nacionais (Distrito, Município, Unidade da Federação e grande região), suas fronteiras e sua hierarquia, localizando seus lugares de vivência"
+  },
+  {
+    "id": "EF04GE06",
+    "texto": "Identificar e descrever territórios étnico-culturais existentes no Brasil, tais como terras indígenas e de comunidades remanescentes de quilombos, reconhecendo a legitimidade da demarcação desses territórios"
+  },
+  {
+    "id": "EF04GE07",
+    "texto": "Comparar as características do trabalho no campo e na cidade"
+  },
+  {
+    "id": "EF04GE08",
+    "texto": "Descrever e discutir o processo de produção (transformação de matérias-primas), circulação e consumo de diferentes produtos"
+  },
+  {
+    "id": "EF04GE09",
+    "texto": "Utilizar as direções cardeais na localização de componentes físicos e humanos nas paisagens rurais e urbanas"
+  },
+  {
+    "id": "EF04GE10",
+    "texto": "Comparar tipos variados de mapas, identificando suas características, elaboradores, finalidades, diferenças e semelhanças"
+  },
+  {
+    "id": "EF04GE11",
+    "texto": "Identificar as características das paisagens naturais e antrópicas (relevo, cobertura vegetal, rios etc"
+  },
+  {
+    "id": "EF05GE01",
+    "texto": "Descrever e analisar dinâmicas populacionais na Unidade da Federação em que vive, estabelecendo relações entre migrações e condições de infraestrutura"
+  },
+  {
+    "id": "EF05GE02",
+    "texto": "Identificar diferenças étnico-raciais e étnico-culturais e desigualdades sociais entre grupos em diferentes territórios"
+  },
+  {
+    "id": "EF05GE03",
+    "texto": "Identificar as formas e funções das cidades e analisar as mudanças sociais, econômicas e ambientais provocadas pelo seu crescimento"
+  },
+  {
+    "id": "EF05GE04",
+    "texto": "Reconhecer as características da cidade e analisar as interações entre a cidade e o campo e entre cidades na rede urbana"
+  },
+  {
+    "id": "EF05GE05",
+    "texto": "Identificar e comparar as mudanças dos tipos de trabalho e desenvolvimento tecnológico na agropecuária, na indústria, no comércio e nos serviços"
+  },
+  {
+    "id": "EF05GE06",
+    "texto": "Identificar e comparar transformações dos meios de transporte e de comunicação"
+  },
+  {
+    "id": "EF05GE07",
+    "texto": "Identificar os diferentes tipos de energia utilizados na produção industrial, agrícola e extrativa e no cotidiano das populações"
+  },
+  {
+    "id": "EF05GE08",
+    "texto": "Analisar transformações de paisagens nas cidades, comparando sequência de fotografias, fotografias aéreas e imagens de satélite de épocas diferentes"
+  },
+  {
+    "id": "EF05GE09",
+    "texto": "Estabelecer conexões e hierarquias entre diferentes cidades, utilizando mapas temáticos e representações gráficas"
+  },
+  {
+    "id": "EF05GE10",
+    "texto": "Reconhecer e comparar atributos da qualidade ambiental e algumas formas de poluição dos cursos de água e dos oceanos (esgotos, efluentes industriais, marés negras etc"
+  },
+  {
+    "id": "EF05GE11",
+    "texto": "Identificar e descrever problemas ambientais que ocorrem no entorno da escola e da residência (lixões, indústrias poluentes, destruição do patrimônio histórico etc"
+  },
+  {
+    "id": "EF05GE12",
+    "texto": "Identificar órgãos do poder público e canais de participação social responsáveis por buscar soluções para a melhoria da qualidade de vida (em áreas como meio ambiente, mobilidade, moradia e direito à cidade) e discutir as propostas implementadas por esses órgãos que afetam a comunidade em que vive"
+  },
+  {
+    "id": "EF06GE01",
+    "texto": "Comparar modificações das paisagens nos lugares de vivência e os usos desses lugares em diferentes tempos"
+  },
+  {
+    "id": "EF06GE02",
+    "texto": "Analisar modificações de paisagens por diferentes tipos de sociedade, com destaque para os povos originários"
+  },
+  {
+    "id": "EF06GE03",
+    "texto": "Descrever os movimentos do planeta e sua relação com a circulação geral da atmosfera, o tempo atmosférico e os padrões climáticos"
+  },
+  {
+    "id": "EF06GE04",
+    "texto": "Descrever o ciclo da água, comparando o escoamento superficial no ambiente urbano e rural, reconhecendo os principais componentes da morfologia das bacias e das redes hidrográficas e a sua localização no modelado da superfície terrestre e da cobertura vegetal"
+  },
+  {
+    "id": "EF06GE05",
+    "texto": "Relacionar padrões climáticos, tipos de solo, relevo e formações vegetais"
+  },
+  {
+    "id": "EF06GE06",
+    "texto": "Identificar as características das paisagens transformadas pelo trabalho humano a partir do desenvolvimento da agropecuária e do processo de industrialização"
+  },
+  {
+    "id": "EF06GE07",
+    "texto": "Explicar as mudanças na interação humana com a natureza a partir do surgimento das cidades"
+  },
+  {
+    "id": "EF06GE08",
+    "texto": "Medir distâncias na superfície pelas escalas gráficas e numéricas dos mapas"
+  },
+  {
+    "id": "EF06GE09",
+    "texto": "Elaborar modelos tridimensionais, blocos-diagramas e perfis topográficos e de vegetação, visando à representação de elementos e estruturas da superfície terrestre"
+  },
+  {
+    "id": "EF06GE10",
+    "texto": "Explicar as diferentes formas de uso do solo (rotação de terras, terraceamento, aterros etc"
+  },
+  {
+    "id": "EF06GE11",
+    "texto": "Analisar distintas interações das sociedades com a natureza, com base na distribuição dos componentes físico-naturais, incluindo as transformações da biodiversidade local e do mundo"
+  },
+  {
+    "id": "EF06GE12",
+    "texto": "Identificar o consumo dos recursos hídricos e o uso das principais bacias hidrográficas no Brasil e no mundo, enfatizando as transformações nos ambientes urbanos"
+  },
+  {
+    "id": "EF06GE13",
+    "texto": "Analisar consequências, vantagens e desvantagens das práticas humanas na dinâmica climática (ilha de calor etc"
+  },
+  {
+    "id": "EF07GE01",
+    "texto": "Avaliar, por meio de exemplos extraídos dos meios de comunicação, ideias e estereótipos acerca das paisagens e da formação territorial do Brasil"
+  },
+  {
+    "id": "EF07GE02",
+    "texto": "Analisar a influência dos fluxos econômicos e populacionais na formação socioeconômica e territorial do Brasil, compreendendo os conflitos e as tensões históricas e contemporâneas"
+  },
+  {
+    "id": "EF07GE03",
+    "texto": "Selecionar argumentos que reconheçam as territorialidades dos povos indígenas originários, das comunidades remanescentes de quilombos, de povos das florestas e do cerrado, de ribeirinhos e caiçaras, entre outros grupos sociais do campo e da cidade, como direitos legais dessas comunidades"
+  },
+  {
+    "id": "EF07GE04",
+    "texto": "Analisar a distribuição territorial da população brasileira, considerando a diversidade étnico-cultural (indígena, africana, europeia e asiática), assim como aspectos de renda, sexo e idade nas regiões brasileiras"
+  },
+  {
+    "id": "EF07GE05",
+    "texto": "Analisar fatos e situações representativas das alterações ocorridas entre o período mercantilista e o advento do capitalismo"
+  },
+  {
+    "id": "EF07GE06",
+    "texto": "Discutir em que medida a produção, a circulação e o consumo de mercadorias provocam impactos ambientais, assim como influem na distribuição de riquezas, em diferentes lugares"
+  },
+  {
+    "id": "EF07GE07",
+    "texto": "Analisar a influência e o papel das redes de transporte e comunicação na configuração do território brasileiro"
+  },
+  {
+    "id": "EF07GE08",
+    "texto": "Estabelecer relações entre os processos de industrialização e inovação tecnológica com as transformações socioeconômicas do território brasileiro"
+  },
+  {
+    "id": "EF07GE09",
+    "texto": "Interpretar e elaborar mapas temáticos e históricos, inclusive utilizando tecnologias digitais, com informações demográficas e econômicas do Brasil (cartogramas), identificando padrões espaciais, regionalizações e analogias espaciais"
+  },
+  {
+    "id": "EF07GE10",
+    "texto": "Elaborar e interpretar gráficos de barras, gráficos de setores e histogramas, com base em dados socioeconômicos das regiões brasileiras"
+  },
+  {
+    "id": "EF07GE11",
+    "texto": "Caracterizar dinâmicas dos componentes físico-naturais no território nacional, bem como sua distribuição e biodiversidade (Florestas Tropicais, Cerrados, Caatingas, Campos Sulinos e Matas de Araucária)"
+  },
+  {
+    "id": "EF07GE12",
+    "texto": "Comparar unidades de conservação existentes no Município de residência e em outras localidades brasileiras, com base na organização do Sistema Nacional de Unidades de Conservação (SNUC)"
+  },
+  {
+    "id": "EF08GE01",
+    "texto": "Descrever as rotas de dispersão da população humana pelo planeta e os principais fluxos migratórios em diferentes períodos da história, discutindo os fatores históricos e condicionantes físico-naturais associados à distribuição da população humana pelos continentes"
+  },
+  {
+    "id": "EF08GE02",
+    "texto": "Relacionar fatos e situações representativas da história das famílias do Município em que se localiza a escola, considerando a diversidade e os fluxos migratórios da população mundial"
+  },
+  {
+    "id": "EF08GE03",
+    "texto": "Analisar aspectos representativos da dinâmica demográfica, considerando características da população (perfil etário, crescimento vegetativo e mobilidade espacial)"
+  },
+  {
+    "id": "EF08GE04",
+    "texto": "Compreender os fluxos de migração na América Latina (movimentos voluntários e forçados, assim como fatores e áreas de expulsão e atração) e as principais políticas migratórias da região"
+  },
+  {
+    "id": "EF08GE05",
+    "texto": "Aplicar os conceitos de Estado, nação, território, governo e país para o entendimento de conflitos e tensões na contemporaneidade, com destaque para as situações geopolíticas na América e na África e suas múltiplas regionalizações a partir do pós-guerra"
+  },
+  {
+    "id": "EF08GE06",
+    "texto": "Analisar a atuação das organizações mundiais nos processos de integração cultural e econômica nos contextos americano e africano, reconhecendo, em seus lugares de vivência, marcas desses processos"
+  },
+  {
+    "id": "EF08GE07",
+    "texto": "Analisar os impactos geoeconômicos, geoestratégicos e geopolíticos da ascensão dos Estados Unidos da América no cenário internacional em sua posição de liderança global e na relação com a China e o Brasil"
+  },
+  {
+    "id": "EF08GE08",
+    "texto": "Analisar a situação do Brasil e de outros países da América Latina e da África, assim como da potência estadunidense na ordem mundial do pós-guerra"
+  },
+  {
+    "id": "EF08GE09",
+    "texto": "Analisar os padrões econômicos mundiais de produção, distribuição e intercâmbio dos produtos agrícolas e industrializados, tendo como referência os Estados Unidos da América e os países denominados de Brics (Brasil, Rússia, Índia, China e África do Sul)"
+  },
+  {
+    "id": "EF08GE10",
+    "texto": "Distinguir e analisar conflitos e ações dos movimentos sociais brasileiros, no campo e na cidade, comparando com outros movimentos sociais existentes nos países latino-americanos"
+  },
+  {
+    "id": "EF08GE11",
+    "texto": "Analisar áreas de conflito e tensões nas regiões de fronteira do continente latino-americano e o papel de organismos internacionais e regionais de cooperação nesses cenários"
+  },
+  {
+    "id": "EF08GE12",
+    "texto": "Compreender os objetivos e analisar a importância dos organismos de integração do território americano (Mercosul, OEA, OEI, Nafta, Unasul, Alba, Comunidade Andina, Aladi, entre outros)"
+  },
+  {
+    "id": "EF08GE13",
+    "texto": "Analisar a influência do desenvolvimento científico e tecnológico na caracterização dos tipos de trabalho e na economia dos espaços urbanos e rurais da América e da África"
+  },
+  {
+    "id": "EF08GE14",
+    "texto": "Analisar os processos de desconcentração, descentralização e recentralização das atividades econômicas a partir do capital estadunidense e chinês em diferentes regiões no mundo, com destaque para o Brasil"
+  },
+  {
+    "id": "EF08GE15",
+    "texto": "Analisar a importância dos principais recursos hídricos da America Latina (Aquífero Guarani, Bacias do rio da Prata, do Amazonas e do Orinoco, sistemas de nuvens na Amazônia e nos Andes, entre outros) e discutir os desafios relacionados à gestão e comercialização da água"
+  },
+  {
+    "id": "EF08GE16",
+    "texto": "Analisar as principais problemáticas comuns às grandes cidades latino-americanas, particularmente aquelas relacionadas à distribuição, estrutura e dinâmica da população e às condições de vida e trabalho"
+  },
+  {
+    "id": "EF08GE17",
+    "texto": "Analisar a segregação socioespacial em ambientes urbanos da América Latina, com atenção especial ao estudo de favelas, alagados e zona de riscos"
+  },
+  {
+    "id": "EF08GE18",
+    "texto": "Elaborar mapas ou outras formas de representação cartográfica para analisar as redes e as dinâmicas urbanas e rurais, ordenamento territorial, contextos culturais, modo de vida e usos e ocupação de solos da África e América"
+  },
+  {
+    "id": "EF08GE19",
+    "texto": "Interpretar cartogramas, mapas esquemáticos (croquis) e anamorfoses geográficas com informações geográficas acerca da África e América"
+  },
+  {
+    "id": "EF08GE20",
+    "texto": "Analisar características de países e grupos de países da América e da África no que se refere aos aspectos populacionais, urbanos, políticos e econômicos, e discutir as desigualdades sociais e econômicas e as pressões sobre a natureza e suas riquezas (sua apropriação e valoração na produção e circulação), o que resulta na espoliação desses povos"
+  },
+  {
+    "id": "EF08GE21",
+    "texto": "Analisar o papel ambiental e territorial da Antártica no contexto geopolítico, sua relevância para os países da América do Sul e seu valor como área destinada à pesquisa e à compreensão do ambiente global"
+  },
+  {
+    "id": "EF08GE22",
+    "texto": "Identificar os principais recursos naturais dos países da América Latina, analisando seu uso para a produção de matéria-prima e energia e sua relevância para a cooperação entre os países do Mercosul"
+  },
+  {
+    "id": "EF08GE23",
+    "texto": "Identificar paisagens da América Latina e associá-las, por meio da cartografia, aos diferentes povos da região, com base em aspectos da geomorfologia, da biogeografia e da climatologia"
+  },
+  {
+    "id": "EF08GE24",
+    "texto": "Analisar as principais características produtivas dos países latino-americanos (como exploração mineral na Venezuela; agricultura de alta especialização e exploração mineira no Chile; circuito da carne nos pampas argentinos e no Brasil; circuito da cana-de-açúcar em Cuba; polígono industrial do sudeste brasileiro e plantações de soja no centro-oeste; maquiladoras mexicanas, entre outros)"
+  },
+  {
+    "id": "EF09GE01",
+    "texto": "Analisar criticamente de que forma a hegemonia europeia foi exercida em várias regiões do planeta, notadamente em situações de conflito, intervenções militares e/ou influência cultural em diferentes tempos e lugares"
+  },
+  {
+    "id": "EF09GE02",
+    "texto": "Analisar a atuação das corporações internacionais e das organizações econômicas mundiais na vida da população em relação ao consumo, à cultura e à mobilidade"
+  },
+  {
+    "id": "EF09GE03",
+    "texto": "Identificar diferentes manifestações culturais de minorias étnicas como forma de compreender a multiplicidade cultural na escala mundial, defendendo o princípio do respeito às diferenças"
+  },
+  {
+    "id": "EF09GE04",
+    "texto": "Relacionar diferenças de paisagens aos modos de viver de diferentes povos na Europa, Ásia e Oceania, valorizando identidades e interculturalidades regionais"
+  },
+  {
+    "id": "EF09GE05",
+    "texto": "Analisar fatos e situações para compreender a integração mundial (econômica, política e cultural), comparando as diferentes interpretações: globalização e mundialização"
+  },
+  {
+    "id": "EF09GE06",
+    "texto": "Associar o critério de divisão do mundo em Ocidente e Oriente com o Sistema Colonial implantado pelas potências europeias"
+  },
+  {
+    "id": "EF09GE07",
+    "texto": "Analisar os componentes físico-naturais da Eurásia e os determinantes histórico-geográficos de sua divisão em Europa e Ásia"
+  },
+  {
+    "id": "EF09GE08",
+    "texto": "Analisar transformações territoriais, considerando o movimento de fronteiras, tensões, conflitos e múltiplas regionalidades na Europa, na Ásia e na Oceania"
+  },
+  {
+    "id": "EF09GE09",
+    "texto": "Analisar características de países e grupos de países europeus, asiáticos e da Oceania em seus aspectos populacionais, urbanos, políticos e econômicos, e discutir suas desigualdades sociais e econômicas e pressões sobre seus ambientes físico-naturais"
+  },
+  {
+    "id": "EF09GE10",
+    "texto": "Analisar os impactos do processo de industrialização na produção e circulação de produtos e culturas na Europa, na Ásia e na Oceania"
+  },
+  {
+    "id": "EF09GE11",
+    "texto": "Relacionar as mudanças técnicas e científicas decorrentes do processo de industrialização com as transformações no trabalho em diferentes regiões do mundo e suas consequências no Brasil"
+  },
+  {
+    "id": "EF09GE12",
+    "texto": "Relacionar o processo de urbanização às transformações da produção agropecuária, à expansão do desemprego estrutural e ao papel crescente do capital financeiro em diferentes países, com destaque para o Brasil"
+  },
+  {
+    "id": "EF09GE13",
+    "texto": "Analisar a importância da produção agropecuária na sociedade urbano-industrial ante o problema da desigualdade mundial de acesso aos recursos alimentares e à matéria-prima"
+  },
+  {
+    "id": "EF09GE14",
+    "texto": "Elaborar e interpretar gráficos de barras e de setores, mapas temáticos e esquemáticos (croquis) e anamorfoses geográficas para analisar, sintetizar e apresentar dados e informações sobre diversidade, diferenças e desigualdades sociopolíticas e geopolíticas mundiais"
+  },
+  {
+    "id": "EF09GE15",
+    "texto": "Comparar e classificar diferentes regiões do mundo com base em informações populacionais, econômicas e socioambientais representadas em mapas temáticos e com diferentes projeções cartográficas"
+  },
+  {
+    "id": "EF09GE16",
+    "texto": "Identificar e comparar diferentes domínios morfoclimáticos da Europa, da Ásia e da Oceania"
+  },
+  {
+    "id": "EF09GE17",
+    "texto": "Explicar as características físico-naturais e a forma de ocupação e usos da terra em diferentes regiões da Europa, da Ásia e da Oceania"
+  }
+]

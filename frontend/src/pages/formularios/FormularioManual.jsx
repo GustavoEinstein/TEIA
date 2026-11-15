@@ -17,9 +17,7 @@ import {
   Layers,
   X,
   Send,
-  Search,
   Link as LinkIcon,
-  Cpu,
   GitMerge,
   UserCheck,
   EyeOff,
@@ -28,80 +26,18 @@ import {
   Sparkles,
 } from "lucide-react"
 
-import bnccMat from "../../data/bncc_mat.json"
-import bnccPort from "../../data/bncc_port.json"
-import bnccComp from "../../data/bncc_comp.json"
-import bnccHist from "../../data/bncc_hist.json"
-import bnccGeo from "../../data/bncc_geo.json"
-import bnccCie from "../../data/bncc_ciencias.json"
-// NOVO IMPORT ADICIONADO AQUI:
-import bnccChs from "../../data/bncc_chs.json"
-
-// ADICIONAMOS bnccChs NA LISTA GERAL:
-const BNCC_GERAL = [
-  ...bnccMat,
-  ...bnccPort,
-  ...bnccComp,
-  ...bnccHist,
-  ...bnccGeo,
-  ...bnccCie,
-  ...bnccChs,
-]
-const BNCC_COMPUTACAO = [...bnccComp]
-
-// Função inteligente: cruza com o JSON local se existir, ou preserva o formato gerado pela IA
-const formatarCodigosBNCC = (textoIA, baseDeDados) => {
-  if (!textoIA) return ""
-
-  // Divide por quebras de linha ou por vírgulas (apenas quando a vírgula antecede outro código da BNCC)
-  const partes = String(textoIA)
-    .split(/\n+|,\s*(?=[A-Z]{2}\d{2}[A-Z0-9]+)/g)
-    .map((p) => p.trim())
-    .filter(Boolean)
-
-  const formatadas = partes.map((parte) => {
-    // Extrai o código no início da linha (ex: EF01MA01, EF07HI01, EM13CO01)
-    const matchCodigo = parte.match(
-      /^([A-Z]{2}\d{2}[A-Z0-9]+)\s*[-:]?\s*(.*)$/i,
-    )
-
-    if (matchCodigo) {
-      const codigo = matchCodigo[1].toUpperCase()
-      const descricaoIA = matchCodigo[2].trim()
-
-      // Se existir nos JSONs locais (Mat, Port, Comp, Hist, etc), usa o texto oficial do JSON
-      const itemLocal = baseDeDados.find(
-        (item) => item.id.toUpperCase() === codigo,
-      )
-      if (itemLocal) {
-        return `${itemLocal.id} - ${itemLocal.texto}`
-      }
-
-      // Se for de outra matéria e a IA trouxe a descrição, formata igual (com hífen)
-      if (descricaoIA) {
-        return `${codigo} - ${descricaoIA}`
-      }
-
-      return codigo
-    }
-
-    return parte
-  })
-
-  // Retorna com duas quebras de linha para ficar um abaixo do outro de forma limpa
-  return formatadas.join("\n\n")
-}
-
 const FormularioManual = () => {
   const navigate = useNavigate()
   const location = useLocation()
 
   const storedDisc = localStorage.getItem("user_disciplina") || "Geral"
+  const isProfessorComputacao = storedDisc.toLowerCase() === "computação"
+
   const baseDataInfo = location.state?.baseData || null
   const initialDataInfo = location.state?.initialData || null
 
   const [formData, setFormData] = useState(() => {
-    // 1. Caso seja uma Releitura de colega
+    // 1. MODO RELEITURA
     if (baseDataInfo) {
       return {
         ...baseDataInfo,
@@ -122,21 +58,18 @@ const FormularioManual = () => {
       }
     }
 
-    // 2. Caso venha do preenchimento assistido por IA
+    // 2. MODO ASSISTIDO POR IA (Recebe os dados do Agente Híbrido)
     if (initialDataInfo) {
       return {
         titulo: initialDataInfo.titulo || "",
         disciplina: storedDisc !== "Outra" ? storedDisc : "Geral",
         nivel: initialDataInfo.nivel || "",
         categoria: initialDataInfo.categoria || "",
-        modelo_ia: "IA DA UNB", // Auto-preenche com a IA da UnB
+        modelo_ia: initialDataInfo.modelo_ia || "IA DA UNB",
         prompts_ia: initialDataInfo.prompts_ia || "",
-        // Formata os códigos vindos da IA usando a função inteligente
-        bncc: formatarCodigosBNCC(initialDataInfo.bncc, BNCC_GERAL),
-        bncc_computacao: formatarCodigosBNCC(
-          initialDataInfo.bncc_computacao,
-          BNCC_COMPUTACAO,
-        ),
+        // A IA já traz o texto formatado, não precisamos mais cruzar com JSON local
+        bncc: initialDataInfo.bncc || "",
+        bncc_computacao: initialDataInfo.bncc_computacao || "",
         metodologia: initialDataInfo.metodologia || "",
         duracao: initialDataInfo.duracao || "",
         recursos: Array.isArray(initialDataInfo.recursos)
@@ -153,7 +86,7 @@ const FormularioManual = () => {
       }
     }
 
-    // 3. Caso Padrão (Formulário do Zero)
+    // 3. MODO EM BRANCO (Manual)
     return {
       titulo: "",
       disciplina: storedDisc !== "Outra" ? storedDisc : "Geral",
@@ -178,54 +111,17 @@ const FormularioManual = () => {
   const [customResource, setCustomResource] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  // Lógica de exibição do campo de Computação
   const [mostrarCampoComp, setMostrarCampoComp] = useState(() =>
-    formData.bncc_computacao ? true : false,
+    isProfessorComputacao || formData.bncc_computacao ? true : false,
   )
-  const [bnccBuscaGeral, setBnccBuscaGeral] = useState("")
-  const [mostrarOpcoesGeral, setMostrarOpcoesGeral] = useState(false)
-
-  const bnccFiltradasGeral = BNCC_GERAL.filter(
-    (item) =>
-      item.id.toLowerCase().includes(bnccBuscaGeral.toLowerCase()) ||
-      item.texto.toLowerCase().includes(bnccBuscaGeral.toLowerCase()),
-  ).slice(0, 5)
-
-  const adicionarBnccGeral = (item) => {
-    // Usando hífen (-) em vez de dois-pontos
-    const novaCompetencia = `${item.id} - ${item.texto}`
-    const textoAtual = formData.bncc ? `${formData.bncc}\n\n` : ""
-    setFormData((prev) => ({ ...prev, bncc: textoAtual + novaCompetencia }))
-    setBnccBuscaGeral("")
-    setMostrarOpcoesGeral(false)
-  }
-
-  const [bnccBuscaComp, setBnccBuscaComp] = useState("")
-  const [mostrarOpcoesComp, setMostrarOpcoesComp] = useState(false)
-
-  const bnccFiltradasComp = BNCC_COMPUTACAO.filter(
-    (item) =>
-      item.id.toLowerCase().includes(bnccBuscaComp.toLowerCase()) ||
-      item.texto.toLowerCase().includes(bnccBuscaComp.toLowerCase()),
-  ).slice(0, 5)
-
-  const adicionarBnccComp = (item) => {
-    // Usando hífen (-) em vez de dois-pontos
-    const novaCompetencia = `${item.id} - ${item.texto}`
-    const textoAtual = formData.bncc_computacao
-      ? `${formData.bncc_computacao}\n\n`
-      : ""
-    setFormData((prev) => ({
-      ...prev,
-      bncc_computacao: textoAtual + novaCompetencia,
-    }))
-    setBnccBuscaComp("")
-    setMostrarOpcoesComp(false)
-  }
 
   const handleToggleComp = () => {
-    const newValue = !mostrarCampoComp
-    setMostrarCampoComp(newValue)
-    if (!newValue) setFormData((prev) => ({ ...prev, bncc_computacao: "" }))
+    if (!isProfessorComputacao) {
+      const newValue = !mostrarCampoComp
+      setMostrarCampoComp(newValue)
+      if (!newValue) setFormData((prev) => ({ ...prev, bncc_computacao: "" }))
+    }
   }
 
   const handleToggleAutoria = () => {
@@ -609,129 +505,48 @@ const FormularioManual = () => {
               </h3>
 
               <label className={labelClass}>
-                BNCC / Objetivos de Aprendizagem
+                {isProfessorComputacao
+                  ? "Outros Objetivos (BNCC)"
+                  : "BNCC / Objetivos de Aprendizagem"}
               </label>
-              <div className="relative z-20 mb-2">
-                <Search
-                  size={16}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-                />
-                <input
-                  type="text"
-                  placeholder="Busque por código ou palavra-chave..."
-                  value={bnccBuscaGeral}
-                  onChange={(e) => {
-                    setBnccBuscaGeral(e.target.value)
-                    setMostrarOpcoesGeral(true)
-                  }}
-                  onFocus={() => setMostrarOpcoesGeral(true)}
-                  onBlur={() =>
-                    setTimeout(() => setMostrarOpcoesGeral(false), 200)
-                  }
-                  className={`${inputClass} pl-10`}
-                />
-                {mostrarOpcoesGeral && bnccBuscaGeral && (
-                  <div className="absolute top-full left-0 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg max-h-60 overflow-y-auto z-50">
-                    {bnccFiltradasGeral.length > 0 ? (
-                      bnccFiltradasGeral.map((item) => (
-                        <div
-                          key={item.id}
-                          onClick={() => adicionarBnccGeral(item)}
-                          className="p-3 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer text-sm"
-                        >
-                          <strong className="text-[#1565C0]">{item.id}</strong>{" "}
-                          -{" "}
-                          <span className="text-slate-600 dark:text-slate-300">
-                            {item.texto}
-                          </span>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="p-4 text-center text-sm text-slate-500">
-                        Nenhuma habilidade encontrada.
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
+
               <textarea
                 name="bncc"
                 value={formData.bncc}
                 onChange={handleChange}
-                rows="4"
+                rows="5"
                 className={inputClass}
-                placeholder="Cite os códigos e objetivos de aprendizagem da BNCC relacionados..."
+                placeholder="Liste as habilidades abordadas nesta prática..."
               />
 
-              <div
-                onClick={handleToggleComp}
-                className="flex items-center gap-3 p-4 rounded-lg cursor-pointer bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 mt-4 mb-2 hover:border-slate-300 transition-colors"
-              >
-                <input
-                  type="checkbox"
-                  checked={mostrarCampoComp}
-                  readOnly
-                  className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500"
-                />
-                <span className="font-bold text-sm text-slate-700 dark:text-slate-300">
-                  Esta prática possui interdisciplinaridade com Computação?
-                </span>
-              </div>
+              {/* LÓGICA DO CAMPO DE COMPUTAÇÃO */}
+              {!isProfessorComputacao && (
+                <div
+                  onClick={handleToggleComp}
+                  className="flex items-center gap-3 p-4 rounded-lg cursor-pointer bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 mt-4 mb-2 hover:border-slate-300 transition-colors"
+                >
+                  <input
+                    type="checkbox"
+                    checked={mostrarCampoComp}
+                    readOnly
+                    className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="font-bold text-sm text-slate-700 dark:text-slate-300">
+                    Esta prática possui interdisciplinaridade com Computação?
+                  </span>
+                </div>
+              )}
 
               {mostrarCampoComp && (
-                <div className="mb-4">
-                  <div className="relative mb-2 z-10">
-                    <Search
-                      size={16}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Busque por eixo ou habilidade de computação..."
-                      value={bnccBuscaComp}
-                      onChange={(e) => {
-                        setBnccBuscaComp(e.target.value)
-                        setMostrarOpcoesComp(true)
-                      }}
-                      onFocus={() => setMostrarOpcoesComp(true)}
-                      onBlur={() =>
-                        setTimeout(() => setMostrarOpcoesComp(false), 200)
-                      }
-                      className={`${inputClass} pl-10`}
-                    />
-                    {mostrarOpcoesComp && bnccBuscaComp && (
-                      <div className="absolute top-full left-0 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg max-h-60 overflow-y-auto z-50">
-                        {bnccFiltradasComp.length > 0 ? (
-                          bnccFiltradasComp.map((item) => (
-                            <div
-                              key={item.id}
-                              onClick={() => adicionarBnccComp(item)}
-                              className="p-3 border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer text-sm"
-                            >
-                              <strong className="text-indigo-600">
-                                {item.id}
-                              </strong>{" "}
-                              -{" "}
-                              <span className="text-slate-600 dark:text-slate-300">
-                                {item.texto}
-                              </span>
-                            </div>
-                          ))
-                        ) : (
-                          <div className="p-4 text-center text-sm text-slate-500">
-                            Nenhuma encontrada.
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                <div className="mb-4 mt-2">
+                  <label className={labelClass}>BNCC Computação</label>
                   <textarea
                     name="bncc_computacao"
                     value={formData.bncc_computacao}
                     onChange={handleChange}
-                    rows="3"
+                    rows="4"
                     className={inputClass}
-                    placeholder="Habilidades de computação..."
+                    placeholder="Habilidades de computação abordadas..."
                   />
                 </div>
               )}
@@ -832,7 +647,7 @@ const FormularioManual = () => {
                 name="experiencia"
                 value={formData.experiencia}
                 onChange={handleChange}
-                rows="4"
+                rows="5"
                 className={inputClass}
                 placeholder="Descreva como foi a aplicação em sala de aula, o engajamento dos alunos e os desafios encontrados..."
               />
@@ -844,7 +659,7 @@ const FormularioManual = () => {
                 name="resultados"
                 value={formData.resultados}
                 onChange={handleChange}
-                rows="3"
+                rows="4"
                 className={inputClass}
                 placeholder="Quais foram as evidências de aprendizagem? O que os alunos produziram ou demonstraram?"
               />
@@ -901,7 +716,6 @@ const FormularioManual = () => {
             </div>
           </div>
 
-          {/* ======================= INFORMATIVO DE PDF ======================= */}
           <div className="h-px bg-slate-200 dark:bg-slate-700 my-8 w-full"></div>
 
           <div className="w-full">
@@ -921,7 +735,7 @@ const FormularioManual = () => {
                   agora, apenas concentre-se em relatar a sua experiência com a
                   turma. Assim que você{" "}
                   <strong className="text-slate-900 dark:text-white font-extrabold">
-                    salvar sua produção
+                    Enviar Prática
                   </strong>
                   , o T.E.I.A. vai disponibilizar magicamente um botão especial
                   lá nos detalhes da sua prática (na aba "Minhas Produções")

@@ -5,7 +5,9 @@ from . import views
 from rest_framework_simplejwt.views import TokenRefreshView
 from django.conf import settings
 from django.conf.urls.static import static
-from .views import AutoCatalogAIView, ExportProducaoPDFView
+
+# IMPORTAÇÃO ATUALIZADA DA NOVA VIEW: GeradorPlanoAulaView
+from .views import AutoCatalogAIView, ExportProducaoPDFView, GeradorPlanoAulaView
 
 urlpatterns = [
     
@@ -36,6 +38,10 @@ urlpatterns = [
 
     # --- (IA E EXPORTAÇÃO EM PDF) ---
     path('api/production/auto-catalog-ai/', AutoCatalogAIView.as_view(), name='auto_catalog_ai'),
+    
+    # NOVA ROTA: Conecta o frontend ao Agente Híbrido (Ollama/Qwen + BNCC)
+    path('api/production/gerar-plano-qwen/', GeradorPlanoAulaView.as_view(), name='gerar_plano_qwen'),
+    
     path('api/production/<int:pk>/export-pdf/', ExportProducaoPDFView.as_view(), name='export_production_pdf'),
 
     # ============================================================================

@@ -16,44 +16,46 @@ def _clean_env(value: str, default: str = "") -> str:
     return str(value).strip().strip('"').strip("'")
 
 class BaseLLMProvider(ABC):
-    """Classe base com o prompt padrão do T.E.I.A e sanitização de JSON."""
+    """Classe base com o prompt padrão do T.E.I.A e sanitização rigorosa de JSON."""
 
     def build_prompt(self, raw_text: str) -> str:
+        # PROMPT OTIMIZADO PARA O MODELO QWEN3:14B E IAs AVANÇADAS
         return f"""
-        Você é um Assistente Pedagógico Mestre, especialista em metodologias ativas e na Base Nacional Comum Curricular (BNCC).
-        Sua tarefa é analisar o rascunho ou a ideia inicial fornecida pelo professor e CO-CRIAR uma proposta pedagógica rica, detalhada e inspiradora, preenchendo as lacunas com sugestões criativas.
+        Você é um Assistente Pedagógico rigoroso e criativo, especialista na Base Nacional Comum Curricular (BNCC) do Brasil.
+        Sua tarefa é expandir o rascunho do professor e CO-CRIAR uma proposta pedagógica rica em formato JSON.
 
         Ideia inicial do professor:
         "{raw_text}"
 
-        Expanda essa ideia em uma prática educacional robusta. Gere descrições detalhadas para a metodologia, engajamento dos alunos e resultados esperados, mesmo que o texto original seja extremamente breve.
+        DIRETRIZES ANTI-ALUCINAÇÃO (MÁXIMA PRIORIDADE):
+        1. É ESTRITAMENTE PROIBIDO inventar códigos BNCC (nunca crie formatos como CN.1 ou EF99). 
+        2. Use APENAS códigos reais do documento oficial (ex: EF07HI01, EF01MA01, EM13CHS101).
+        3. O formato dos campos de BNCC deve ser ESTRITAMENTE: "CÓDIGO - Descrição completa".
+        4. Se houver mais de uma habilidade, separe-as com duas quebras de linha (\\n\\n).
 
-        REGRAS ESTRITAS DE FORMATAÇÃO DO JSON:
-        1. Nos campos "bncc" e "bncc_computacao", escreva CADA habilidade no formato exato "CÓDIGO: Descrição completa da habilidade na BNCC". Se houver mais de uma, separe com quebra de linha (\\n\\n). Exemplo: "EF07HI01: Explicar o significado de 'modernidade' e suas lógicas de inclusão e exclusão.\\n\\nEF07HI02: Identificar conexões e interações entre as sociedades do Novo Mundo." (Use códigos alfanuméricos reais da BNCC, nunca use siglas inventadas como CN.1).
-        2. No campo "nivel", escolha ESTRITAMENTE uma destas 4 opções exatas: "Fundamental 1", "Fundamental 2", "Ensino Médio" ou "Ensino Superior".
-        3. No campo "categoria", escolha ESTRITAMENTE uma destas opções exatas: "Plano de Aula", "Sequência Didática", "Rubrica de Avaliação", "Texto de Apoio", "Slide / Apresentação", "Lista de Exercícios", "Quiz / Questões", "Imagens / Vídeos", "Estudo de Caso", "Simulação / Roleplay" ou "Prompt para Alunos".
-        4. No campo "modelo_ia", preencha exatamente com: "IA DA UNB".
-        5. No campo "prompts_ia", repita exatamente o texto original enviado pelo professor, sem inventar novos prompts.
+        REGRAS DE ESTRUTURA E VALORES EXATOS:
+        - "nivel": ESTRITAMENTE uma destas opções -> "Fundamental 1", "Fundamental 2", "Ensino Médio" ou "Ensino Superior".
+        - "categoria": ESTRITAMENTE uma destas opções -> "Plano de Aula", "Sequência Didática", "Rubrica de Avaliação", "Texto de Apoio", "Slide / Apresentação", "Lista de Exercícios", "Quiz / Questões", "Imagens / Vídeos", "Estudo de Caso", "Simulação / Roleplay" ou "Prompt para Alunos".
 
-        Responda APENAS com um objeto JSON válido (sem texto adicional antes ou depois, sem formatação markdown em volta) no seguinte formato exato:
+        Responda APENAS com um objeto JSON válido, sem NENHUM texto adicional:
         {{
-            "titulo": "Crie um título engajador e descritivo para a aula",
-            "nivel": "Fundamental 1, Fundamental 2, Ensino Médio ou Ensino Superior",
-            "categoria": "Plano de Aula",
-            "bncc": "CÓDIGO: Texto completo da habilidade da BNCC",
-            "bncc_computacao": "CÓDIGO: Texto completo da habilidade de computação (ou deixe vazio '' se não aplicável)",
-            "metodologia": "Descreva em detalhes a abordagem (ex: Sala Invertida, Gamificação, Aprendizagem Baseada em Problemas) e o passo a passo da aula",
-            "duracao": "Sugira uma estimativa realista de tempo (ex: 2 aulas de 50 min)",
+            "titulo": "Crie um título engajador para a aula",
+            "nivel": "Escolha exata de uma das 4 opções",
+            "categoria": "Escolha exata de uma das opções",
+            "bncc": "CÓDIGO REAL - Descrição completa",
+            "bncc_computacao": "CÓDIGO REAL - Descrição completa (ou deixe vazio se não houver tecnologia envolvida)",
+            "metodologia": "Passo a passo detalhado da abordagem e dinâmicas da aula",
+            "duracao": "Estimativa realista (ex: 2 aulas de 50 min)",
             "modelo_ia": "IA DA UNB",
             "prompts_ia": {json.dumps(raw_text.strip())},
-            "experiencia": "Crie uma narrativa detalhada simulando como seria a aplicação dessa aula, focando no engajamento dos estudantes e no papel mediador do professor",
-            "resultados": "Descreva os resultados de aprendizagem esperados e como os alunos demonstrarão o conhecimento na prática",
-            "recursos": ["Sugira recursos físicos e digitais necessários (mínimo de 3 itens)"]
+            "experiencia": "Narrativa detalhada de como seria a aplicação em sala, o engajamento dos estudantes e o papel mediador do professor",
+            "resultados": "Quais serão as evidências de aprendizagem geradas pelos alunos",
+            "recursos": ["Recurso 1", "Recurso 2", "Recurso 3"]
         }}
         """
 
     def _normalize_bncc_field(self, val) -> str:
-        """Garante que o campo BNCC fique sempre como string formatada (CODIGO: Texto)."""
+        """Limpa o campo BNCC caso a IA devolva uma lista ou formatação inesperada."""
         if not val:
             return ""
         if isinstance(val, list):
@@ -62,13 +64,14 @@ class BaseLLMProvider(ABC):
                 if isinstance(item, dict):
                     cid = item.get('id') or item.get('codigo') or ''
                     txt = item.get('texto') or item.get('descricao') or ''
-                    items.append(f"{cid}: {txt}".strip(": "))
+                    items.append(f"{cid} - {txt}".strip(" -"))
                 else:
                     items.append(str(item).strip())
             return "\n\n".join(filter(None, items))
         return str(val).strip()
 
     def parse_json_response(self, raw_response: str, original_prompt: str = "") -> dict:
+        """Sanitiza e força os campos vitais da estrutura do T.E.I.A."""
         clean_text = re.sub(r'^```json\s*', '', raw_response.strip(), flags=re.MULTILINE)
         clean_text = re.sub(r'^```\s*', '', clean_text, flags=re.MULTILINE)
         clean_text = re.sub(r'\s*```$', '', clean_text, flags=re.MULTILINE).strip()
@@ -84,15 +87,12 @@ class BaseLLMProvider(ABC):
                 f"A IA não retornou um JSON válido. Resposta recebida: {raw_response[:150]}..."
             )
 
-        # TRAVAS GARANTIDAS EM CÓDIGO (Sobrescreve qualquer loucura da IA):
-        # 1. Força sempre "IA DA UNB" no campo de modelo (Mesmo se você estiver usando o Qwen2.5 local)
+        # TRAVAS DE SEGURANÇA GERAIS
         data['modelo_ia'] = "IA DA UNB"
         
-        # 2. Força o prompt exato que o professor digitou
         if original_prompt:
             data['prompts_ia'] = original_prompt.strip()
 
-        # 3. Normaliza quebras de linha da BNCC caso a IA mande como lista sem querer
         data['bncc'] = self._normalize_bncc_field(data.get('bncc', ''))
         data['bncc_computacao'] = self._normalize_bncc_field(data.get('bncc_computacao', ''))
 
@@ -108,7 +108,8 @@ class LocalOllamaProvider(BaseLLMProvider):
 
     def __init__(self):
         raw_url = getattr(settings, 'LOCAL_LLM_URL', None) or os.getenv('LOCAL_LLM_URL', 'http://localhost:11434/v1')
-        raw_model = getattr(settings, 'LOCAL_LLM_MODEL', None) or os.getenv('LOCAL_LLM_MODEL', 'qwen2.5')
+        # APONTANDO EXATAMENTE PARA O QWEN3:14B
+        raw_model = getattr(settings, 'LOCAL_LLM_MODEL', None) or os.getenv('LOCAL_LLM_MODEL', 'qwen3:8b')
 
         self.base_url = _clean_env(raw_url)
         self.model_name = _clean_env(raw_model)
@@ -130,9 +131,9 @@ class LocalOllamaProvider(BaseLLMProvider):
                     {
                         "role": "system",
                         "content": (
-                            "Você é um consultor pedagógico avançado, criativo e especialista na BNCC. "
-                            "Seu objetivo é expandir ideias curtas em planos de aula detalhados e ricos. "
-                            "Sempre inclua o código alfanumérico oficial da BNCC seguido de dois-pontos e a descrição completa da habilidade. "
+                            "Você é um consultor pedagógico altamente rigoroso e criativo. "
+                            "Seu objetivo é expandir ideias em planos de aula ricos. "
+                            "REGRA DE OURO: NUNCA invente códigos BNCC. Use apenas códigos reais no formato 'CÓDIGO - Descrição'. "
                             "Você DEVE responder estritamente em um formato JSON válido, sem NENHUM texto fora das chaves {}."
                         ),
                     },
@@ -141,10 +142,10 @@ class LocalOllamaProvider(BaseLLMProvider):
                         "content": prompt,
                     },
                 ],
-                temperature=0.5,
+                # Temperatura 0.3 restringe alucinações e garante um formato JSON sólido
+                temperature=0.3,
             )
             raw_response = response.choices[0].message.content
-            # Passa o texto original para a trava de segurança forçar no campo "prompts_ia"
             return self.parse_json_response(raw_response, original_prompt=raw_text)
 
         except Exception as err:
@@ -188,9 +189,9 @@ class UnbAIProvider(BaseLLMProvider):
                     {
                         "role": "system",
                         "content": (
-                            "Você é um consultor pedagógico avançado, criativo e especialista na BNCC. "
-                            "Seu objetivo é expandir ideias curtas em planos de aula detalhados e ricos. "
-                            "Sempre inclua o código alfanumérico oficial da BNCC seguido de dois-pontos e a descrição completa da habilidade. "
+                            "Você é um consultor pedagógico altamente rigoroso e criativo. "
+                            "Seu objetivo é expandir ideias em planos de aula ricos. "
+                            "REGRA DE OURO: NUNCA invente códigos BNCC. Use apenas códigos reais no formato 'CÓDIGO - Descrição'. "
                             "Você DEVE responder estritamente em um formato JSON válido, sem NENHUM texto fora das chaves {}."
                         ),
                     },
@@ -199,7 +200,7 @@ class UnbAIProvider(BaseLLMProvider):
                         "content": prompt,
                     },
                 ],
-                temperature=0.5,
+                temperature=0.3,
             )
             raw_response = response.choices[0].message.content
             return self.parse_json_response(raw_response, original_prompt=raw_text)
@@ -234,7 +235,7 @@ class GeminiProvider(BaseLLMProvider):
                 prompt,
                 generation_config={
                     "response_mime_type": "application/json",
-                    "temperature": 0.5
+                    "temperature": 0.1
                 }
             )
             return self.parse_json_response(response.text.strip(), original_prompt=raw_text)

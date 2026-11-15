@@ -18,6 +18,7 @@ import json
 import sys
 import re
 import traceback
+import requests  # Adicionado para requisições à API do Ollama/Qwen
 from random import randint
 
 # --- IMPORTS DE PDF E IA ---
@@ -1532,6 +1533,174 @@ class AutoCatalogAIView(APIView):
 
 
 # ============================================================================
+# GERAÇÃO DE PLANO DE AULA COM BNCC E AGENTES (HÍBRIDO HITL)
+# ============================================================================
+# ============================================================================
+# GERAÇÃO DE PLANO DE AULA COM BNCC E AGENTES (HÍBRIDO HITL)
+# ============================================================================
+import json
+import re
+import requests
+import os
+from django.conf import settings
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+
+def extrair_bloco_markdown(etapa: str, materia: str, termo_busca: str) -> str:
+    """
+    Lê o arquivo Markdown fatiado e retorna apenas a seção relevante para economizar tokens.
+    """
+    if not etapa or not materia:
+        return ""
+        
+    caminho = os.path.join(settings.BASE_DIR, 'bncc_fatiada', str(etapa).lower(), f"{str(materia).lower()}.md")
+    
+    try:
+        with open(caminho, 'r', encoding='utf-8') as f:
+            conteudo = f.read()
+    except FileNotFoundError:
+        return ""
+
+    secoes = re.split(r'(?=\n#{2,4} )', conteudo)
+    termo = str(termo_busca).upper() if termo_busca else ""
+    
+    blocos_relevantes = [secao for secao in secoes if termo in secao.upper()]
+    
+    if blocos_relevantes:
+        return "".join(blocos_relevantes)[:4000]
+    
+    return conteudo[:4000]
+
+def gerar_aula_qwen(prompt_livre: str, contexto_bncc: str) -> dict:
+    """
+    Comunica-se com o Qwen3:8b via Ollama forçando a devolução de um JSON 
+    estruturado e sem marcações Markdown para o frontend.
+    """
+    system_prompt = f"""Você é um assistente educacional de planejamento. 
+Sua tarefa é criar um plano de aula detalhado com base nas diretrizes da BNCC abaixo.
+
+DIRETRIZES DA BNCC:
+{contexto_bncc}
+
+REGRAS OBRIGATÓRIAS:
+1. Você DEVE responder APENAS com um objeto JSON válido.
+2. Não inclua texto fora do JSON. Não use blocos ```json.
+3. Não use asteriscos (**) ou marcações Markdown dentro dos valores do JSON, escreva em texto limpo.
+4. CÓDIGOS BNCC: NUNCA invente ou abrevie códigos (como "H11" ou "G12"). Você deve obrigatoriamente extrair e utilizar o código alfanumérico oficial COMPLETO que está no texto (ex: EF06HI07, EM13CHS101, EF08MA02).
+5. O JSON deve seguir exatamente esta estrutura de chaves:
+{{
+  "titulo": "Título criativo da aula",
+  "bncc": "Lista de habilidades com o CÓDIGO OFICIAL COMPLETO e a descrição",
+  "metodologia": "Nome da metodologia (ex: Aula Expositiva Dialogada)",
+  "duracao": "Tempo estimado (ex: 2 aulas de 50 min)",
+  "recursos": ["Item 1", "Item 2"],
+  "relato_experiencia": "Texto corrido descrevendo a aula passo a passo de forma limpa",
+  "resultados": "Como será a avaliação"
+}}"""
+    
+    payload = {
+        "model": "qwen3:8b", 
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": prompt_livre}
+        ],
+        "stream": False,
+        "temperature": 0.3
+    }
+    
+    try:
+        resposta = requests.post("http://localhost:11434/api/chat", json=payload)
+        
+        if resposta.status_code != 200:
+            print(f"❌ Erro Ollama: {resposta.text}")
+            return {"titulo": "Erro", "relato_experiencia": f"Erro no servidor: {resposta.status_code}"}
+            
+        conteudo_bruto = resposta.json().get('message', {}).get('content', '')
+        conteudo_limpo = re.sub(r'^```json\s*|\s*```$', '', conteudo_bruto.strip(), flags=re.MULTILINE)
+        
+        return json.loads(conteudo_limpo)
+        
+    except json.JSONDecodeError as e:
+        print(f"❌ Qwen não devolveu JSON puro: {e}")
+        texto_limpo = conteudo_bruto.replace("**", "").replace("*", "")
+        return {
+            "titulo": "Plano de Aula Gerado",
+            "relato_experiencia": texto_limpo
+        }
+    except Exception as e:
+        print(f"❌ Erro de conexão com Ollama: {e}")
+        return {"titulo": "Erro", "relato_experiencia": "Falha de conexão com a IA."}
+
+class GeradorPlanoAulaView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        prompt_livre = request.data.get('prompt', '')
+        etapa_ui = request.data.get('etapa')
+        materia_ui = request.data.get('materia')
+        ano_ui = request.data.get('ano')
+
+        if not prompt_livre:
+            return Response({'erro': 'O prompt de busca não pode estar vazio.'}, status=400)
+
+        # 1. Filtros UI assumem precedência
+        if etapa_ui and materia_ui and ano_ui:
+            etapa_final, materia_final, ano_final = etapa_ui, materia_ui, ano_ui
+        
+        # 2. Agente Classificador (Roteamento)
+        else:
+            system_classificador = (
+                "Você é um roteador educacional. Analise o tema e devolva APENAS "
+                "um JSON válido com a etapa, materia e ano escolar mais adequados segundo a BNCC. "
+                "Exemplo: {\"etapa\": \"fundamental\", \"materia\": \"historia\", \"ano\": \"6º ANO\"}"
+            )
+            
+            payload_classificador = {
+                "model": "qwen3:8b", # NOME DO MODELO CORRIGIDO AQUI TAMBÉM
+                "messages": [
+                    {"role": "system", "content": system_classificador},
+                    {"role": "user", "content": prompt_livre}
+                ],
+                "stream": False,
+                "temperature": 0.1
+            }
+            
+            try:
+                resposta_raw = requests.post("http://localhost:11434/api/chat", json=payload_classificador)
+                
+                if resposta_raw.status_code != 200:
+                    print(f"❌ Erro da API Ollama: {resposta_raw.text}")
+                    raise ValueError(f"Ollama retornou erro {resposta_raw.status_code}")
+                
+                conteudo_json = resposta_raw.json().get('message', {}).get('content', '')
+                conteudo_json = re.sub(r'```json|```', '', conteudo_json).strip()
+                classificacao = json.loads(conteudo_json)
+                
+                etapa_final = classificacao.get('etapa', 'fundamental')
+                materia_final = classificacao.get('materia', 'geral')
+                ano_final = classificacao.get('ano', '')
+            except Exception as e:
+                print(f"❌ Erro no Agente Classificador: {e}")
+                etapa_final, materia_final, ano_final = "fundamental", "geral", ""
+
+        # 3. Extração do contexto específico baseado na Rota
+        contexto_bncc = extrair_bloco_markdown(etapa_final, materia_final, ano_final)
+        
+        # 4. Aciona o Agente Gerador Principal (retorna um Dict)
+        plano_aula_dit = gerar_aula_qwen(prompt_livre, contexto_bncc)
+        
+        return Response({
+            'plano_aula': plano_aula_dit,
+            'filtros_utilizados': {
+                'etapa': etapa_final,
+                'materia': materia_final,
+                'ano': ano_final
+            }
+        }, status=200)
+
+
+# ============================================================================
 # SISTEMA DE EXPORTAÇÃO DE PRODUÇÕES PARA PDF (IFB / MEC)
 # ============================================================================
 class ExportProducaoPDFView(APIView):
@@ -1580,3 +1749,4 @@ class ExportProducaoPDFView(APIView):
             print("\n❌ ERRO NA GERAÇÃO DO PDF:")
             traceback.print_exc()
             return HttpResponse(f"Erro ao gerar PDF: {str(e)}", status=500)
+

@@ -58,7 +58,7 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        
+
         {/* === ROTAS LEGAIS AQUI === */}
         <Route path="/termos" element={<TermosDeUso />} />
         <Route path="/privacidade" element={<PoliticaDePrivacidade />} />
@@ -71,11 +71,18 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />}>
             <Route index element={<MainContent />} />
             <Route path="producao/:id" element={<DetalharProducao />} />
-            <Route path="minha-producao/:id" element={<VisualizarMinhaProducao />} />
+            <Route
+              path="minha-producao/:id"
+              element={<VisualizarMinhaProducao />}
+            />
             <Route path="catalogar" element={<SelecionarMetodo />} />
             <Route path="catalogar/base" element={<BuscarBase />} />
             <Route path="catalogar/manual" element={<FormularioManual />} />
-            <Route path="/dashboard/catalogar/assistido" element={<CatalogarAssistido />} /> 
+            {/* Rota do novo Assistente de Planejamento (HITL) */}
+            <Route
+              path="catalogar/assistido"
+              element={<CatalogarAssistido />}
+            />
             <Route path="minhas-producoes" element={<MinhasProducoes />} />
             <Route path="revisao" element={<RevisaoDuploCego />} />
             <Route path="revisao/:id" element={<Revisao />} />
@@ -91,7 +98,10 @@ function App() {
             <Route path="admin/gamificacao" element={<GamificacaoAdmin />} />
             <Route path="admin/diario" element={<DiarioOperacoes />} />
             <Route path="admin/diario/:id" element={<DiarioDetalhes />} />
-            <Route path="admin/configuracoes" element={<ConfiguracoesGerais />} />
+            <Route
+              path="admin/configuracoes"
+              element={<ConfiguracoesGerais />}
+            />
           </Route>
 
           <Route path="/perfil" element={<Profile />} />

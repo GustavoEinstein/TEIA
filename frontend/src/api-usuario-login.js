@@ -1,20 +1,9 @@
-import axios from 'axios';
+// Legacy interceptor - mantido para compatibilidade mas não usado pelo novo AuthContext
+// O novo sistema usa api.js com AuthContext para gerenciamento de tokens seguro
 
-// Configura o axios globalmente para verificar erros 401 (Não autorizado)
-axios.interceptors.response.use(
-    (response) => {
-        return response;
-    },
-    (error) => {
-        // Se receber um erro 401 (Token inválido ou expirado)
-        if (error.response && error.response.status === 401) {
-            // Verifica se não é a própria tela de login (para evitar loop)
-            if (!window.location.pathname.includes('/') && !window.location.pathname.includes('/register')) {
-                localStorage.clear(); // Limpa dados
-                window.location.href = '/'; // Força ir para o Login
-                alert("Sua sessão expirou. Faça login novamente.");
-            }
-        }
-        return Promise.reject(error);
-    }
-);
+// Não faz nada - o tratamento de 401 é feito em:
+// 1. services/api.js (interceptor do axios customizado)
+// 2. context/AuthContext.jsx (gerenciamento de estado de auth)
+// 3. components/PrivateRoute.jsx (validação server-side)
+
+console.log('[TEIA] Legacy api-usuario-login.js loaded - interceptors handled by AuthContext/api.js');

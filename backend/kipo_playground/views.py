@@ -1796,3 +1796,41 @@ class ExportProducaoPDFView(APIView):
             traceback.print_exc()
             return HttpResponse(f"Erro ao gerar PDF: {str(e)}", status=500)
 
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+@authentication_classes([])
+def api_health_check(request):
+    """
+    Health check endpoint para Docker/load balancer.
+    Não requer autenticação.
+    """
+    from django.db import connection
+    from django.core.cache import cache
+
+    health = {
+        'status': 'healthy',
+        'database': 'ok',
+        'cache': 'ok',
+    }
+
+    # Verificar banco de dados
+    try:
+        connection.ensure_connection()
+    except Exception:
+        health['database'] = 'error'
+        health['status'] = 'unhealthy'
+
+    # Verificar cache
+    try:
+        cache.set('health_check', 'ok', 10)
+        if cache.get('health_check') != 'ok':
+            health['cache'] = 'error'
+            health['status'] = 'unhealthy'
+    except Exception:
+        health['cache'] = 'error'
+        health['status'] = 'unhealthy'
+
+    status_code = 200 if health['status'] == 'healthy' else 503
+    return Response(health, status=status_code)
+

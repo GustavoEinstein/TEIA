@@ -48,7 +48,7 @@ import ConfiguracoesGerais from "./pages/ConfiguracoesGerais"
 import EditarProducao from "./EditarProducao"
 
 // --- COMPONENTE DE PROTEÇÃO ---
-import PrivateRoute from "./components/PrivateRoute"
+import PrivateRoute, { AdminRoute } from "./components/PrivateRoute"
 
 function App() {
   return (
@@ -92,16 +92,18 @@ function App() {
             <Route path="forum/:id" element={<TopicoDetalhe />} />
             <Route path="editar-producao/:id" element={<EditarProducao />} />
 
-            <Route path="central-admin" element={<CentralAdmin />} />
-            <Route path="aprovacoes" element={<AprovacaoContas />} />
-            <Route path="admin" element={<Admin />} />
-            <Route path="admin/gamificacao" element={<GamificacaoAdmin />} />
-            <Route path="admin/diario" element={<DiarioOperacoes />} />
-            <Route path="admin/diario/:id" element={<DiarioDetalhes />} />
-            <Route
-              path="admin/configuracoes"
-              element={<ConfiguracoesGerais />}
-            />
+            <Route element={<AdminRoute />}>
+              <Route path="central-admin" element={<CentralAdmin />} />
+              <Route path="aprovacoes" element={<AprovacaoContas />} />
+              <Route path="admin" element={<Admin />} />
+              <Route path="admin/gamificacao" element={<GamificacaoAdmin />} />
+              <Route path="admin/diario" element={<DiarioOperacoes />} />
+              <Route path="admin/diario/:id" element={<DiarioDetalhes />} />
+              <Route
+                path="admin/configuracoes"
+                element={<ConfiguracoesGerais />}
+              />
+            </Route>
           </Route>
 
           <Route path="/perfil" element={<Profile />} />

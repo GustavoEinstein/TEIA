@@ -1,26 +1,65 @@
-# frontend/Dockerfile
+# =============================================================================
+# TEIA Frontend - Multi-stage Dockerfile (Production Hardened)
+# =============================================================================
+# Stage 1: Builder - Install dependencies and build Vite app
+# Stage 2: Runtime - Nginx serving static files with non-root user
+# =============================================================================
 
-# Usa uma versão leve do Node.js
-FROM node:21-alpine
+# -----------------------------------------------------------------------------
+# STAGE 1: Builder
+# -----------------------------------------------------------------------------
+FROM node:21-alpine AS builder
 
-# Define a pasta de trabalho dentro do contêiner
+# Instalar dependências de build
+RUN apk add --no-cache python3 make g++
+
 WORKDIR /app
 
-# Copia os arquivos de configuração do NPM e instala as dependências
+# Copiar package files primeiro (cache de layer)
 COPY package*.json ./
-RUN npm install
 
-# Copia o restante do código do frontend
+# Instalar dependências (incluindo devDependencies para build)
+RUN npm ci --prefer-offline --no-audit
+
+# Copiar código fonte
 COPY . .
 
-# Roda o comando do Vite para gerar a versão otimizada ("minificada") do site
+# Build da aplicação (produção)
 RUN npm run build
 
-# Instala um servidor estático simples e rápido para servir os arquivos do React
-RUN npm install -g serve
+# -----------------------------------------------------------------------------
+# STAGE 2: Runtime - Nginx
+# -----------------------------------------------------------------------------
+FROM nginx:alpine AS runtime
 
-# Expõe a porta que configuramos no docker-compose e no Nginx
-EXPOSE 3000
+# Instalar curl para health check
+RUN apk add --no-cache curl
 
-# Roda o servidor apontando para a pasta 'dist' gerada pelo Vite
-CMD ["serve", "-s", "dist", "-l", "3000"]
+# Criar usuário não-root para nginx
+RUN addgroup -g 1000 -S appgroup && \
+    adduser -u 1000 -S -G appgroup -h /app appuser
+
+# Copiar build do frontend
+COPY --from=builder --chown=appuser:appgroup /app/dist /usr/share/nginx/html
+
+# Copiar configuração customizada do nginx
+COPY --chown=root:root nginx.conf /etc/nginx/nginx.conf
+COPY --chown=root:root default.conf /etc/nginx/conf.d/default.conf
+
+# Criar diretórios necessários para nginx (cache, pid, etc.) com permissões corretas
+RUN mkdir -p /var/cache/nginx /var/run /var/log/nginx && \
+    chown -R appuser:appgroup /var/cache/nginx /var/run /var/log/nginx && \
+    chmod -R 755 /var/cache/nginx /var/run /var/log/nginx
+
+# Mudar para usuário não-root
+USER appuser
+
+# Expor porta (nginx roda em porta não privilegiada)
+EXPOSE 8080
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:8080/ || exit 1
+
+# Iniciar nginx
+CMD ["nginx", "-g", "daemon off;"]

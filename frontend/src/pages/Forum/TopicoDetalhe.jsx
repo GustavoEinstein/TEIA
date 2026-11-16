@@ -4,8 +4,8 @@ import api from "../../services/api"
 import {
   ArrowLeft, Download, CheckCircle, Trash2, Loader2, Send, Link2, CheckCircle2, User, MessageSquare
 } from "lucide-react"
-import ReactMarkdown from "react-markdown"
 import Swal from "sweetalert2"
+import SafeMarkdown from "../../components/SafeMarkdown"
 
 export default function TopicoDetalhe() {
   const { id } = useParams()
@@ -144,7 +144,7 @@ export default function TopicoDetalhe() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-200 p-4 md:p-8 pb-24">
       <div className="max-w-[900px] mx-auto">
-        
+
         {/* Voltar */}
         <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-[#1565C0] dark:hover:text-blue-400 font-bold text-sm mb-6 transition-colors">
           <ArrowLeft size={18} /> Voltar para o Fórum
@@ -152,7 +152,7 @@ export default function TopicoDetalhe() {
 
         {/* --- TÓPICO PRINCIPAL --- */}
         <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 p-6 md:p-10 mb-10">
-          
+
           {/* Header do Tópico */}
           <div className="flex flex-col md:flex-row justify-between items-start gap-6 mb-8 border-b border-slate-100 dark:border-slate-800 pb-8">
             <div className="flex-1 min-w-0">
@@ -166,7 +166,7 @@ export default function TopicoDetalhe() {
                   </span>
                 )}
               </div>
-              
+
               <h1 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white leading-tight mb-4">
                 {topico.titulo}
               </h1>
@@ -214,10 +214,10 @@ export default function TopicoDetalhe() {
             </div>
           )}
 
-          {/* Corpo do Tópico (Markdown) */}
-          <div className="text-[15px] text-slate-700 dark:text-slate-300 leading-relaxed font-normal whitespace-pre-wrap [&>p]:mb-4 [&>ul]:list-disc [&>ul]:pl-5 [&>h1]:text-2xl [&>h1]:font-bold [&>h2]:text-xl [&>h2]:font-bold">
-            <ReactMarkdown>{topico.conteudo}</ReactMarkdown>
-          </div>
+          {/* Corpo do Tópico (Markdown) - Sanitizado com DOMPurify via SafeMarkdown */}
+          <SafeMarkdown mode="user" className="text-[15px] text-slate-700 dark:text-slate-300 leading-relaxed font-normal whitespace-pre-wrap [&>p]:mb-4 [&>ul]:list-disc [&>ul]:pl-5 [&>h1]:text-2xl [&>h1]:font-bold [&>h2]:text-xl [&>h2]:font-bold">
+            {topico.conteudo}
+          </SafeMarkdown>
 
           {/* Anexo */}
           {topico.arquivo && (
@@ -240,11 +240,11 @@ export default function TopicoDetalhe() {
             {topico.comentarios.map((comentario) => {
               const isAutor = comentario.is_autor_topico
               return (
-                <div 
-                  key={comentario.id} 
+                <div
+                  key={comentario.id}
                   className={`p-6 rounded-2xl border transition-colors ${
-                    isAutor 
-                    ? "bg-blue-50/50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800/50" 
+                    isAutor
+                    ? "bg-blue-50/50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800/50"
                     : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm"
                   }`}
                 >
@@ -262,9 +262,9 @@ export default function TopicoDetalhe() {
                       {calcularTempoAtras(comentario.data)}
                     </span>
                   </div>
-                  <div className="text-[15px] text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
-                    <ReactMarkdown>{comentario.conteudo}</ReactMarkdown>
-                  </div>
+                  <SafeMarkdown mode="user" className="text-[15px] text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
+                    {comentario.conteudo}
+                  </SafeMarkdown>
                 </div>
               )
             })}

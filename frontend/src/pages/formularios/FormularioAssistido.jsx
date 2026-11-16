@@ -10,10 +10,11 @@ import {
   Loader2,
   GraduationCap,
   BookA,
-  AlertTriangle, // <-- Novo ícone importado
+  AlertTriangle,
 } from "lucide-react"
 import api from "../../services/api"
 import Swal from "sweetalert2"
+import SafeMarkdown from "../../components/SafeMarkdown"
 
 const CatalogarAssistido = () => {
   const navigate = useNavigate()
@@ -336,9 +337,9 @@ const CatalogarAssistido = () => {
                       <h4 className="font-black text-lg text-slate-800 dark:text-white mb-3">
                         {planoGerado.titulo}
                       </h4>
-                      <p className="m-0 text-slate-700 dark:text-slate-300 text-base whitespace-pre-line leading-relaxed">
+                      <SafeMarkdown mode="ai" className="text-slate-700 dark:text-slate-300 text-base whitespace-pre-line leading-relaxed">
                         {planoGerado.relato_experiencia}
-                      </p>
+                      </SafeMarkdown>
 
                       {planoGerado.recursos &&
                         planoGerado.recursos.length > 0 && (

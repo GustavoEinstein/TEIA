@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react"
-import api from "./services/api" // Ajuste o caminho se necessário
 import { Link, useNavigate, useLocation } from "react-router-dom"
 import { ArrowLeft, User, Lock, Loader2, AlertCircle } from "lucide-react"
+import { useAuth } from "./context/AuthContext"
 
 // Novo Ícone Exclusivo: Teia com a aranha descendo!
 const SpiderWebIcon = ({ size = 32, className = "" }) => (
@@ -42,6 +42,7 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
+  const { login } = useAuth()
 
   // Verifica se a URL contém o parâmetro indicando que a sessão expirou
   const isExpired = new URLSearchParams(location.search).get("expired")
@@ -52,30 +53,8 @@ const Login = () => {
     setIsLoading(true)
 
     try {
-      const urlToken = "api/token/"
-      const response = await api.post(urlToken, { username, password })
-      const token = response.data.access
-      localStorage.setItem("access_token", token)
-      localStorage.setItem("refresh_token", response.data.refresh)
-
-      const urlUser = "api/user/me/"
-      const userResponse = await api.get(urlUser, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-
-      localStorage.setItem("user_name", userResponse.data.username || "Admin")
-      localStorage.setItem(
-        "user_disciplina",
-        userResponse.data.disciplina || "Geral",
-      )
-      if (userResponse.data.avatar)
-        localStorage.setItem("user_avatar", userResponse.data.avatar)
-      if (userResponse.data.is_superuser)
-        localStorage.setItem("is_superuser", "true")
-      else localStorage.removeItem("is_superuser")
-
-      window.dispatchEvent(new Event("storage"))
-      window.location.href = "/dashboard"
+      await login(username, password)
+      navigate("/dashboard")
     } catch (err) {
       if (err.code === "ERR_NETWORK")
         setError("Erro de conexão. Verifique se o servidor está rodando.")

@@ -7,13 +7,16 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 # IMPORTAÇÃO ATUALIZADA DA NOVA VIEW: GeradorPlanoAulaView
-from .views import AutoCatalogAIView, ExportProducaoPDFView, GeradorPlanoAulaView
+from .views import AutoCatalogAIView, ExportProducaoPDFView, GeradorPlanoAulaView, api_health_check
 
 urlpatterns = [
     
     # ============================================================================
     # 1. AUTENTICAÇÃO E REGISTRO
     # ============================================================================
+    # Health check (sem autenticação)
+    path('api/health/', api_health_check, name='health_check'),
+
     path('api/token/', views.CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/register/', views.api_register_user, name='register_user'),

@@ -5,10 +5,22 @@ const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL, // Sua URL base
 })
 
+// Referência para função que obtém o access token (será definida pelo AuthProvider)
+let getAccessTokenFn = () => localStorage.getItem("access_token")
+
+/**
+ * Define a função para obter o access token.
+ * Chamada pelo AuthProvider na inicialização.
+ * @param {Function} fn - Função que retorna o access token atual
+ */
+export const setAccessTokenGetter = (fn) => {
+  getAccessTokenFn = fn
+}
+
 // 1. INTERCEPTOR DE REQUISIÇÃO (Envia o Token automaticamente)
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("access_token")
+    const token = getAccessTokenFn()
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
@@ -53,12 +65,14 @@ api.interceptors.response.use(
                 },
               )
 
-              // Sucesso! Salva o novo token
-              const newAccessToken = refreshResponse.data.access
-              localStorage.setItem("access_token", newAccessToken)
+              // Sucesso! O novo access token será obtido via getAccessTokenFn na próxima request
+              // Notificamos o AuthContext para atualizar seu estado
+              window.dispatchEvent(new CustomEvent('tokenRefreshed', {
+                detail: { accessToken: refreshResponse.data.access }
+              }))
 
               // Refaz a requisição original que havia falhado com o novo token
-              originalRequest.headers.Authorization = `Bearer ${newAccessToken}`
+              originalRequest.headers.Authorization = `Bearer ${refreshResponse.data.access}`
               return api(originalRequest)
             }
           } catch (refreshError) {

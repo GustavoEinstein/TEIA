@@ -1,22 +1,162 @@
 version: '3.8'
 
+# =============================================================================
+# TEIA - Docker Compose (Production Hardened)
+# =============================================================================
+# Uso:
+#   Desenvolvimento: docker-compose -f docker-compose.yml -f docker-compose.override.yml up
+#   Produção:        docker-compose -f docker-compose.yml -f docker-compose.prod.yml up
+# =============================================================================
+
 services:
+  # ---------------------------------------------------------------------------
+  # Backend - Django + Gunicorn
+  # ---------------------------------------------------------------------------
   teia-backend:
-    build: ./backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: runtime
     env_file:
       - .env
+      # Em produção, use docker secrets em vez de env_file:
+      # secrets:
+      #   - secret_key
+      #   - db_password
+      #   - email_password
+      #   - gemini_api_key
+      #   - unb_api_key
+    environment:
+      # Configurações de runtime (não secrets)
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+      - DJANGO_SETTINGS_MODULE=TCC_DjangoScrumKipo.settings
     ports:
       - "8000:8000"
     volumes:
-      - ./dados_db:/app/database
-      - ./static_files:/app/staticfiles
-      - ./media_files:/app/kipo_playground/media
-    restart: always
+      # Dados persistentes
+      - dados_db:/app/database
+      - static_files:/app/staticfiles
+      - media_files:/app/kipo_playground/media
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/run
+      - /app/kipo_playground/media/temp
 
+  # ---------------------------------------------------------------------------
+  # Frontend - Nginx + React (Vite build)
+  # ---------------------------------------------------------------------------
   teia-frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: runtime
+    env_file:
+      - .env.frontend
     ports:
-      - "3000:3000"
+      - "3000:8080"
     depends_on:
-      - teia-backend
-    restart: always
+      teia-backend:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx
+      - /var/run
+      - /var/log/nginx
+
+  # ---------------------------------------------------------------------------
+  # PostgreSQL (Opcional - para produção)
+  # ---------------------------------------------------------------------------
+  # postgres:
+  #   image: postgres:16-alpine
+  #   env_file:
+  #     - .env.db
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   restart: unless-stopped
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: '1.0'
+  #         memory: 1G
+  #   security_opt:
+  #     - no-new-privileges:true
+
+# -----------------------------------------------------------------------------
+# Volumes persistentes
+# -----------------------------------------------------------------------------
+volumes:
+  dados_db:
+    driver: local
+  static_files:
+    driver: local
+  media_files:
+    driver: local
+  # postgres_data:
+  #   driver: local
+
+# -----------------------------------------------------------------------------
+# Secrets (Produção - descomente e configure)
+# -----------------------------------------------------------------------------
+# secrets:
+#   secret_key:
+#     file: ./secrets/secret_key.txt
+#   db_password:
+#     file: ./secrets/db_password.txt
+#   email_password:
+#     file: ./secrets/email_password.txt
+#   gemini_api_key:
+#     file: ./secrets/gemini_api_key.txt
+#   unb_api_key:
+#     file: ./secrets/unb_api_key.txt
+
+# -----------------------------------------------------------------------------
+# Networks (isolamento)
+# -----------------------------------------------------------------------------
+networks:
+  default:
+    name: teia-network
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16

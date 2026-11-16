@@ -51,6 +51,8 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware', # CORS DEVE VIR NO TOPO PARA O REACT
     'django.middleware.security.SecurityMiddleware',
+    'kipo_playground.security_middleware.SecurityHeadersMiddleware',  # Headers de segurança customizados
+    'kipo_playground.security_middleware.CORSSecurityMiddleware',    # Validação CORS adicional
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',

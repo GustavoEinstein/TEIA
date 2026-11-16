@@ -42,6 +42,9 @@ __pycache__/
 .env.production.local
 .env
 
+# Security audit report (não commitar para não expor vulnerabilidades)
+SECURITY_AUDIT_REPORT.md
+
 # Project data / databases
 db.sqlite3
 backend/**/*.sqlite3
@@ -64,3 +67,9 @@ backend/TCC_DjangoScrumKipo/__pycache__
 # Legacy environment alias
 venv
 frontend/public/unb.png_Zone.Identifier
+
+# AI Agents
+.claude/
+.aider*
+.cline/
+.opencode/

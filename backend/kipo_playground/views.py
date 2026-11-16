@@ -25,8 +25,18 @@ from random import randint
 from weasyprint import HTML
 from .services.llm import get_llm_provider
 
+# --- IMPORTS DE SEGURANÇA ---
+from .security import (
+    validate_file_upload, validate_multiple_files,
+    get_ollama_url, validate_ollama_url,
+    AICatalogThrottle, AIPlannerThrottle,
+    PasswordResetRequestThrottle, PasswordResetConfirmThrottle, RegisterThrottle,
+    store_password_reset_token, consume_password_reset_token,
+    sanitize_crm_data, mask_email, mask_phone
+)
+
 # --- IMPORTS DO REST FRAMEWORK ---
-from rest_framework.decorators import api_view, permission_classes, authentication_classes
+from rest_framework.decorators import api_view, permission_classes, authentication_classes, throttle_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -43,6 +53,7 @@ from django.utils.html import strip_tags
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Count, Q
+from django.core.cache import cache
 
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
@@ -56,12 +67,8 @@ from .models import (
 )
 
 
-# Lista de arquivos permitidos no servidor
-ALLOWED_EXTENSIONS = [
-    '.pdf', '.doc', '.docx', '.txt',
-    '.ppt', '.pptx', '.xls', '.xlsx',
-    '.jpg', '.jpeg', '.png'
-]
+# Lista de arquivos permitidos no servidor (importada de security)
+from .security import ALLOWED_EXTENSIONS
 
 # ============================================================================
 # FUNÇÃO AUXILIAR DE GAMIFICAÇÃO
@@ -181,6 +188,7 @@ def api_get_register_options(request):
 @api_view(['POST'])
 @authentication_classes([])
 @permission_classes([AllowAny])
+@throttle_classes([RegisterThrottle])
 def api_register_user(request):
     data = request.data
     
@@ -307,11 +315,12 @@ def api_create_production(request):
     data = request.data
     arquivo = request.FILES.get('arquivo')
 
+    # Validar upload de arquivo (MIME type, magic bytes, tamanho)
     if arquivo:
-        extensao = os.path.splitext(arquivo.name)[1].lower()
-        if extensao not in ALLOWED_EXTENSIONS:
-            return Response({'erro': f'Formato de arquivo inválido ({extensao}).'}, status=400)
-    
+        is_valid, error = validate_file_upload(arquivo, 'arquivo')
+        if not is_valid:
+            return Response({'erro': error}, status=400)
+
     try:
         recursos_input = data.getlist('recursos') if hasattr(data, 'getlist') else data.get('recursos', '')
         recursos_str = ", ".join(recursos_input) if isinstance(recursos_input, list) else str(recursos_input)
@@ -557,6 +566,10 @@ def api_update_production(request, pk):
 
         novo_arquivo = request.FILES.get('arquivo')
         if novo_arquivo:
+            # Validar upload de arquivo (MIME type, magic bytes, tamanho)
+            is_valid, error = validate_file_upload(novo_arquivo, 'arquivo')
+            if not is_valid:
+                return Response({'erro': error}, status=400)
             p.arquivo = novo_arquivo
 
         is_draft_val = data.get('is_draft')
@@ -788,6 +801,7 @@ def api_list_public_feed(request):
 @api_view(['POST'])
 @authentication_classes([])
 @permission_classes([AllowAny])
+@throttle_classes([PasswordResetRequestThrottle])
 def api_password_reset_request(request):
     email = request.data.get('email')
     if not email:
@@ -800,7 +814,12 @@ def api_password_reset_request(request):
 
     token = default_token_generator.make_token(user)
     uid = urlsafe_base64_encode(force_bytes(user.pk))
-    reset_link = f"http://localhost:5173/reset-password/{uid}/{token}"
+    # Usar FRONTEND_URL do settings para o link de reset
+    frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:5173')
+    reset_link = f"{frontend_url}/reset-password/{uid}/{token}"
+
+    # Armazenar token no cache para uso único
+    store_password_reset_token(user, token)
 
     subject = "Redefinição de Senha - T.E.I.A"
     from_email = settings.DEFAULT_FROM_EMAIL
@@ -833,9 +852,10 @@ def api_password_reset_request(request):
 @api_view(['POST'])
 @authentication_classes([])
 @permission_classes([AllowAny])
+@throttle_classes([PasswordResetConfirmThrottle])
 def api_password_reset_confirm(request, uidb64, token):
     new_password = request.data.get('password')
-    
+
     if not new_password:
         return Response({'erro': 'Nova senha é obrigatória.'}, status=400)
 
@@ -844,6 +864,10 @@ def api_password_reset_confirm(request, uidb64, token):
         user = User.objects.get(pk=uid)
     except (TypeError, ValueError, OverflowError, User.DoesNotExist):
         return Response({'erro': 'Link inválido.'}, status=400)
+
+    # Verificar e consumir token do cache (single-use)
+    if not consume_password_reset_token(user, token):
+        return Response({'erro': 'Link expirado ou inválido.'}, status=400)
 
     if default_token_generator.check_token(user, token):
         user.set_password(new_password)
@@ -1012,12 +1036,18 @@ def api_forum_topicos(request):
         conteudo = request.data.get('conteudo')
         categoria = request.data.get('categoria', 'Geral')
         producao_base_id = request.data.get('producao_base_id')
-        
+
         arquivo_enviado = request.FILES.get('arquivo')
 
         if not titulo or not conteudo:
             return Response({'erro': 'Título e conteúdo são obrigatórios.'}, status=400)
-            
+
+        # Validar upload de arquivo (MIME type, magic bytes, tamanho)
+        if arquivo_enviado:
+            is_valid, error = validate_file_upload(arquivo_enviado, 'arquivo')
+            if not is_valid:
+                return Response({'erro': error}, status=400)
+
         producao_base = None
         if producao_base_id:
             try:
@@ -1277,9 +1307,9 @@ class DiarioOperacaoView(APIView):
     def get(self, request):
         logs = DiarioOperacao.objects.all().select_related('docente')
         dados = []
-        
+
         for log in logs:
-            dados.append({
+            log_data = {
                 'id': log.id,
                 'titulo': log.titulo,
                 'tipo': log.tipo,
@@ -1292,7 +1322,10 @@ class DiarioOperacaoView(APIView):
                 'tags': log.tags,
                 'participantes': log.participantes,
                 'foto': request.build_absolute_uri(log.foto.url) if log.foto else None,
-            })
+            }
+            # Sanitizar PII para não-superusers
+            log_data = sanitize_crm_data(log_data, request.user)
+            dados.append(log_data)
         return Response(dados)
 
     def post(self, request):
@@ -1306,11 +1339,17 @@ class DiarioOperacaoView(APIView):
         proximos_passos = request.data.get('proximos_passos')
         tags = request.data.get('tags')
         participantes = request.data.get('participantes', 1)
-        
+
         foto = request.FILES.get('foto')
 
         if not all([titulo, tipo, data_evento, descricao]):
             return Response({'erro': 'Campos obrigatórios faltando.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Validar upload de foto
+        if foto:
+            is_valid, error = validate_file_upload(foto, 'foto')
+            if not is_valid:
+                return Response({'erro': error}, status=400)
 
         docente = None
         if docente_id:
@@ -1333,7 +1372,7 @@ class DiarioOperacaoView(APIView):
             foto=foto
         )
 
-        return Response({
+        response_data = {
             'id': novo_log.id,
             'titulo': novo_log.titulo,
             'tipo': novo_log.tipo,
@@ -1346,7 +1385,10 @@ class DiarioOperacaoView(APIView):
             'tags': novo_log.tags,
             'participantes': novo_log.participantes,
             'foto': request.build_absolute_uri(novo_log.foto.url) if novo_log.foto else None,
-        }, status=status.HTTP_201_CREATED)
+        }
+        # Sanitizar PII na resposta
+        response_data = sanitize_crm_data(response_data, request.user)
+        return Response(response_data, status=status.HTTP_201_CREATED)
 
 class DiarioOperacaoDeleteView(APIView):
     permission_classes = [IsAdminUser]
@@ -1389,7 +1431,9 @@ class DiarioNotaView(APIView):
             'participantes': diario.participantes,
             'foto': request.build_absolute_uri(diario.foto.url) if diario.foto else None,
         }
-        
+        # Sanitizar PII para não-superusers
+        dados_diario = sanitize_crm_data(dados_diario, request.user)
+
         return Response({'diario': dados_diario, 'notas': lista_notas})
 
     def post(self, request, pk):
@@ -1506,6 +1550,7 @@ def api_mark_notifications_read(request):
 # ============================================================================
 class AutoCatalogAIView(APIView):
     permission_classes = [IsAuthenticated]
+    throttle_classes = [AICatalogThrottle]
 
     def post(self, request):
         raw_text = request.data.get('texto', '') or request.data.get('raw_text', '')
@@ -1634,6 +1679,7 @@ REGRAS OBRIGATÓRIAS:
 
 class GeradorPlanoAulaView(APIView):
     permission_classes = [IsAuthenticated]
+    throttle_classes = [AIPlannerThrottle]
 
     def post(self, request):
         prompt_livre = request.data.get('prompt', '')
@@ -1738,7 +1784,7 @@ class ExportProducaoPDFView(APIView):
 
             pdf_bytes = HTML(
                 string=html_string,
-                base_url=request.build_absolute_uri('/')
+                base_url=None  # SSRF protection: não resolver URLs relativas
             ).write_pdf()
 
             response = HttpResponse(pdf_bytes, content_type='application/pdf')

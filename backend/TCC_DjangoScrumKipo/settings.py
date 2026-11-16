@@ -16,15 +16,17 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-substitua-esta-chave-em-producao')
 
-LLM_PROVIDER = os.getenv('LLM_PROVIDER', 'gemini')
+# LLM Provider: 'local' (Ollama), 'unb' (LiteLLM UnB), ou 'gemini'
+LLM_PROVIDER = os.getenv('LLM_PROVIDER', 'local')
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-# Puxa o valor do .env (Se não achar, o padrão é True para dev local)
-DEBUG = os.environ.get('DEBUG', 'True') == 'True'
+# Puxa o valor do .env (Se não achar, o padrão é False para segurança)
+DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
 # Lê do .env (Ex: 164.41.76.34/28,localhost,127.0.0.1) e transforma em lista
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*').split(',')
+# Padrão seguro para desenvolvimento local
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 
 # Application definition
@@ -39,6 +41,7 @@ INSTALLED_APPS = [
     # Bibliotecas de Terceiros
     'rest_framework',
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',  # Para blacklist de refresh tokens rotacionados
     'corsheaders',
 
     # O seu App
@@ -131,13 +134,20 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
     'DEFAULT_THROTTLE_RATES': {
-        'login_attempts': '10/m', # <-- CORREÇÃO DO ERRO 500 APLICADA AQUI
+        'login_attempts': '10/m',
+        'ai_catalog': '20/h',           # Catálogo IA: 20 req/hora por usuário
+        'ai_planner': '10/h',           # Planejador IA: 10 req/hora por usuário
+        'password_reset_request': '3/h', # Reset senha request: 3/hora por IP
+        'password_reset_confirm': '5/h', # Reset senha confirm: 5/hora por IP
+        'register': '5/h',              # Registro: 5/hora por IP
     }
 }
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(hours=8),  # Sessão de 8 horas (Estilo Aprender3)
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),  # Opcional: 7 dias para o token de renovação
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=45),      # 45 minutos
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),         # 7 dias
+    'ROTATE_REFRESH_TOKENS': True,                       # Rotaciona a cada uso
+    'BLACKLIST_AFTER_ROTATION': True,                    # Invalida refresh tokens antigos
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
@@ -145,10 +155,40 @@ SIMPLE_JWT = {
 # ============================================================================
 # 2. CONFIGURAÇÕES DO CORS (Para o React conseguir consumir a API)
 # ============================================================================
-CORS_ALLOW_ALL_ORIGINS = True # Deixe True ou liste domínios específicos
+# CORS_ALLOW_ALL_ORIGINS = True  # REMOVIDO: inseguro para produção
+# Origens permitidas (Lê do .env, ex: http://localhost:5173,https://teia.unb.br)
+CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173').split(',')
 
-# Origens confiáveis (Lê do .env, ex: http://192.168.0.100,http://localhost)
-CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', 'http://localhost:8000').split(',')
+# Origens confiáveis para CSRF (Lê do .env, ex: https://teia.unb.br,http://localhost:8000)
+CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', 'http://localhost:8000,http://127.0.0.1:8000').split(',')
+
+
+# ============================================================================
+# 5. CONFIGURAÇÕES DE SEGURANÇA DE COOKIES E HTTPS
+# ============================================================================
+# Em produção (DEBUG=False): cookies seguros, SameSite=Strict, HSTS
+# Em desenvolvimento (DEBUG=True): cookies lax para funcionar em localhost HTTP
+if not DEBUG:
+    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Strict'
+    CSRF_COOKIE_SECURE = True
+    CSRF_COOKIE_HTTPONLY = True
+    CSRF_COOKIE_SAMESITE = 'Strict'
+    SECURE_SSL_REDIRECT = True
+    SECURE_HSTS_SECONDS = 31536000  # 1 ano
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+else:
+    # Desenvolvimento local: cookies funcionam em HTTP localhost
+    SESSION_COOKIE_SECURE = False
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    CSRF_COOKIE_SECURE = False
+    CSRF_COOKIE_HTTPONLY = True
+    CSRF_COOKIE_SAMESITE = 'Lax'
 
 
 # ============================================================================
@@ -165,21 +205,27 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'kipo_playground', 'media')
 # ============================================================================
 # 4. CONFIGURAÇÕES DE E-MAIL (Recuperação de Senha)
 # ============================================================================
-EMAIL_BACKEND = 'kipo_playground.email_backend.EmailBackend' 
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
-EMAIL_USE_TLS = True
+EMAIL_USE_TLS = True      # Porta 587 usa STARTTLS
+EMAIL_USE_SSL = False     # SSL implícito usa porta 465
 
 # Puxando as credenciais de forma segura do arquivo .env!
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL')
 
-# Alternador de provedor ('gemini' ou 'local')
-LLM_PROVIDER = os.getenv('LLM_PROVIDER', 'unb')
-
-# Configurações do modelo local
-LOCAL_LLM_URL = os.getenv('LOCAL_LLM_URL', '[http://127.0.0.1:11434/v1](http://127.0.0.1:11434/v1)')
-LOCAL_LLM_MODEL = os.getenv('LOCAL_LLM_MODEL', 'qwen2.5:7b-instruct')
+# Configurações do modelo local (Ollama)
+LOCAL_LLM_URL = os.getenv('LOCAL_LLM_URL', 'http://127.0.0.1:11434/v1')
+LOCAL_LLM_MODEL = os.getenv('LOCAL_LLM_MODEL', 'qwen3:8b')
 LOCAL_LLM_TIMEOUT = 90
+
+# Configurações do provedor UnB (LiteLLM)
+UNB_LLM_URL = os.getenv('UNB_LLM_URL', 'https://ia-router.unb.br/v1/')
+UNB_LLM_MODEL = os.getenv('UNB_LLM_MODEL', 'UnB-Llama-3.3-70B-Instruct')
+UNB_API_KEY = os.getenv('UNB_API_KEY', '')
+
+# Frontend URL (para links de reset de senha, etc.)
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')

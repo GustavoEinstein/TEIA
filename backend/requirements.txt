@@ -58,6 +58,7 @@ PyJWT==2.13.0
 pyparsing==3.3.3
 pyphen==0.18.1
 python-dotenv==1.2.4
+python-magic==0.4.27
 pytz==2026.3.post1
 requests==2.34.2
 requests-oauthlib==2.0.0

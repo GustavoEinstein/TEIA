@@ -25,11 +25,9 @@ WORKDIR /app
 # Copiar apenas requirements primeiro (cache de layer)
 COPY requirements.txt .
 
-# Instalar dependências Python em diretório isolado
-RUN pip install --no-cache-dir --user -r requirements.txt
-
-# Instalar gunicorn
-RUN pip install --no-cache-dir --user gunicorn
+# Instalar dependências Python e gunicorn em diretório isolado
+RUN pip install --no-cache-dir --user -r requirements.txt && \
+    pip install --no-cache-dir --user gunicorn
 
 # Copiar código da aplicação
 COPY --chown=appuser:appuser . .
@@ -55,27 +53,27 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
-# Criar usuário não-root com UID/GID fixos
+# Criar usuário não-root com UID/GID fixos e diretório home válido
 RUN groupadd --gid 1000 appgroup && \
-    useradd --no-create-home --uid 1000 --gid 1000 --shell /bin/bash --home-dir /app appuser
+    useradd --create-home --uid 1000 --gid 1000 --shell /bin/bash appuser
 
 WORKDIR /app
 
-# Copiar dependências Python do builder (instaladas com --user)
-COPY --from=builder /root/.local /home/appuser/.local
+# Copiar dependências Python do builder com permissão correta para o appuser
+COPY --from=builder --chown=appuser:appgroup /root/.local /home/appuser/.local
 
 # Copiar código da aplicação
 COPY --from=builder --chown=appuser:appgroup /app /app
 
 # Criar diretórios necessários com permissões corretas
 RUN mkdir -p /app/staticfiles /app/kipo_playground/media /app/database && \
-    chown -R appuser:appgroup /app
+    chown -R appuser:appgroup /app /home/appuser
 
-# Variáveis de ambiente para Python
+# Variáveis de ambiente para Python (apontando para a home real do appuser)
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PATH="/home/appuser/.local/bin:${PATH}" \
-    HOME=/app
+    HOME=/home/appuser
 
 # Mudar para usuário não-root
 USER appuser
@@ -87,5 +85,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -f http://localhost:8000/api/health/ || exit 1
 
-# Comando de inicialização
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "3", "--timeout", "120", "TCC_DjangoScrumKipo.wsgi:application"]
+# Comando de inicialização via módulo Python (garante execução sem erro de PATH)
+CMD ["python", "-m", "gunicorn", "--bind", "0.0.0.0:8000", "--workers", "3", "--timeout", "120", "TCC_DjangoScrumKipo.wsgi:application"]

@@ -4,19 +4,16 @@ import axios from "axios"
 const getApiBaseUrl = () => {
   // Vite expõe variáveis com prefixo VITE_ em import.meta.env
   // Em desenvolvimento, fallback para localhost:8000
-  return import.meta.env.VITE_API_URL || 'http://localhost:8000/'
+  return import.meta.env.VITE_API_URL || "http://localhost:8000/"
 }
 
 // Cria uma instância padrão do Axios
-// withCredentials: true é OBRIGATÓRIO para enviar/receber cookies HttpOnly
 const api = axios.create({
   baseURL: getApiBaseUrl(),
-  withCredentials: true,  // Envia cookies (refresh_token HttpOnly) automaticamente
 })
 
 // Referência para função que obtém o access token (será definida pelo AuthProvider)
-// Inicializa como null - o AuthContext injeta o getter real após montar
-let getAccessTokenFn = () => null
+let getAccessTokenFn = () => localStorage.getItem("access_token")
 
 /**
  * Define a função para obter o access token.
@@ -27,7 +24,7 @@ export const setAccessTokenGetter = (fn) => {
   getAccessTokenFn = fn
 }
 
-// 1. INTERCEPTOR DE REQUISIÇÃO (Envia o access_token no header Authorization)
+// 1. INTERCEPTOR DE REQUISIÇÃO (Envia o Token automaticamente)
 api.interceptors.request.use(
   (config) => {
     const token = getAccessTokenFn()
@@ -41,7 +38,7 @@ api.interceptors.request.use(
   },
 )
 
-// 2. INTERCEPTOR DE RESPOSTA (Trata erro 401 - token expirado)
+// 2. INTERCEPTOR DE RESPOSTA (Trata o erro 401 de forma inteligente)
 api.interceptors.response.use(
   (response) => {
     return response
@@ -55,6 +52,7 @@ api.interceptors.response.use(
       // Só atua se NÃO estivermos na tela de login ou registro
       if (currentPath !== "/" && !currentPath.includes("/register")) {
         // Verifica se é realmente um erro de token expirado vindo do SimpleJWT
+        // Isso evita que falsos 401 (como erros de CORS ou redirects sem barra) desloguem você
         const isTokenError =
           error.response.data && error.response.data.code === "token_not_valid"
 
@@ -63,34 +61,40 @@ api.interceptors.response.use(
           originalRequest._retry = true
 
           try {
-            // Refresh via cookie HttpOnly - NÃO enviamos refresh no body
-            // O cookie é enviado automaticamente graças a withCredentials: true
-            const refreshResponse = await axios.post(
-              `${import.meta.env.VITE_API_URL}api/token/refresh/`,
-              {},  // Body vazio - refresh_token vem do cookie
-              { withCredentials: true }
-            )
+            const refreshToken = localStorage.getItem("refresh_token")
 
-            const newAccessToken = refreshResponse.data.access
+            if (refreshToken) {
+              // Tenta renovar o token silenciosamente no background
+              const refreshResponse = await axios.post(
+                `${import.meta.env.VITE_API_URL}api/token/refresh/`,
+                {
+                  refresh: refreshToken,
+                },
+              )
 
-            // Notificamos o AuthContext para atualizar seu estado em memória
-            window.dispatchEvent(new CustomEvent('tokenRefreshed', {
-              detail: { accessToken: newAccessToken }
-            }))
+              // Sucesso! O novo access token será obtido via getAccessTokenFn na próxima request
+              // Notificamos o AuthContext para atualizar seu estado
+              window.dispatchEvent(
+                new CustomEvent("tokenRefreshed", {
+                  detail: { accessToken: refreshResponse.data.access },
+                }),
+              )
 
-            // Refaz a requisição original com o novo token
-            originalRequest.headers.Authorization = `Bearer ${newAccessToken}`
-            return api(originalRequest)
+              // Refaz a requisição original que havia falhado com o novo token
+              originalRequest.headers.Authorization = `Bearer ${refreshResponse.data.access}`
+              return api(originalRequest)
+            }
           } catch (refreshError) {
-            // Se o refresh falhar (cookie expirado/inválido), sessão morreu
-            // Não há localStorage para limpar - cookie é HttpOnly
+            // Se o refresh_token também falhar, aí sim a sessão morreu de verdade
+            localStorage.clear()
             window.location.href = "/?expired=true"
             return Promise.reject(refreshError)
           }
         }
 
-        // Se já tentou renovar ou token inválido
+        // Se já tentou renovar, se não havia refresh token, ou se o token era inválido
         if (isTokenError) {
+          localStorage.clear()
           window.location.href = "/?expired=true"
         }
       }

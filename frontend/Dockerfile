@@ -30,6 +30,10 @@ RUN apk add --no-cache curl
 RUN addgroup -g 1000 -S appgroup && \
     adduser -u 1000 -S -G appgroup -h /app appuser
 
+# Copiar configurações do Nginx
+COPY --chown=appuser:appgroup nginx.conf /etc/nginx/nginx.conf
+COPY --chown=appuser:appgroup default.conf /etc/nginx/conf.d/default.conf
+
 # Copiar build do frontend
 COPY --from=builder --chown=appuser:appgroup /app/dist /usr/share/nginx/html
 

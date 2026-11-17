@@ -1,0 +1,99 @@
+<svg width="1123" height="794" viewBox="0 0 1123 794" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fundo branco -->
+  <rect width="1123" height="794" fill="white"/>
+
+  <!-- Borda decorativa -->
+  <rect x="40" y="40" width="1043" height="714" fill="none" stroke="#1565C0" stroke-width="4"/>
+  <rect x="60" y="60" width="1003" height="674" fill="none" stroke="#1565C0" stroke-width="1"/>
+
+  <!-- Elementos decorativos - cantos -->
+  <g fill="#1565C0">
+    <!-- Canto superior esquerdo -->
+    <path d="M80 60 L140 60 L80 120 Z"/>
+    <path d="M60 80 L120 80 L60 140 Z"/>
+    <!-- Canto superior direito -->
+    <path d="M1043 60 L983 60 L1043 120 Z"/>
+    <path d="M1063 80 L1003 80 L1063 140 Z"/>
+    <!-- Canto inferior esquerdo -->
+    <path d="M80 734 L140 734 L80 674 Z"/>
+    <path d="M60 714 L120 714 L60 654 Z"/>
+    <!-- Canto inferior direito -->
+    <path d="M1043 734 L983 734 L1043 674 Z"/>
+    <path d="M1063 714 L1003 714 L1063 654 Z"/>
+  </g>
+
+  <!-- Logo/Ícone T.E.I.A no topo -->
+  <g transform="translate(561.5, 140)">
+    <!-- Teia estilizada -->
+    <circle cx="0" cy="0" r="50" fill="none" stroke="#1565C0" stroke-width="3"/>
+    <line x1="0" y1="-50" x2="0" y2="50" stroke="#1565C0" stroke-width="2"/>
+    <line x1="-50" y1="0" x2="50" y2="0" stroke="#1565C0" stroke-width="2"/>
+    <line x1="-35.36" y1="-35.36" x2="35.36" y2="35.36" stroke="#1565C0" stroke-width="1.5"/>
+    <line x1="35.36" y1="-35.36" x2="-35.36" y2="35.36" stroke="#1565C0" stroke-width="1.5"/>
+    <polygon points="0,-25 13.15,-14.15 25,0 13.15,14.15 0,25 -13.15,14.15 -25,0 -13.15,-14.15" fill="none" stroke="#1565C0" stroke-width="1.5"/>
+    <polygon points="0,-40 21.04,-10.7 40,0 21.04,10.7 0,40 -21.04,10.7 -40,0 -21.04,-10.7" fill="none" stroke="#1565C0" stroke-width="1"/>
+  </g>
+
+  <!-- Título principal -->
+  <text x="561.5" y="250" text-anchor="middle" font-family="Georgia, serif" font-size="36" font-weight="bold" fill="#1a1a2e">
+    Certificado de Conclusão
+  </text>
+
+  <!-- Linha decorativa -->
+  <line x1="361.5" y1="270" x2="761.5" y2="270" stroke="#1565C0" stroke-width="2"/>
+
+  <!-- Texto introdutório -->
+  <text x="561.5" y="320" text-anchor="middle" font-family="Georgia, serif" font-size="20" fill="#333">
+    Certificamos que
+  </text>
+
+  <!-- ÁREA DO NOME (será preenchida dinamicamente) -->
+  <!-- Linha para o nome -->
+  <line x1="280" y1="420" x2="843" y2="420" stroke="#1565C0" stroke-width="2" stroke-dasharray="10,5"/>
+
+  <!-- Texto complementar -->
+  <text x="561.5" y="480" text-anchor="middle" font-family="Georgia, serif" font-size="18" fill="#333">
+    participou da formação continuada
+  </text>
+
+  <text x="561.5" y="515" text-anchor="middle" font-family="Georgia, serif" font-size="22" font-weight="bold" fill="#1565C0">
+    T.E.I.A — Tecendo a Educação com Inteligência Artificial
+  </text>
+
+  <text x="561.5" y="560" text-anchor="middle" font-family="Georgia, serif" font-size="18" fill="#333">
+    com carga horária de 40 horas, promovida pela Universidade de Brasília (UnB).
+  </text>
+
+  <!-- Data e local -->
+  <text x="561.5" y="620" text-anchor="middle" font-family="Georgia, serif" font-size="16" fill="#555">
+    Brasília, <span id="cert-date">__ de ________ de ____</span>
+  </text>
+
+  <!-- Assinaturas -->
+  <g font-family="Georgia, serif" font-size="14" fill="#333">
+    <!-- Linha assinatura 1 -->
+    <line x1="180" y1="680" x2="420" y2="680" stroke="#333" stroke-width="1"/>
+    <text x="300" y="700" text-anchor="middle" font-size="12" fill="#666">
+      Coordenação T.E.I.A
+    </text>
+
+    <!-- Linha assinatura 2 -->
+    <line x1="703" y1="680" x2="943" y2="680" stroke="#333" stroke-width="1"/>
+    <text x="823" y="700" text-anchor="middle" font-size="12" fill="#666">
+      Universidade de Brasília
+    </text>
+  </g>
+
+  <!-- QR Code placeholder / Código de verificação -->
+  <g transform="translate(920, 660)">
+    <rect x="0" y="0" width="80" height="80" fill="#f0f0f0" stroke="#ddd" stroke-width="1"/>
+    <text x="40" y="45" text-anchor="middle" font-family="monospace" font-size="8" fill="#999">QR Code</text>
+    <text x="40" y="60" text-anchor="middle" font-family="monospace" font-size="7" fill="#999">TEIA-2024</text>
+    <text x="40" y="72" text-anchor="middle" font-family="monospace" font-size="6" fill="#999">000001</text>
+  </g>
+
+  <!-- Rodapé -->
+  <text x="561.5" y="760" text-anchor="middle" font-family="Georgia, serif" font-size="10" fill="#999">
+    Certificado válido em todo território nacional. Código de verificação: TEIA-2024-000001
+  </text>
+</svg>

@@ -1,14 +1,22 @@
-import React from "react"
+import React, { useState } from "react"
 import { useNavigate, useOutletContext } from "react-router-dom"
 import {
-  ShieldAlert, UserCheck, Settings, ChevronRight, Database, 
-  Trophy, ExternalLink, Book, FileText
+  ShieldAlert, UserCheck, Settings, ChevronRight, Database,
+  Trophy, ExternalLink, Book, FileText, Award
 } from "lucide-react"
+import CertificateGenerator from "../components/CertificateGenerator"
 
 export default function CentralAdmin() {
   const navigate = useNavigate()
   const context = useOutletContext()
   const isMobile = context ? context.isMobile : false
+
+  const [showCertificateModal, setShowCertificateModal] = useState(false)
+
+  const handleCertificateSuccess = (professorName) => {
+    console.log(`Certificado gerado para: ${professorName}`)
+    // O modal fecha automaticamente via onSuccess no CertificateGenerator
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-4 md:p-8 transition-colors duration-200 pb-20">
@@ -98,7 +106,26 @@ export default function CentralAdmin() {
             <ChevronRight size={20} className="text-slate-300 dark:text-slate-600 group-hover:text-purple-500 transition-colors" />
           </div>
 
+          {/* Gerar Certificados */}
+          <div onClick={() => setShowCertificateModal(true)} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 flex items-center gap-5 cursor-pointer hover:shadow-lg hover:-translate-y-1 hover:border-violet-300 dark:hover:border-violet-700 transition-all group">
+            <div className="w-16 h-16 rounded-xl bg-violet-50 dark:bg-violet-900/30 border border-violet-100 dark:border-violet-800/50 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <Award size={32} className="text-violet-500 dark:text-violet-400" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-extrabold text-slate-900 dark:text-white mb-1 group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">Gerar Certificados</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 leading-snug">Emita certificados de conclusão da formação T.E.I.A para professores.</p>
+            </div>
+            <ChevronRight size={20} className="text-slate-300 dark:text-slate-600 group-hover:text-violet-500 transition-colors" />
+          </div>
+
         </div>
+
+        {/* Modal de Certificados */}
+        <CertificateGenerator
+          isOpen={showCertificateModal}
+          onClose={() => setShowCertificateModal(false)}
+          onSuccess={handleCertificateSuccess}
+        />
       </div>
     </div>
   )

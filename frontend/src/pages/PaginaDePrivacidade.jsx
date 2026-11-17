@@ -81,7 +81,7 @@ export default function PoliticaDePrivacidade() {
             </span>
           </div>
           <div className="text-xs font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-4 py-2 rounded-full border border-slate-200 dark:border-slate-700">
-            Versão 1.0 — Outubro de 2026
+            Versão 1.1 — Novembro de 2026
           </div>
         </div>
       </header>
@@ -544,14 +544,20 @@ export default function PoliticaDePrivacidade() {
               <p className="mb-4">
                 A Plataforma adota medidas técnicas e administrativas para proteger os dados pessoais
                 de acessos não autorizados, destruição, perda, alteração ou qualquer forma de
-                tratamento inadequado (Art. 46 da LGPD). Entre as medidas adotadas estão:
+                tratamento inadequado (Art. 46 da LGPD). As medidas implementadas incluem:
               </p>
               <ul className="space-y-2 mb-4">
                 {[
-                  "Criptografia de senhas e dados em trânsito",
-                  "Controle de acesso baseado em funções",
-                  "Backups regulares e armazenamento seguro",
-                  "Monitoramento de logs e detecção de anomalias",
+                  "Criptografia de senhas com bcrypt (custo 12) e dados em trânsito via TLS 1.2+",
+                  "JWT com rotação de refresh token (30min access / 7 dias refresh) em cookie HttpOnly, Secure, SameSite=Strict",
+                  "Proteção CSRF via Double Submit Cookie pattern",
+                  "Rate limiting e throttling por endpoint (login, registro, IA, reset senha)",
+                  "Proteção SSRF no WeasyPrint (validação de URLs, allowlist de domínios)",
+                  "Mascaramento de PII em logs (e-mail, telefone, IP parcial)",
+                  "Controle de acesso baseado em funções (RBAC) e princípio do menor privilégio",
+                  "Backups criptografados diários com retenção de 30 dias e testes de restauração mensais",
+                  "Monitoramento de logs, detecção de anomalias e alertas de segurança",
+                  "Headers de segurança: CSP com nonces, HSTS, X-Frame-Options, Referrer-Policy",
                 ].map((item, i) => (
                   <li key={i} className="flex items-start gap-3">
                     <Lock
@@ -569,7 +575,19 @@ export default function PoliticaDePrivacidade() {
                   </strong>{" "}
                   Em caso de incidente de segurança relevante, a Plataforma comunicará os titulares
                   afetados e a Autoridade Nacional de Proteção de Dados (ANPD), nos termos dos Arts.
-                  46 e 48 da LGPD.
+                  46 e 48 da LGPD, no prazo legal e com descrição da natureza dos dados afetados,
+                  medidas adotadas e orientações aos titulares.
+                </p>
+              </div>
+              <div className="bg-blue-50 dark:bg-blue-900/20 p-5 rounded-xl border border-blue-200 dark:border-blue-800/50 mt-4">
+                <p className="text-sm text-blue-700/90 dark:text-blue-400/90">
+                  <strong className="font-black uppercase text-xs tracking-wider">
+                    Avaliação de Legítimo Interesse (Art. 10 LGPD):
+                  </strong>{" "}
+                  O tratamento baseado em legítimo interesse (segurança, prevenção a fraudes, melhoria dos serviços)
+                  foi submetido a teste de balanceamento (LIA - Legitimate Interest Assessment), considerando:
+                  (i) finalidade legítima e específica; (ii) necessidade do tratamento; (iii) balanceamento com
+                  direitos do titular; (iv) medidas de mitigação (anonimização, pseudonimização, minimização).
                 </p>
               </div>
             </section>
@@ -582,45 +600,84 @@ export default function PoliticaDePrivacidade() {
               </h2>
               <p className="mb-4">
                 Os dados pessoais serão mantidos apenas pelo tempo necessário ao cumprimento das
-                finalidades para as quais foram coletados, observando:
+                finalidades para as quais foram coletados, observando os prazos abaixo definidos com
+                base na LGPD, Marco Civil da Internet e legislação aplicável:
               </p>
-              <div className="space-y-3 mb-6">
-                <div className="flex items-start gap-3 p-4 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
-                  <Trash2 size={18} className="shrink-0 text-rose-600 dark:text-rose-400 mt-0.5" />
-                  <div>
-                    <p className="font-bold text-slate-800 dark:text-slate-200 text-sm">
-                      Dados de conta
-                    </p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      Mantidos enquanto a conta estiver ativa
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3 p-4 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
-                  <Clock size={18} className="shrink-0 text-rose-600 dark:text-rose-400 mt-0.5" />
-                  <div>
-                    <p className="font-bold text-slate-800 dark:text-slate-200 text-sm">
-                      Logs de acesso
-                    </p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      Retidos por 6 (seis) meses, conforme o Art. 15 do Marco Civil da Internet
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3 p-4 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
-                  <FileText
-                    size={18}
-                    className="shrink-0 text-rose-600 dark:text-rose-400 mt-0.5"
-                  />
-                  <div>
-                    <p className="font-bold text-slate-800 dark:text-slate-200 text-sm">
-                      Produções didáticas
-                    </p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      Mantidas no acervo público após anonimização irreversível
-                    </p>
-                  </div>
-                </div>
+              <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 mb-6">
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-50 dark:bg-slate-800/50">
+                    <tr>
+                      <th className="text-left px-4 py-3 font-black text-slate-800 dark:text-slate-200 text-xs uppercase tracking-wider">
+                        Categoria de Dados
+                      </th>
+                      <th className="text-left px-4 py-3 font-black text-slate-800 dark:text-slate-200 text-xs uppercase tracking-wider">
+                        Período de Retenção
+                      </th>
+                      <th className="text-left px-4 py-3 font-black text-slate-800 dark:text-slate-200 text-xs uppercase tracking-wider">
+                        Fundamento Legal
+                      </th>
+                      <th className="text-left px-4 py-3 font-black text-slate-800 dark:text-slate-200 text-xs uppercase tracking-wider">
+                        Ação Após Período
+                    </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                    <tr>
+                      <td className="px-4 py-3 font-bold text-slate-800 dark:text-slate-200">Dados de conta (nome, e-mail, disciplina, escola)</td>
+                      <td className="px-4 py-3">Enquanto a conta estiver ativa + 30 dias após exclusão</td>
+                      <td className="px-4 py-3 text-slate-500 text-xs">Art. 15 LGPD; Execução de contrato</td>
+                      <td className="px-4 py-3 text-slate-500 text-xs">Eliminação / Anonimização</td>
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-3 font-bold text-slate-800 dark:text-slate-200">Senha (hash bcrypt)</td>
+                      <td className="px-4 py-3">Enquanto a conta estiver ativa</td>
+                      <td className="px-4 py-3 text-slate-500 text-xs">Art. 15 LGPD; Segurança</td>
+                      <td className="px-4 py-3 text-slate-500 text-xs">Eliminação imediata</td>
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-3 font-bold text-slate-800 dark:text-slate-200">Logs de acesso (IP, timestamp, user-agent)</td>
+                      <td className="px-4 py-3">6 (seis) meses</td>
+                      <td className="px-4 py-3 text-slate-500 text-xs">Art. 15 Marco Civil da Internet</td>
+                      <td className="px-4 py-3 text-slate-500 text-xs">Eliminação automática</td>
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-3 font-bold text-slate-800 dark:text-slate-200">Registros de consentimento (LGPD Art. 8º)</td>
+                      <td className="px-4 py-3">5 (cinco) anos após última interação</td>
+                      <td className="px-4 py-3 text-slate-500 text-xs">Art. 8º LGPD; Obrigação legal</td>
+                      <td className="px-4 py-3 text-slate-500 text-xs">Arquivamento seguro</td>
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-3 font-bold text-slate-800 dark:text-slate-200">Produções didáticas (conteúdo)</td>
+                      <td className="px-4 py-3">Indeterminado (acervo público)</td>
+                      <td className="px-4 py-3 text-slate-500 text-xs">Legítimo interesse; Pesquisa</td>
+                      <td className="px-4 py-3 text-slate-500 text-xs">Anonimização irreversível</td>
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-3 font-bold text-slate-800 dark:text-slate-200">Avaliações e pareceres (duplo-cego)</td>
+                      <td className="px-4 py-3">5 (cinco) anos</td>
+                      <td className="px-4 py-3 text-slate-500 text-xs">Execução de contrato; Pesquisa</td>
+                      <td className="px-4 py-3 text-slate-500 text-xs">Anonimização</td>
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-3 font-bold text-slate-800 dark:text-slate-200">Fórum (tópicos, comentários)</td>
+                      <td className="px-4 py-3">Enquanto a conta ativa + anonimização</td>
+                      <td className="px-4 py-3 text-slate-500 text-xs">Legítimo interesse</td>
+                      <td className="px-4 py-3 text-slate-500 text-xs">Anonimização do autor</td>
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-3 font-bold text-slate-800 dark:text-slate-200">Dados de gamificação (XP, conquistas, histórico)</td>
+                      <td className="px-4 py-3">Enquanto a conta ativa</td>
+                      <td className="px-4 py-3 text-slate-500 text-xs">Execução de contrato</td>
+                      <td className="px-4 py-3 text-slate-500 text-xs">Eliminação / Anonimização</td>
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-3 font-bold text-slate-800 dark:text-slate-200">Backups criptografados</td>
+                      <td className="px-4 py-3">30 (trinta) dias</td>
+                      <td className="px-4 py-3 text-slate-500 text-xs">Segurança da informação</td>
+                      <td className="px-4 py-3 text-slate-500 text-xs">Rotação automática</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
               <div className="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-xl border border-slate-200 dark:border-slate-700">
                 <p className="font-black text-slate-800 dark:text-slate-200 mb-2 uppercase text-xs tracking-wider">
@@ -681,15 +738,72 @@ export default function PoliticaDePrivacidade() {
             {/* CLÁUSULA 9 - COOKIES */}
             <section id="cookies" ref={registerRef("cookies")} className="scroll-mt-24">
               <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-4 flex items-center gap-3">
-                <Cookie className="text-amber-600 dark:text-amber-500" /> 9. Cookies
+                <Cookie className="text-amber-600 dark:text-amber-500" /> 9. Cookies e Tecnologias Similares
               </h2>
-              <p>
-                Utilizamos apenas cookies essenciais para o funcionamento básico da plataforma (como a
-                manutenção de sua sessão ativa após o login). Não utilizamos cookies de rastreamento
-                comportamental ou de terceiros para fins de marketing ou publicidade. Os logs de acesso
-                são registrados estritamente para segurança, auditoria e cumprimento de obrigações legais,
-                com retenção de 6 meses.
+              <p className="mb-4">
+                Utilizamos cookies e tecnologias similares para garantir o funcionamento da Plataforma,
+                entender como ela é usada e melhorar sua experiência. Conforme a LGPD e as diretrizes da ANPD,
+                o consentimento para cookies não essenciais deve ser <strong>livre, informado, específico e
+                inequívoco</strong>. Você pode gerenciar suas preferências a qualquer momento no banner de
+                cookies ou em <strong>Perfil → Conta → Preferências de Privacidade</strong>.
               </p>
+              <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800 mb-4">
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-50 dark:bg-slate-800/50">
+                    <tr>
+                      <th className="text-left px-4 py-3 font-black text-slate-800 dark:text-slate-200 text-xs uppercase tracking-wider">
+                        Categoria
+                      </th>
+                      <th className="text-left px-4 py-3 font-black text-slate-800 dark:text-slate-200 text-xs uppercase tracking-wider">
+                        Finalidade
+                      </th>
+                      <th className="text-left px-4 py-3 font-black text-slate-800 dark:text-slate-200 text-xs uppercase tracking-wider">
+                        Cookies / Tecnologias
+                      </th>
+                      <th className="text-left px-4 py-3 font-black text-slate-800 dark:text-slate-200 text-xs uppercase tracking-wider">
+                        Duração
+                    </th>
+                      <th className="text-left px-4 py-3 font-black text-slate-800 dark:text-slate-200 text-xs uppercase tracking-wider">
+                        Consentimento
+                    </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                    <tr className="bg-green-50 dark:bg-green-900/20">
+                      <td className="px-4 py-3 font-bold text-green-800 dark:text-green-300">Essenciais</td>
+                      <td className="px-4 py-3 text-green-700 dark:text-green-400">Autenticação, sessão, segurança (CSRF), preferências de idioma/tema</td>
+                      <td className="px-4 py-3"><code className="bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 rounded text-[10px] font-mono">refresh_token, csrftoken, sessionid</code></td>
+                      <td className="px-4 py-3 text-slate-500 text-xs">Sessão / 7 dias (refresh)</td>
+                      <td className="px-4 py-3 text-center"><span className="text-[10px] font-bold text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-2 py-0.5 rounded">Não necessário (Art. 7º LGPD)</span></td>
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-3 font-bold text-blue-800 dark:text-blue-300">Análise e Desempenho</td>
+                      <td className="px-4 py-3 text-blue-700 dark:text-blue-400">Métricas de uso anonimizadas (páginas, tempo, erros) para melhoria contínua</td>
+                      <td className="px-4 py-3"><code className="bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 rounded text-[10px] font-mono">_ga, _gid, teia_analytics (futuro)</code></td>
+                      <td className="px-4 py-3 text-slate-500 text-xs">Até 2 anos / Sessão</td>
+                      <td className="px-4 py-3 text-center"><span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 rounded">Opt-in (Art. 7º LGPD)</span></td>
+                    </tr>
+                    <tr className="bg-purple-50 dark:bg-purple-900/20">
+                      <td className="px-4 py-3 font-bold text-purple-800 dark:text-purple-300">Comunicação e Novidades</td>
+                      <td className="px-4 py-3 text-purple-700 dark:text-purple-400">Preferências de UI, notificações push, avisos da comunidade</td>
+                      <td className="px-4 py-3"><code className="bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 rounded text-[10px] font-mono">teia_prefs, teia_notifs (futuro)</code></td>
+                      <td className="px-4 py-3 text-slate-500 text-xs">1 ano / Sessão</td>
+                      <td className="px-4 py-3 text-center"><span className="text-[10px] font-bold text-purple-600 dark:text-purple-400 bg-purple-100 dark:bg-purple-900/30 px-2 py-0.5 rounded">Opt-in (Art. 7º LGPD)</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-xl border border-amber-200 dark:border-amber-800/50">
+                <p className="text-sm text-amber-700/90 dark:text-amber-400/90">
+                  <strong className="font-black uppercase text-xs tracking-wider">
+                    Importante:
+                  </strong>{" "}
+                  Não utilizamos cookies de rastreamento comportamental entre sites (third-party tracking),
+                  fingerprinting, ou tecnologias para publicidade direcionada. Os logs de acesso (IP, timestamp)
+                  são registrados estritamente para segurança, auditoria e cumprimento do Art. 15 do Marco Civil
+                  da Internet, com retenção de 6 meses.
+                </p>
+              </div>
             </section>
 
             {/* CLÁUSULA 10 - ALTERAÇÕES */}

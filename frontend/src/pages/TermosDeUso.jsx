@@ -82,7 +82,7 @@ export default function TermosDeUso() {
           </div>
           <div className="flex items-center gap-3">
             <span className="text-xs font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-4 py-2 rounded-full border border-slate-200 dark:border-slate-700">
-              Versão 4.0 — Última atualização: Outubro de 2026
+              Versão 4.1 — Última atualização: Novembro de 2026
             </span>
           </div>
         </div>
@@ -124,6 +124,14 @@ export default function TermosDeUso() {
               Estes Termos de Serviço ("Termos") constituem um acordo legalmente vinculativo entre você ("Usuário", "Professor") e a{" "}
               <strong>Universidade de Brasília (UnB)</strong>, por meio do projeto T.E.I.A. (Tecendo a Educação com Inteligência Artificial), doravante denominado "T.E.I.A." ou "Plataforma". Leia atentamente cada cláusula abaixo.
             </p>
+            <div className="mt-4 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-200 dark:border-blue-800/50">
+              <p className="font-bold text-blue-800 dark:text-blue-300 mb-1 uppercase text-xs tracking-wider">
+                Direito de Arrependimento (CDC Art. 49)
+              </p>
+              <p className="text-sm text-blue-700/90 dark:text-blue-400/90">
+                Conforme o <strong>Art. 49 do Código de Defesa do Consumidor (Lei nº 8.078/90)</strong>, o consumidor pode desistir do contrato no prazo de <strong>7 (sete) dias</strong> a contar de sua assinatura ou do ato de recebimento do produto ou serviço, sempre que a contratação ocorrer fora do estabelecimento comercial (inclui contratação online). Para exercer esse direito, basta solicitar a exclusão da conta em <strong>Perfil → Conta → Excluir minha conta</strong> dentro do prazo, sem necessidade de justificativa.
+              </p>
+            </div>
           </div>
 
           <div className="space-y-16 text-[15px] text-slate-700 dark:text-slate-300 leading-relaxed">
@@ -448,6 +456,18 @@ export default function TermosDeUso() {
                 incidente de segurança relevante, comunicará os titulares e a ANPD, nos termos dos Arts. 46 e 48 da
                 LGPD.
               </p>
+              <p className="mb-3">
+                <strong>10.7. Oposição ao Perfilamento Automatizado (Art. 20 LGPD):</strong> O sistema de gamificação
+                (XP, níveis, ranking) gera perfil comportamental baseado em ações voluntárias do Usuário (submissão,
+                revisão, participação no fórum). Este perfilamento **não** produz efeitos jurídicos automáticos nem
+                decisões que afetem direitos fundamentais. O Usuário tem o direito de se opor a este tratamento a
+                qualquer momento, solicitando a desativação do seu perfil no ranking e a não utilização dos seus
+                dados de gamificação para análises comportamentais, por meio do e-mail{" "}
+                <a href="mailto:ishikawa@unb.br" className="underline text-[#1565C0]">
+                  ishikawa@unb.br
+                </a>
+                . A oposição não impede o uso das demais funcionalidades da Plataforma.
+              </p>
             </section>
 
             {/* CLÁUSULA 11 */}
@@ -477,12 +497,20 @@ export default function TermosDeUso() {
                 alterações que afetem dados pessoais. O uso continuado após as modificações implica aceitação.
               </p>
               <p className="mb-3">
-                <strong>12.2. Legislação Aplicável:</strong> Este contrato rege-se pelas leis da República
-                Federativa do Brasil.
+                <strong>12.2. Direito de Arrependimento (CDC Art. 49):</strong> Nos termos do Art. 49 da Lei nº
+                8.078/90 (Código de Defesa do Consumidor), o Usuário pode desistir deste contrato no prazo de
+                <strong>7 (sete) dias</strong> a contar do aceite, sem necessidade de justificativa, bastando
+                solicitar a exclusão da conta em "Perfil → Conta → Excluir minha conta". O exercício deste direito
+                implica a eliminação dos dados pessoais e anonimização das produções, nos termos da Cláusula 10.5.
+              </p>
+              <p className="mb-3">
+                <strong>12.3. Legislação Aplicável:</strong> Este contrato rege-se pelas leis da República
+                Federativa do Brasil, em especial a LGPD (Lei nº 13.709/2018), o Marco Civil da Internet
+                (Lei nº 12.965/2014) e o Código de Defesa do Consumidor (Lei nº 8.078/90).
               </p>
               <p>
-                <strong>12.3. Foro Competente:</strong> Fica eleito o Foro da Comarca de Brasília, Distrito
-                Federal, para dirimir quaisquer litígios.
+                <strong>12.4. Foro Competente:</strong> Fica eleito o Foro da Comarca de Brasília, Distrito
+                Federal, para dirimir quaisquer litígios decorrentes destes Termos.
               </p>
             </section>
           </div>

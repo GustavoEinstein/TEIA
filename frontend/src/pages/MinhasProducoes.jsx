@@ -4,7 +4,8 @@ import { useNavigate, useOutletContext } from "react-router-dom"
 import { Alert } from "../utils/alerts"
 import {
   FileText, ClipboardCheck, Clock, CheckCircle2, XCircle,
-  AlertCircle, Eye, Calendar, Plus, User, Wrench, Edit3, Link as LinkIcon
+  AlertCircle, Eye, Calendar, Plus, User, Wrench, Edit3, Link as LinkIcon,
+  Copy, Trophy, Zap
 } from "lucide-react"
 
 const MinhasProducoes = () => {
@@ -141,6 +142,7 @@ const CardProducao = ({ data, navigate }) => {
   const config = getStatusConfig(data.status)
   const isRejected = config.label === "Ajustes Necessários"
   const isDraft = config.label === "Rascunho Salvo"
+  const isApproved = config.label === "Aprovado"
 
   const rejectionMessage = (() => {
     const raw = data.feedback_revisor || ""
@@ -150,8 +152,19 @@ const CardProducao = ({ data, navigate }) => {
     return raw
   })()
 
+  const handleDuplicate = async (e) => {
+    e.stopPropagation()
+    try {
+      const response = await api.post(`api/production/${data.id}/duplicate/`)
+      Alert.sucesso("Duplicado!", "A prática foi copiada como rascunho.")
+      navigate(`/dashboard/editar-producao/${response.data.id}`)
+    } catch (err) {
+      Alert.erro("Erro", "Não foi possível duplicar a prática.")
+    }
+  }
+
   return (
-    <div 
+    <div
       onClick={() => navigate(isDraft ? `/dashboard/editar-producao/${data.id}` : `/dashboard/minha-producao/${data.id}`)}
       className={`group flex flex-col md:flex-row gap-6 p-5 md:p-6 rounded-xl border cursor-pointer transition-all hover:shadow-md hover:-translate-y-0.5 ${isDraft ? 'bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'}`}
     >
@@ -159,11 +172,18 @@ const CardProducao = ({ data, navigate }) => {
         <div className="flex items-center gap-3 mb-3 flex-wrap">
           <span className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider">{data.disciplina || "Geral"}</span>
           <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5 font-medium"><Calendar size={14}/> Salvo em: {data.data || "Hoje"}</span>
+
+          {/* XP Badge for approved productions */}
+          {isApproved && data.xp_ganho > 0 && (
+            <span className="flex items-center gap-1 px-2.5 py-1 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-full text-[10px] font-bold uppercase tracking-wider border border-amber-200 dark:border-amber-800">
+              <Zap size={12} /> +{data.xp_ganho} XP
+            </span>
+          )}
         </div>
         <h3 className={`text-lg font-extrabold mb-3 leading-snug line-clamp-2 transition-colors ${isDraft ? 'text-slate-600 dark:text-slate-400' : 'text-slate-900 dark:text-white group-hover:text-[#1565C0] dark:group-hover:text-blue-400'}`}>
           {data.titulo || "(Rascunho sem título)"}
         </h3>
-        
+
         {data.producao_base && (
           <div className="inline-flex items-center gap-1 bg-blue-50 dark:bg-blue-900/20 text-[#1565C0] dark:text-blue-400 px-2 py-0.5 rounded text-[10px] font-bold mb-2 border border-dashed border-blue-200 dark:border-blue-800 w-fit">
             <LinkIcon size={11} /> Baseado em Releitura
@@ -182,8 +202,8 @@ const CardProducao = ({ data, navigate }) => {
         <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold border ${config.bg} ${config.color} ${config.border}`}>
           {config.icon} {config.label}
         </div>
-        
-        <div className="w-full mt-2">
+
+        <div className="w-full mt-2 flex flex-col gap-2">
           {isRejected && (
             <button onClick={(e) => { e.stopPropagation(); navigate(`/dashboard/editar-producao/${data.id}`); }} className="w-full flex items-center justify-center gap-2 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-700 dark:text-red-400 py-2 px-4 rounded-lg text-xs font-black uppercase tracking-wider transition-colors">
               <Wrench size={14}/> Editar e Reenviar
@@ -195,9 +215,17 @@ const CardProducao = ({ data, navigate }) => {
             </button>
           )}
           {!isRejected && !isDraft && (
-            <button onClick={(e) => { e.stopPropagation(); navigate(`/dashboard/minha-producao/${data.id}`); }} className="w-full flex items-center justify-center gap-2 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 py-2 px-4 rounded-lg text-sm font-bold transition-colors">
-              <Eye size={16}/> Visualizar
-            </button>
+            <>
+              <button onClick={(e) => { e.stopPropagation(); navigate(`/dashboard/minha-producao/${data.id}`); }} className="w-full flex items-center justify-center gap-2 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 py-2 px-4 rounded-lg text-sm font-bold transition-colors">
+                <Eye size={16}/> Visualizar
+              </button>
+              {/* Duplicate as Draft button for approved (and other non-draft) productions */}
+              {!isDraft && (
+                <button onClick={handleDuplicate} className="w-full flex items-center justify-center gap-2 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 py-2 px-4 rounded-lg text-sm font-bold transition-colors hover:border-blue-300 dark:hover:border-blue-600">
+                  <Copy size={16}/> Duplicar como Rascunho
+                </button>
+              )}
+            </>
           )}
         </div>
       </div>

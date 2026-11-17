@@ -33,6 +33,18 @@ class Profile(models.Model):
     escola = models.CharField(max_length=150, null=True, blank=True)
     status_conta = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Em análise')
 
+    # --- CONSENTIMENTO LGPD (Art. 8º) ---
+    terms_version = models.CharField(max_length=20, null=True, blank=True, help_text="Versão dos Termos de Uso aceita (ex: '4.1')")
+    terms_accepted_at = models.DateTimeField(null=True, blank=True, help_text="Timestamp do aceite dos Termos de Uso")
+    privacy_version = models.CharField(max_length=20, null=True, blank=True, help_text="Versão da Política de Privacidade aceita (ex: '1.1')")
+    privacy_accepted_at = models.DateTimeField(null=True, blank=True, help_text="Timestamp do aceite da Política de Privacidade")
+    cookies_accepted_at = models.DateTimeField(null=True, blank=True, help_text="Timestamp do consentimento de cookies")
+    cookies_consent = models.BooleanField(default=False, help_text="Se o usuário consentiu com cookies essenciais (sempre true após aceite)")
+    analytics_consent = models.BooleanField(default=False, help_text="Consentimento para cookies de análise/desempenho")
+    marketing_consent = models.BooleanField(default=False, help_text="Consentimento para cookies de marketing/comunicação")
+    consent_ip = models.GenericIPAddressField(null=True, blank=True, help_text="IP do usuário no momento do consentimento (auditoria)")
+    consent_user_agent = models.TextField(null=True, blank=True, help_text="User-Agent no momento do consentimento (auditoria)")
+
     # --- CAMPO DE GAMIFICAÇÃO ---
     pontos = models.IntegerField(default=0)
 
@@ -121,7 +133,7 @@ class ConquistaUsuario(models.Model):
 # 4. PRODUÇÕES DIDÁTICAS
 # ============================================================================
 class Producao(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='producoes')
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='producoes')
     escola = models.CharField(max_length=149, null=True, blank=True)
     titulo = models.CharField(max_length=255)
     disciplina = models.CharField(max_length=100)
@@ -172,7 +184,7 @@ class Producao(models.Model):
 # ============================================================================
 class Avaliacao(models.Model):
     producao = models.ForeignKey(Producao, on_delete=models.CASCADE, related_name='avaliacoes')
-    revisor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='revisoes_feitas')
+    revisor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='revisoes_feitas')
     data_avaliacao = models.DateTimeField(auto_now_add=True)
     aprovado = models.BooleanField(default=False) 
     feedback_revisao = models.TextField(blank=True, null=True)
@@ -194,7 +206,7 @@ class Topico(models.Model):
         ('Dúvida BNCC', 'Dúvida BNCC'), ('Metodologia', 'Metodologia'),
         ('Uso de IA', 'Uso de IA'), ('Sugestão', 'Sugestão'), ('Geral', 'Geral'),
     )
-    autor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='topicos_forum')
+    autor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='topicos_forum')
     titulo = models.CharField(max_length=255)
     conteudo = models.TextField()
     categoria = models.CharField(max_length=50, choices=CATEGORIAS_CHOICES, default='Geral')
@@ -215,7 +227,7 @@ class Topico(models.Model):
 
 class Comentario(models.Model):
     topico = models.ForeignKey(Topico, on_delete=models.CASCADE, related_name='comentarios')
-    autor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='comentarios_usuario')
+    autor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='comentarios_usuario')
     conteudo = models.TextField()
     data_criacao = models.DateTimeField(auto_now_add=True)
 

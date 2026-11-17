@@ -12,6 +12,7 @@ import Login from "./Login"
 import Register from "./Register"
 import TermosDeUso from "./pages/TermosDeUso"
 import PoliticaDePrivacidade from "./pages/PaginaDePrivacidade"
+import PrivacidadeDetalhada from "./pages/PrivacidadeDetalhada"
 
 // --- PÁGINAS DE RECUPERAÇÃO DE SENHA ---
 import EsqueceuSenha from "./pages/EsqueceuSenha"
@@ -62,6 +63,7 @@ function App() {
         {/* === ROTAS LEGAIS AQUI === */}
         <Route path="/termos" element={<TermosDeUso />} />
         <Route path="/privacidade" element={<PoliticaDePrivacidade />} />
+        <Route path="/privacidade-detalhada" element={<PrivacidadeDetalhada />} />
 
         <Route path="/esqueceu-senha" element={<EsqueceuSenha />} />
         <Route path="/reset-password/:uid/:token" element={<NovaSenha />} />

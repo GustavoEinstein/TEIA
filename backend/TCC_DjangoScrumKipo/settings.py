@@ -53,6 +53,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'kipo_playground.security_middleware.SecurityHeadersMiddleware',  # Headers de segurança customizados
     'kipo_playground.security_middleware.CORSSecurityMiddleware',    # Validação CORS adicional
+    'kipo_playground.security_middleware.StructuredLoggingMiddleware', # Structured logging (request_id, user_id)
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -151,6 +152,15 @@ SIMPLE_JWT = {
     'ROTATE_REFRESH_TOKENS': True,                       # Rotaciona a cada uso
     'BLACKLIST_AFTER_ROTATION': True,                    # Invalida refresh tokens antigos
     'AUTH_HEADER_TYPES': ('Bearer',),
+
+    # HttpOnly Cookie para Refresh Token (segurança máxima)
+    # O refresh_token fica em cookie HttpOnly, inacessível a JavaScript/XSS
+    'AUTH_COOKIE': 'refresh_token',
+    'AUTH_COOKIE_HTTP_ONLY': True,
+    'AUTH_COOKIE_SECURE': not DEBUG,          # True em produção (HTTPS), False em dev (HTTP)
+    'AUTH_COOKIE_SAMESITE': 'Strict' if not DEBUG else 'Lax',  # CSRF protection
+    'AUTH_COOKIE_PATH': '/api/token/refresh/', # Cookie só enviado no endpoint de refresh
+    'AUTH_COOKIE_DOMAIN': None,                # None = domínio atual
 }
 
 
@@ -161,8 +171,37 @@ SIMPLE_JWT = {
 # Origens permitidas (Lê do .env, ex: http://localhost:5173,https://teia.unb.br)
 CORS_ALLOWED_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173').split(',')
 
+# Permitir credenciais (Authorization header, cookies) em requisições cross-origin
+# OBRIGATÓRIO para JWT Bearer token funcionar no frontend
+CORS_ALLOW_CREDENTIALS = True
+
+# Headers permitidos em requisições CORS
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+    'x-request-id',
+]
+
+# Métodos permitidos
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+
 # Origens confiáveis para CSRF (Lê do .env, ex: https://teia.unb.br,http://localhost:8000)
-CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', 'http://localhost:8000,http://127.0.0.1:8000').split(',')
+# IMPORTANTE: Incluir o frontend para CSRF funcionar com cookies cross-origin
+CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', 'http://localhost:8000,http://127.0.0.1:8000,http://localhost:5173,http://127.0.0.1:5173').split(',')
 
 
 # ============================================================================
@@ -231,3 +270,187 @@ UNB_API_KEY = os.getenv('UNB_API_KEY', '')
 
 # Frontend URL (para links de reset de senha, etc.)
 FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
+
+
+# ============================================================================
+# 6. LOGGING ESTRUTURADO JSON (para Loki, ELK, Graylog, Datadog)
+# ============================================================================
+# Configuração de logging em JSON estruturado para observabilidade
+# Compatível com: Grafana Loki, ELK Stack (Logstash/Elasticsearch), Graylog, Datadog
+
+# Importações necessárias para o JsonFormatter
+import logging
+import json
+from datetime import datetime
+
+# Formato JSON customizado com campos padronizados
+class JsonFormatter(logging.Formatter):
+    """
+    Formatter JSON que adiciona campos padrão para observabilidade:
+    - timestamp: ISO 8601 UTC
+    - level: nível do log (INFO, ERROR, etc.)
+    - logger: nome do logger
+    - message: mensagem do log
+    - module, function, line: origem do código
+    - request_id: ID da requisição (se disponível via middleware)
+    - user_id: ID do usuário autenticado (se disponível)
+    - trace_id / span_id: para distributed tracing (OpenTelemetry)
+    """
+
+    def format(self, record):
+        # Base log entry
+        log_entry = {
+            'timestamp': datetime.utcnow().isoformat() + 'Z',
+            'level': record.levelname,
+            'logger': record.name,
+            'message': record.getMessage(),
+            'module': record.module,
+            'function': record.funcName,
+            'line': record.lineno,
+        }
+
+        # Adicionar campos extras do record (ex: request_id, user_id)
+        for key, value in record.__dict__.items():
+            if key not in ['name', 'msg', 'args', 'created', 'filename', 'funcName',
+                          'levelname', 'levelno', 'lineno', 'module', 'msecs',
+                          'message', 'msg', 'name', 'pathname', 'process',
+                          'processName', 'relativeCreated', 'thread', 'threadName',
+                          'exc_info', 'exc_text', 'stack_info', 'getMessage']:
+                # Serializar valores não-serializáveis
+                try:
+                    json.dumps(value)
+                    log_entry[key] = value
+                except (TypeError, ValueError):
+                    log_entry[key] = str(value)
+
+        # Exception info
+        if record.exc_info:
+            log_entry['exception'] = self.formatException(record.exc_info)
+
+        return json.dumps(log_entry, ensure_ascii=False)
+
+
+# Configuração de logging baseada em ambiente
+# Determinar se deve usar file handler (apenas se LOG_FILE explícito ou dir existe)
+_log_file = os.environ.get('LOG_FILE')
+_use_file_handler = False
+if _log_file:
+    _use_file_handler = True
+else:
+    _default_log_dir = BASE_DIR / 'logs'
+    if _default_log_dir.exists():
+        _use_file_handler = True
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+
+    'formatters': {
+        'json': {
+            '()': 'TCC_DjangoScrumKipo.settings.JsonFormatter',
+        },
+        'console': {
+            'format': '%(asctime)s [%(levelname)s] %(name)s: %(message)s',
+            'datefmt': '%Y-%m-%d %H:%M:%S',
+        },
+    },
+
+    'filters': {
+        'require_debug_true': {
+            '()': 'django.utils.log.RequireDebugTrue',
+        },
+        'require_debug_false': {
+            '()': 'django.utils.log.RequireDebugFalse',
+        },
+    },
+
+    'handlers': {
+        # Console (desenvolvimento) - formato legível
+        'console': {
+            'level': 'DEBUG' if DEBUG else 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'console',
+            'filters': ['require_debug_true'],
+        },
+        # Console JSON (produção) - para Loki/ELK/Graylog via stdout
+        'console_json': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'json',
+            'filters': ['require_debug_false'],
+        },
+    } | ({
+        'file_json': {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'formatter': 'json',
+            'filename': _log_file or (BASE_DIR / 'logs' / 'teia.json.log'),
+            'maxBytes': 10 * 1024 * 1024,  # 10 MB
+            'backupCount': 10,
+            'encoding': 'utf-8',
+        },
+    } if _use_file_handler else {}),
+
+    'loggers': {
+        # Django core
+        'django': {
+            'handlers': ['console', 'console_json'] + (['file_json'] if _use_file_handler else []),
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'django.request': {
+            'handlers': ['console', 'console_json'] + (['file_json'] if _use_file_handler else []),
+            'level': 'WARNING',
+            'propagate': False,
+        },
+        'django.security': {
+            'handlers': ['console', 'console_json'] + (['file_json'] if _use_file_handler else []),
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'django.db.backends': {
+            'handlers': ['console', 'console_json'],
+            'level': 'WARNING',  # DEBUG para ver SQL queries
+            'propagate': False,
+        },
+
+        # App T.E.I.A.
+        'kipo_playground': {
+            'handlers': ['console', 'console_json'] + (['file_json'] if _use_file_handler else []),
+            'level': 'DEBUG' if DEBUG else 'INFO',
+            'propagate': False,
+        },
+        'kipo_playground.security': {
+            'handlers': ['console', 'console_json'] + (['file_json'] if _use_file_handler else []),
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'kipo_playground.views': {
+            'handlers': ['console', 'console_json'] + (['file_json'] if _use_file_handler else []),
+            'level': 'INFO',
+            'propagate': False,
+        },
+
+        # Third-party
+        'rest_framework': {
+            'handlers': ['console', 'console_json'] + (['file_json'] if _use_file_handler else []),
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'rest_framework_simplejwt': {
+            'handlers': ['console', 'console_json'] + (['file_json'] if _use_file_handler else []),
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+
+    'root': {
+        'handlers': ['console', 'console_json'] + (['file_json'] if _use_file_handler else []),
+        'level': 'INFO',
+    },
+}
+
+# Criar diretório de logs se não existir
+if not DEBUG:
+    log_dir = BASE_DIR / 'logs'
+    log_dir.mkdir(exist_ok=True)

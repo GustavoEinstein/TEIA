@@ -2,8 +2,111 @@
 Middleware de Segurança para Django - Headers HTTP Hardened
 Adiciona headers de segurança em todas as respostas.
 """
+import logging
+import uuid
 from django.conf import settings
 from django.utils.deprecation import MiddlewareMixin
+
+# Logger para structured logging
+structured_logger = logging.getLogger('kipo_playground.structured')
+
+
+class StructuredLoggingMiddleware(MiddlewareMixin):
+    """
+    Middleware para adicionar contexto estruturado aos logs.
+    Injeta request_id e user_id em todos os log records da requisição.
+    Compatível com Loki, ELK, Graylog, Datadog.
+    """
+
+    def process_request(self, request):
+        # Gerar ou extrair request_id
+        request_id = request.META.get('HTTP_X_REQUEST_ID') or str(uuid.uuid4())
+        request.request_id = request_id
+
+        # Adicionar request_id ao header de resposta (para tracing cliente-servidor)
+        request._request_id_for_response = request_id
+
+        # Bind request_id ao logger via extra
+        # Isso fará com que todos os logs dentro desta requisição tenham request_id
+        request._log_extra = {
+            'request_id': request_id,
+            'method': request.method,
+            'path': request.path,
+            'remote_addr': self._get_client_ip(request),
+        }
+
+        # Log de início de requisição (apenas em DEBUG ou para endpoints sensíveis)
+        if settings.DEBUG or request.path.startswith('/api/token/') or request.path.startswith('/api/register/'):
+            structured_logger.info(
+                'Request started',
+                extra={
+                    **request._log_extra,
+                    'event': 'request_start',
+                }
+            )
+
+        return None
+
+    def process_response(self, request, response):
+        # Adicionar request_id ao header de resposta
+        if hasattr(request, '_request_id_for_response'):
+            response['X-Request-ID'] = request._request_id_for_response
+
+        # Log de fim de requisição
+        if hasattr(request, '_log_extra'):
+            duration_ms = None
+            if hasattr(request, '_start_time'):
+                import time
+                duration_ms = int((time.time() - request._start_time) * 1000)
+
+            # Determinar nível baseado no status code
+            if response.status_code >= 500:
+                level = 'error'
+            elif response.status_code >= 400:
+                level = 'warning'
+            else:
+                level = 'info'
+
+            log_data = {
+                **request._log_extra,
+                'event': 'request_end',
+                'status_code': response.status_code,
+                'duration_ms': duration_ms,
+            }
+
+            # Adicionar user_id se autenticado
+            if hasattr(request, 'user') and request.user.is_authenticated:
+                log_data['user_id'] = request.user.id
+                log_data['username'] = request.user.username
+
+            getattr(structured_logger, level)(
+                'Request completed',
+                extra=log_data
+            )
+
+        return response
+
+    def process_exception(self, request, exception):
+        """Log de exceções não tratadas."""
+        if hasattr(request, '_log_extra'):
+            structured_logger.error(
+                'Request exception',
+                extra={
+                    **request._log_extra,
+                    'event': 'request_exception',
+                    'exception_type': type(exception).__name__,
+                    'exception_message': str(exception),
+                },
+                exc_info=True
+            )
+        return None
+
+    def _get_client_ip(self, request):
+        """Extrai IP real do cliente considerando proxies."""
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            return x_forwarded_for.split(',')[0].strip()
+        return request.META.get('REMOTE_ADDR', 'unknown')
 
 
 class SecurityHeadersMiddleware(MiddlewareMixin):
@@ -73,9 +176,15 @@ class SecurityHeadersMiddleware(MiddlewareMixin):
         # ---------------------------------------------------------------------
         # 8. Cross-Origin-Opener-Policy (COOP) e Cross-Origin-Embedder-Policy (COEP)
         #    Isolamento de contexto para prevenir Spectre-like attacks
+        #    DESABILITADO em desenvolvimento para permitir cross-origin (React -> Django)
         # ---------------------------------------------------------------------
-        response['Cross-Origin-Opener-Policy'] = 'same-origin'
-        response['Cross-Origin-Embedder-Policy'] = 'require-corp'
+        if not settings.DEBUG:
+            response['Cross-Origin-Opener-Policy'] = 'same-origin'
+            response['Cross-Origin-Embedder-Policy'] = 'require-corp'
+        else:
+            # Desenvolvimento: permitir cross-origin embedding
+            response['Cross-Origin-Opener-Policy'] = 'unsafe-none'
+            response['Cross-Origin-Embedder-Policy'] = 'unsafe-none'
 
         # ---------------------------------------------------------------------
         # 9. Remover headers que vazam informação
@@ -116,13 +225,14 @@ class SecurityHeadersMiddleware(MiddlewareMixin):
 
     def _get_development_csp(self, request):
         """CSP para desenvolvimento - mais permissiva."""
+        # Permitir conexões para o frontend (Vite dev server) e backend
         policies = [
             "default-src 'self' 'unsafe-inline' 'unsafe-eval'",
             "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
             "font-src 'self' https://fonts.gstatic.com data:",
             "img-src 'self' data: https:",
-            "connect-src 'self' https://ia-router.unb.br http://localhost:8000 ws://localhost:5173 https://*.unb.br",
+            "connect-src 'self' https://ia-router.unb.br http://localhost:8000 http://127.0.0.1:8000 ws://localhost:5173 ws://127.0.0.1:5173 http://localhost:5173 http://127.0.0.1:5173 https://*.unb.br",
             "frame-ancestors 'self'",
             "form-action 'self'",
             "base-uri 'self'",
@@ -138,7 +248,8 @@ class CORSSecurityMiddleware(MiddlewareMixin):
     """
 
     def process_request(self, request):
-        # Validar Origin header em requisições sensíveis
+        # Validar Origin header em requisições sensíveis (mutating)
+        # Permitir OPTIONS (preflight) passar sem validação
         if request.method in ('POST', 'PUT', 'PATCH', 'DELETE'):
             origin = request.META.get('HTTP_ORIGIN')
             referer = request.META.get('HTTP_REFERER')
@@ -150,17 +261,7 @@ class CORSSecurityMiddleware(MiddlewareMixin):
         return None
 
     def process_response(self, request, response):
-        # Garantir que CORS headers não vazem em erros
-        if response.status_code >= 400:
-            # Remover headers CORS em respostas de erro para não vazar info
-            cors_headers = [
-                'Access-Control-Allow-Origin',
-                'Access-Control-Allow-Credentials',
-                'Access-Control-Allow-Methods',
-                'Access-Control-Allow-Headers',
-            ]
-            for header in cors_headers:
-                if header in response:
-                    del response[header]
-
+        # NÃO remover headers CORS - deixamos o django-cors-headers gerenciar
+        # Este middleware apenas loga/valida, não remove headers CORS em respostas 2xx
+        # Removido: lógica que deletava headers CORS pois causava problemas com token endpoint
         return response

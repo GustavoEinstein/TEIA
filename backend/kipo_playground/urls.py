@@ -2,15 +2,14 @@
 
 from django.urls import path
 from . import views
-from rest_framework_simplejwt.views import TokenRefreshView
 from django.conf import settings
 from django.conf.urls.static import static
 
 # IMPORTAÇÃO ATUALIZADA DA NOVA VIEW: GeradorPlanoAulaView
-from .views import AutoCatalogAIView, ExportProducaoPDFView, GeradorPlanoAulaView, api_health_check
+from .views import AutoCatalogAIView, ExportProducaoPDFView, GeradorPlanoAulaView, api_health_check, CookieTokenRefreshView
 
 urlpatterns = [
-    
+
     # ============================================================================
     # 1. AUTENTICAÇÃO E REGISTRO
     # ============================================================================
@@ -18,13 +17,17 @@ urlpatterns = [
     path('api/health/', api_health_check, name='health_check'),
 
     path('api/token/', views.CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('api/token/refresh/', CookieTokenRefreshView.as_view(), name='token_refresh'),
     path('api/register/', views.api_register_user, name='register_user'),
 
     # ============================================================================
     # 2. PERFIL DO USUÁRIO, GAMIFICAÇÃO E NOTIFICAÇÕES
     # ============================================================================
     path('api/user/me/', views.api_user_profile, name='user_profile'),
+    path('api/user/consent/', views.api_user_consent, name='user_consent'),
+    path('api/user/delete-account/', views.api_delete_my_account, name='delete_my_account'),
+    path('api/user/export-data/', views.api_export_my_data, name='export_my_data'),
+    path('api/logout/', views.api_logout, name='logout'),
     path('api/password_reset/', views.api_password_reset_request, name='password_reset_request'),
     path('api/password_reset_confirm/<uidb64>/<token>/', views.api_password_reset_confirm, name='password_reset_confirm'),
     path('api/notificacoes/', views.api_list_notifications, name='list_notifications'),
@@ -38,6 +41,7 @@ urlpatterns = [
     path('api/production/<int:pk>/', views.api_get_production_details, name='get_production_details'),
     path('api/production/<int:pk>/update/', views.api_update_production, name='update_production'),
     path('api/production/<int:pk>/toggle-author/', views.api_toggle_author_visibility, name='toggle_author'),
+    path('api/production/<int:pk>/duplicate/', views.api_duplicate_production, name='duplicate_production'),
 
     # --- (IA E EXPORTAÇÃO EM PDF) ---
     path('api/production/auto-catalog-ai/', AutoCatalogAIView.as_view(), name='auto_catalog_ai'),

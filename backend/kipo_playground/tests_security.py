@@ -267,14 +267,18 @@ class AuthAndResetTokenTests(TestCase):
         from django.apps import apps
         self.assertTrue(apps.is_installed('rest_framework_simplejwt.token_blacklist'))
 
-        # Login deve funcionar
+        # Login deve funcionar e definir cookie HttpOnly com refresh_token
         response = self.client.post('/api/token/', {
             'username': 'jwtuser',
             'password': 'jwtpass123'
         }, format='json')
         self.assertEqual(response.status_code, 200)
-        self.assertIn('refresh', response.data)
         self.assertIn('access', response.data)
+        # Refresh token agora está em cookie HttpOnly, não no body
+        self.assertIn('refresh_token', response.cookies)
+        refresh_cookie = response.cookies['refresh_token']
+        self.assertTrue(refresh_cookie['httponly'])
+        self.assertEqual(refresh_cookie['path'], '/api/token/refresh/')
 
     def test_access_token_expiry(self):
         """Access token deve ter lifetime de ~45 min."""

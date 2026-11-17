@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react"
 import { NavLink } from "react-router-dom"
+import { useAuth } from "../context/AuthContext"
 import {
   LayoutDashboard, FilePlus2, FolderOpen, Scale,
   LifeBuoy, MessageSquare, Settings, Trophy,
@@ -24,7 +25,8 @@ const MAX_WIDTH = 440
 const DEFAULT_WIDTH = 280
 
 export default function Sidebar({ isOpen, isMobile, onClose, onToggle }) {
-  const isSuperUser = localStorage.getItem("is_superuser") === "true"
+  const { user, isAuthenticated } = useAuth()
+  const isSuperUser = isAuthenticated && user?.is_superuser === true
 
   // Estado local caso o componente pai não controle o recolhimento no Desktop
   const [desktopHidden, setDesktopHidden] = useState(false)

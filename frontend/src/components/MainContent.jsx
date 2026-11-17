@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react"
 import api from "../services/api"
 import { useNavigate } from "react-router-dom"
+import { useAuth } from "../context/AuthContext"
 import {
   Search,
   Bot,
@@ -18,36 +19,35 @@ import {
 
 const MainContent = () => {
   const navigate = useNavigate()
+  const { user, isAuthenticated } = useAuth()
   const [searchTerm, setSearchTerm] = useState("")
   const [producoes, setProducoes] = useState([])
   const [isLoading, setIsLoading] = useState(true)
 
-  const [headerInfo, setHeaderInfo] = useState({
-    firstName: "Visitante",
-    disciplina: "Geral",
-    pontos: "0",
-    nivel: "🌱 Prof. Conectado(a)",
-  })
-
-  useEffect(() => {
-    const updateHeaderInfo = () => {
-      const storedName = localStorage.getItem("user_name") || ""
-      const storedDisc = localStorage.getItem("user_disciplina") || ""
-      let formattedName = "Visitante"
-      if (storedName) {
-        const first = storedName.split(" ")[0]
-        formattedName =
-          first.charAt(0).toUpperCase() + first.slice(1).toLowerCase()
+  // Deriva informações do header diretamente do contexto de autenticação (memória)
+  const headerInfo = React.useMemo(() => {
+    if (!isAuthenticated || !user) {
+      return {
+        firstName: "Visitante",
+        disciplina: "Geral",
+        pontos: 0,
+        nivel: "🌱 Prof. Conectado(a)",
       }
-      setHeaderInfo({
-        firstName: formattedName,
-        disciplina:
-          !storedDisc || storedDisc === "Outra" ? "Geral" : storedDisc,
-        pontos: localStorage.getItem("user_pontos") || "0",
-        nivel: localStorage.getItem("user_nivel") || "🌱 Prof. Conectado(a)",
-      })
     }
 
+    // Pega o primeiro nome do username (ex: "Maria Silva" -> "Maria")
+    const fullName = user.username || "Professor"
+    const firstName = fullName.split(" ")[0]
+
+    return {
+      firstName: firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase(),
+      disciplina: user.disciplina && user.disciplina !== "Outra" ? user.disciplina : "Geral",
+      pontos: user.pontos || 0,
+      nivel: user.nivel || "🌱 Prof. Conectado(a)",
+    }
+  }, [isAuthenticated, user])
+
+  useEffect(() => {
     const fetchData = async () => {
       try {
         const response = await api.get("api/public/feed/")
@@ -59,7 +59,6 @@ const MainContent = () => {
       }
     }
 
-    updateHeaderInfo()
     fetchData()
   }, [])
 

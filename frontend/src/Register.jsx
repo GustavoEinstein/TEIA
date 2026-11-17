@@ -58,13 +58,25 @@ const Register = () => {
     if (!/[A-Z]/.test(pwd)) return setError("A senha precisa ter pelo menos uma letra maiúscula.")
     if (!/[!@#$%^&*(),.?":{}|<>]/.test(pwd)) return setError("A senha precisa ter pelo menos um símbolo especial (ex: !@#$%^&*).")
     if (pwd !== formData.confirmPassword) return setError("As senhas não coincidem.")
-    if (!formData.escola) return setError("Por favor, selecione sua escola.")
+    {/* Escola agora é opcional (minimização LGPD Art. 6º) */}
+      {/* if (!formData.escola) return setError("Por favor, selecione sua escola.") */}
     if (!formData.disciplina) return setError("Por favor, selecione sua área de atuação.")
     if (!aceitouTermos) return setError("Você precisa ler e concordar com os Termos de Uso e a Política de Privacidade.")
 
     setIsLoading(true)
     try {
-      await api.post("api/register/", { ...formData })
+      // Enviar dados do formulário + consentimento explícito granular (LGPD Art. 8º)
+      const payload = {
+        ...formData,
+        terms_version: '4.1',
+        terms_accepted: aceitouTermos,
+        privacy_version: '1.1',
+        privacy_accepted: aceitouTermos,
+        cookies_consent: true,      // Essenciais sempre true no cadastro
+        analytics_consent: false,   // Opt-in para analytics
+        marketing_consent: false,   // Opt-in para marketing
+      }
+      await api.post("api/register/", payload)
       alert("Conta criada com sucesso! Aguarde a aprovação do administrador.")
       navigate("/login")
     } catch (err) {
@@ -139,14 +151,14 @@ const Register = () => {
               </div>
 
               <div>
-                <label className={labelClass}>Sua Escola</label>
+                <label className={labelClass}>Sua Escola <span className="text-slate-400 text-xs font-normal">(opcional)</span></label>
                 <div className="relative group">
                   <School size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#1565C0] transition-colors" />
                   <select
-                    name="escola" value={formData.escola} onChange={handleChange} required disabled={isLoadingOptions}
+                    name="escola" value={formData.escola} onChange={handleChange} disabled={isLoadingOptions}
                     className={`${inputClass} cursor-pointer appearance-none`}
                   >
-                    <option value="" disabled>{isLoadingOptions ? "Carregando..." : "Selecione a escola"}</option>
+                    <option value="" disabled>{isLoadingOptions ? "Carregando..." : "Selecione a escola (opcional)"}</option>
                     {escolas.map((escola, i) => <option key={i} value={escola}>{escola}</option>)}
                   </select>
                 </div>

@@ -55,7 +55,9 @@ from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Count, Q
 from django.core.cache import cache
 
-from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.serializers import TokenRefreshSerializer
+from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.throttling import ScopedRateThrottle
@@ -161,6 +163,89 @@ class CustomTokenObtainPairView(TokenObtainPairView):
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = 'login_attempts'
 
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+
+        if response.status_code == 200:
+            refresh_token = response.data.get('refresh')
+            if refresh_token:
+                # Definir refresh_token em cookie HttpOnly (seguro contra XSS)
+                # Não retornar refresh_token no body da resposta
+                response.set_cookie(
+                    'refresh_token',
+                    refresh_token,
+                    httponly=True,
+                    secure=not settings.DEBUG,      # True em produção (HTTPS)
+                    samesite='Lax' if settings.DEBUG else 'Strict',
+                    path='/api/token/refresh/',     # Só enviado no endpoint de refresh
+                    max_age=60 * 60 * 24 * 7        # 7 dias
+                )
+                # Remover refresh_token do body da resposta (não expô-lo ao JS)
+                del response.data['refresh']
+
+        return response
+
+
+# ============================================================================
+# REFRESH TOKEN VIA HTTPONLY COOKIE (Segurança máxima)
+# ============================================================================
+class CookieTokenRefreshView(TokenRefreshView):
+    """
+    View personalizada para refresh de token via HttpOnly Cookie.
+    O refresh_token é lido do cookie (inacessível a JavaScript/XSS),
+    não do corpo da requisição.
+    O novo refresh_token rotacionado é definido no cookie HttpOnly,
+    NÃO exposto no body da resposta.
+    """
+    serializer_class = TokenRefreshSerializer
+
+    def post(self, request, *args, **kwargs):
+        # Ler refresh_token do cookie HttpOnly
+        refresh_token = request.COOKIES.get('refresh_token')
+
+        if not refresh_token:
+            return Response(
+                {'detail': 'Refresh token não encontrado no cookie.'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        # Adicionar o token ao request.data para o serializer
+        request.data['refresh'] = refresh_token
+
+        # Processar refresh normal
+        try:
+            response = super().post(request, *args, **kwargs)
+
+            if response.status_code == 200:
+                new_refresh = response.data.get('refresh')
+                if new_refresh:
+                    # Definir NOVO refresh_token rotacionado no cookie HttpOnly
+                    response.set_cookie(
+                        'refresh_token',
+                        new_refresh,
+                        httponly=True,
+                        secure=not settings.DEBUG,
+                        samesite='Lax' if settings.DEBUG else 'Strict',
+                        path='/api/token/refresh/',
+                        max_age=60 * 60 * 24 * 7  # 7 dias
+                    )
+                    # Remover refresh_token do body (não expô-lo ao JS)
+                    del response.data['refresh']
+
+            return response
+        except TokenError as e:
+            # Se token inválido/expirado, limpar cookie
+            response = Response(
+                {'detail': str(e)},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+            response.delete_cookie(
+                'refresh_token',
+                path='/api/token/refresh/',
+                samesite='Lax' if settings.DEBUG else 'Strict'
+            )
+            return response
+
 
 # ============================================================================
 # OPÇÕES PARA O FORMULÁRIO DE REGISTRO
@@ -191,13 +276,21 @@ def api_get_register_options(request):
 @throttle_classes([RegisterThrottle])
 def api_register_user(request):
     data = request.data
-    
+
     username = data.get('username')
     email = data.get('email')
     password = data.get('password')
     name = data.get('name')
     disciplina = data.get('disciplina', 'Outra')
     escola = data.get('escola', '')
+    # Campos de consentimento LGPD (enviados pelo frontend)
+    terms_version = data.get('terms_version', '4.1')
+    terms_accepted = data.get('terms_accepted', False)
+    privacy_version = data.get('privacy_version', '1.1')
+    privacy_accepted = data.get('privacy_accepted', False)
+    cookies_consent = data.get('cookies_consent', False)
+    analytics_consent = data.get('analytics_consent', False)
+    marketing_consent = data.get('marketing_consent', False)
 
     if not username or not password or not email:
         return Response({'erro': 'Preencha todos os campos obrigatórios.'}, status=400)
@@ -211,6 +304,9 @@ def api_register_user(request):
     if len(password) < 8:
         return Response({'erro': 'A senha precisa ter no mínimo 8 caracteres.'}, status=400)
 
+    if not terms_accepted or not privacy_accepted:
+        return Response({'erro': 'É necessário aceitar os Termos de Uso e a Política de Privacidade.'}, status=400)
+
     try:
         user = User.objects.create_user(
             username=username,
@@ -218,17 +314,111 @@ def api_register_user(request):
             password=password,
             first_name=name
         )
-        
+
         profile, created = Profile.objects.get_or_create(user=user)
         profile.disciplina = disciplina
         profile.escola = escola
         profile.status_conta = 'Em análise'
+        # Gravar consentimento LGPD (Art. 8º) - granular
+        client_ip = request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR', ''))
+        user_agent = request.META.get('HTTP_USER_AGENT', '')
+
+        profile.terms_version = terms_version
+        profile.terms_accepted_at = timezone.now()
+        profile.privacy_version = privacy_version
+        profile.privacy_accepted_at = timezone.now()
+        profile.cookies_consent = cookies_consent
+        profile.analytics_consent = analytics_consent
+        profile.marketing_consent = marketing_consent
+        profile.cookies_accepted_at = timezone.now() if cookies_consent else None
+        profile.consent_ip = client_ip
+        profile.consent_user_agent = user_agent
         profile.save()
-        
+
         return Response({'mensagem': 'Conta criada com sucesso! Aguarde aprovação.'}, status=201)
-        
+
     except Exception as e:
         return Response({'erro': 'Erro interno ao criar conta.'}, status=500)
+
+
+# ============================================================================
+# CONSENTIMENTO LGPD — Consulta e Atualização
+# ============================================================================
+@api_view(['GET', 'PATCH'])
+@permission_classes([IsAuthenticated])
+def api_user_consent(request):
+    """
+    GET: Retorna status de consentimentos do usuário
+    PATCH: Atualiza consentimentos granulares (cookies essenciais, analytics, marketing,
+           re-aceite de termos/privacidade quando versão muda)
+    """
+    profile, _ = Profile.objects.get_or_create(user=request.user)
+
+    if request.method == 'GET':
+        return Response({
+            'terms_version': profile.terms_version,
+            'terms_accepted_at': profile.terms_accepted_at,
+            'privacy_version': profile.privacy_version,
+            'privacy_accepted_at': profile.privacy_accepted_at,
+            'cookies_accepted_at': profile.cookies_accepted_at,
+            'cookies_consent': profile.cookies_consent,
+            'analytics_consent': profile.analytics_consent,
+            'marketing_consent': profile.marketing_consent,
+            'current_terms_version': '4.1',  # Versão atual dos termos
+            'current_privacy_version': '1.1',  # Versão atual da privacidade
+        })
+
+    elif request.method == 'PATCH':
+        data = request.data
+        updated = False
+        client_ip = request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR', ''))
+        user_agent = request.META.get('HTTP_USER_AGENT', '')
+
+        # Consentimento de cookies essenciais (sempre true se enviado)
+        if 'cookies_consent' in data:
+            profile.cookies_consent = bool(data['cookies_consent'])
+            profile.cookies_accepted_at = timezone.now()
+            profile.consent_ip = client_ip
+            profile.consent_user_agent = user_agent
+            updated = True
+
+        # Consentimento de analytics
+        if 'analytics_consent' in data:
+            profile.analytics_consent = bool(data['analytics_consent'])
+            profile.cookies_accepted_at = timezone.now()
+            profile.consent_ip = client_ip
+            profile.consent_user_agent = user_agent
+            updated = True
+
+        # Consentimento de marketing
+        if 'marketing_consent' in data:
+            profile.marketing_consent = bool(data['marketing_consent'])
+            profile.cookies_accepted_at = timezone.now()
+            profile.consent_ip = client_ip
+            profile.consent_user_agent = user_agent
+            updated = True
+
+        # Re-aceite de termos (quando versão muda)
+        if 'terms_version' in data and data['terms_version'] != profile.terms_version:
+            profile.terms_version = data['terms_version']
+            profile.terms_accepted_at = timezone.now()
+            profile.consent_ip = client_ip
+            profile.consent_user_agent = user_agent
+            updated = True
+
+        # Re-aceite de privacidade (quando versão muda)
+        if 'privacy_version' in data and data['privacy_version'] != profile.privacy_version:
+            profile.privacy_version = data['privacy_version']
+            profile.privacy_accepted_at = timezone.now()
+            profile.consent_ip = client_ip
+            profile.consent_user_agent = user_agent
+            updated = True
+
+        if updated:
+            profile.save()
+            return Response({'mensagem': 'Consentimentos atualizados com sucesso.'})
+
+        return Response({'mensagem': 'Nenhuma alteração realizada.'})
 
 
 @api_view(['GET', 'PUT'])
@@ -303,6 +493,290 @@ def api_user_profile(request):
             'nivel': profile.get_nivel(),
             'progresso': profile.get_progresso_proximo_nivel()
         })
+
+
+# ============================================================================
+# EXCLUSÃO DE CONTA PELO PRÓPRIO USUÁRIO (Direito ao Esquecimento - Art. 18 LGPD)
+# ============================================================================
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def api_delete_my_account(request):
+    """
+    Exclui a conta do usuário autenticado com anonimização irreversível
+    das produções públicas (Art. 12 LGPD).
+
+    Requer confirmação via parâmetro 'confirm': true
+    """
+    # Verificar confirmação explícita
+    if not request.data.get('confirm') is True:
+        return Response(
+            {'erro': 'Confirmação obrigatória. Envie {"confirm": true}.'},
+            status=400
+        )
+
+    user = request.user
+    profile = getattr(user, 'profile', None)
+
+    # 1. Anonimizar produções do usuário
+    producoes = Producao.objects.filter(user=user)
+    for prod in producoes:
+        # Anonimização irreversível (Art. 12 LGPD)
+        prod.exibir_autor = False  # Nunca exibir autor
+        prod.user = None  # Dissociar do usuário (FK nullable após migração)
+        prod.save()
+
+    # 2. Anonimizar avaliações feitas pelo usuário
+    avaliacoes = Avaliacao.objects.filter(revisor=user)
+    for av in avaliacoes:
+        av.revisor = None
+        av.save()
+
+    # 3. Anonimizar tópicos e comentários do fórum
+    topicos = Topico.objects.filter(autor=user)
+    for t in topicos:
+        t.autor = None
+        t.save()
+
+    comentarios = Comentario.objects.filter(autor=user)
+    for c in comentarios:
+        c.autor = None
+        c.save()
+
+    # 4. Deletar notificações, conquistas, histórico XP, profile
+    Notificacao.objects.filter(user=user).delete()
+    ConquistaUsuario.objects.filter(perfil=profile).delete()
+    RegistroXP.objects.filter(perfil=profile).delete()
+
+    if profile:
+        profile.delete()
+
+    # 5. Deletar o usuário (CASCADE limpa User)
+    user.delete()
+
+    # 6. Retornar resposta e limpar cookie de refresh
+    response = Response({'mensagem': 'Conta excluída com sucesso. Seus dados pessoais foram eliminados e suas produções foram anonimizadas irreversivelmente.'})
+    response.delete_cookie(
+        'refresh_token',
+        path='/api/token/refresh/',
+        samesite='Lax' if settings.DEBUG else 'Strict'
+    )
+    return response
+
+
+# ============================================================================
+# EXPORTAÇÃO DE DADOS — Portabilidade (Art. 18 LGPD)
+# ============================================================================
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def api_export_my_data(request):
+    """
+    Exporta todos os dados do usuário autenticado em formato JSON
+    para cumprimento do direito à portabilidade (Art. 18 LGPD).
+    """
+    user = request.user
+    profile = getattr(user, 'profile', None)
+
+    # User data
+    user_data = {
+        'id': user.id,
+        'username': user.username,
+        'email': user.email,
+        'first_name': user.first_name,
+        'last_name': user.last_name,
+        'date_joined': user.date_joined.isoformat() if user.date_joined else None,
+        'last_login': user.last_login.isoformat() if user.last_login else None,
+    }
+
+    # Profile data
+    profile_data = {}
+    if profile:
+        profile_data = {
+            'disciplina': profile.disciplina,
+            'escola': profile.escola,
+            'pontos': profile.pontos,
+            'nivel': profile.get_nivel(),
+            'status_conta': profile.status_conta,
+            'progresso': profile.get_progresso_proximo_nivel(),
+            # Consentimentos LGPD (granular)
+            'terms_version': profile.terms_version,
+            'terms_accepted_at': profile.terms_accepted_at.isoformat() if profile.terms_accepted_at else None,
+            'privacy_version': profile.privacy_version,
+            'privacy_accepted_at': profile.privacy_accepted_at.isoformat() if profile.privacy_accepted_at else None,
+            'cookies_accepted_at': profile.cookies_accepted_at.isoformat() if profile.cookies_accepted_at else None,
+            'cookies_consent': profile.cookies_consent,
+            'analytics_consent': profile.analytics_consent,
+            'marketing_consent': profile.marketing_consent,
+            'consent_ip': profile.consent_ip,
+            'consent_user_agent': profile.consent_user_agent,
+        }
+
+    # Produções didáticas
+    producoes = Producao.objects.filter(user=user).order_by('-data_criacao')
+    producoes_data = []
+    for p in producoes:
+        producoes_data.append({
+            'id': p.id,
+            'titulo': p.titulo,
+            'disciplina': p.disciplina,
+            'nivel': p.nivel,
+            'modelo_ia': p.modelo_ia,
+            'prompts_ia': p.prompts_ia,
+            'categoria': p.categoria,
+            'bncc': p.bncc,
+            'bncc_computacao': p.bncc_computacao,
+            'metodologia': p.metodologia,
+            'duracao': p.duracao,
+            'recursos': p.recursos,
+            'experiencia': p.experiencia,
+            'resultados': p.resultados,
+            'link_material': p.link_material,
+            'exibir_autor': p.exibir_autor,
+            'status': p.status,
+            'data_criacao': p.data_criacao.isoformat() if p.data_criacao else None,
+            'producao_base_id': p.producao_base_id,
+        })
+
+    # Avaliações recebidas (nas produções do usuário)
+    avaliacoes_recebidas = []
+    for p in producoes:
+        for av in p.avaliacoes.all():
+            avaliacoes_recebidas.append({
+                'id': av.id,
+                'producao_id': p.id,
+                'producao_titulo': p.titulo,
+                'revisor_id': av.revisor_id,
+                'revisor_nome': av.revisor.first_name if av.revisor else 'Anonimizado',
+                'data_avaliacao': av.data_avaliacao.isoformat() if av.data_avaliacao else None,
+                'aprovado': av.aprovado,
+                'feedback_revisao': av.feedback_revisao,
+                'notas': {
+                    'coerencia': av.nota_coerencia,
+                    'qualidade': av.nota_qualidade,
+                    'metodologia': av.nota_metodologia,
+                    'avaliacao': av.nota_avaliacao,
+                    'inclusao': av.nota_inclusao,
+                    'inovacao': av.nota_inovacao,
+                }
+            })
+
+    # Avaliações feitas pelo usuário
+    avaliacoes_feitas = Avaliacao.objects.filter(revisor=user).select_related('producao')
+    avaliacoes_feitas_data = []
+    for av in avaliacoes_feitas:
+        avaliacoes_feitas_data.append({
+            'id': av.id,
+            'producao_id': av.producao_id,
+            'producao_titulo': av.producao.titulo if av.producao else 'Removida',
+            'data_avaliacao': av.data_avaliacao.isoformat() if av.data_avaliacao else None,
+            'aprovado': av.aprovado,
+            'feedback_revisao': av.feedback_revisao,
+            'notas': {
+                'coerencia': av.nota_coerencia,
+                'qualidade': av.nota_qualidade,
+                'metodologia': av.nota_metodologia,
+                'avaliacao': av.nota_avaliacao,
+                'inclusao': av.nota_inclusao,
+                'inovacao': av.nota_inovacao,
+            }
+        })
+
+    # Tópicos do fórum
+    topicos = Topico.objects.filter(autor=user).order_by('-data_criacao')
+    topicos_data = []
+    for t in topicos:
+        topicos_data.append({
+            'id': t.id,
+            'titulo': t.titulo,
+            'conteudo': t.conteudo,
+            'categoria': t.categoria,
+            'resolvido': t.resolvido,
+            'data_criacao': t.data_criacao.isoformat() if t.data_criacao else None,
+            'producao_base_id': t.producao_base_id,
+        })
+
+    # Comentários do fórum
+    comentarios = Comentario.objects.filter(autor=user).select_related('topico').order_by('-data_criacao')
+    comentarios_data = []
+    for c in comentarios:
+        comentarios_data.append({
+            'id': c.id,
+            'topico_id': c.topico_id,
+            'topico_titulo': c.topico.titulo if c.topico else 'Removido',
+            'conteudo': c.conteudo,
+            'data_criacao': c.data_criacao.isoformat() if c.data_criacao else None,
+        })
+
+    # Histórico de XP
+    historico_xp = RegistroXP.objects.filter(perfil=profile).order_by('-data') if profile else []
+    historico_xp_data = []
+    for h in historico_xp:
+        historico_xp_data.append({
+            'quantidade': h.quantidade,
+            'descricao': h.descricao,
+            'data': h.data.isoformat() if h.data else None,
+        })
+
+    # Conquistas
+    conquistas = ConquistaUsuario.objects.filter(perfil=profile).select_related('conquista') if profile else []
+    conquistas_data = []
+    for c in conquistas:
+        conquistas_data.append({
+            'id': c.conquista.id,
+            'nome': c.conquista.nome,
+            'descricao': c.conquista.descricao,
+            'icone': c.conquista.icone,
+            'xp_bonus': c.conquista.xp_bonus,
+            'data_conquista': c.data_conquista.isoformat() if c.data_conquista else None,
+        })
+
+    # Notificações
+    notificacoes = Notificacao.objects.filter(user=user).order_by('-data_criacao')
+    notificacoes_data = []
+    for n in notificacoes:
+        notificacoes_data.append({
+            'id': n.id,
+            'titulo': n.titulo,
+            'mensagem': n.mensagem,
+            'tipo': n.tipo,
+            'lida': n.lida,
+            'data_criacao': n.data_criacao.isoformat() if n.data_criacao else None,
+        })
+
+    return Response({
+        'exportado_em': timezone.now().isoformat(),
+        'usuario': user_data,
+        'perfil': profile_data,
+        'producoes': producoes_data,
+        'avaliacoes_recebidas': avaliacoes_recebidas,
+        'avaliacoes_feitas': avaliacoes_feitas_data,
+        'topicos_forum': topicos_data,
+        'comentarios_forum': comentarios_data,
+        'historico_xp': historico_xp_data,
+        'conquistas': conquistas_data,
+        'notificacoes': notificacoes_data,
+    })
+
+
+# ============================================================================
+# LOGOUT - Limpar cookie HttpOnly do refresh_token
+# ============================================================================
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def api_logout(request):
+    """
+    Endpoint de logout que limpa o cookie HttpOnly do refresh_token.
+    O access_token em memória é limpo pelo frontend.
+    """
+    response = Response({'mensagem': 'Logout realizado com sucesso.'})
+
+    # Deletar cookie HttpOnly do refresh_token
+    response.delete_cookie(
+        'refresh_token',
+        path='/api/token/refresh/',
+        samesite='Lax' if settings.DEBUG else 'Strict'
+    )
+
+    return response
 
 
 # ============================================================================
@@ -381,13 +855,26 @@ def api_create_production(request):
 def api_list_my_productions(request):
     user = request.user
     producoes = Producao.objects.filter(user=user).order_by('-data_criacao')
-    
+
     lista = []
     for p in producoes:
         ultima_avaliacao = p.avaliacoes.order_by('-data_avaliacao').first()
         feedback = ultima_avaliacao.feedback_revisao if ultima_avaliacao else None
 
         total_aprovacoes = p.avaliacoes.filter(aprovado=True).count()
+
+        # XP ganho com esta produção (busca no histórico de XP)
+        xp_ganho = 0
+        try:
+            from kipo_playground.models import RegistroXP
+            registro = RegistroXP.objects.filter(
+                perfil=user.profile,
+                descricao__icontains=str(p.id)
+            ).first()
+            if registro:
+                xp_ganho = registro.quantidade
+        except Exception:
+            pass
 
         lista.append({
             'id': p.id,
@@ -397,10 +884,51 @@ def api_list_my_productions(request):
             'status': p.status,
             'modelo_ia': p.modelo_ia,
             'feedback_revisor': feedback,
-            'total_aprovacoes': total_aprovacoes
+            'total_aprovacoes': total_aprovacoes,
+            'xp_ganho': xp_ganho,
         })
-    
+
     return Response(lista)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def api_duplicate_production(request, pk):
+    """Duplica uma produção existente como rascunho."""
+    try:
+        original = Producao.objects.get(id=pk, user=request.user)
+    except Producao.DoesNotExist:
+        return Response({'erro': 'Produção não encontrada.'}, status=404)
+
+    # Cria cópia como rascunho
+    nova = Producao.objects.create(
+        user=request.user,
+        titulo=f"Cópia de {original.titulo}",
+        disciplina=original.disciplina,
+        nivel=original.nivel,
+        modelo_ia=original.modelo_ia,
+        prompts_ia=original.prompts_ia,
+        categoria=original.categoria,
+        bncc=original.bncc,
+        bncc_computacao=original.bncc_computacao,
+        metodologia=original.metodologia,
+        duracao=original.duracao,
+        recursos=original.recursos,
+        experiencia=original.experiencia,
+        resultados=original.resultados,
+        arquivo=original.arquivo,
+        exibir_autor=original.exibir_autor,
+        link_material=original.link_material,
+        status='Rascunho',
+        producao_base=original,
+    )
+
+    return Response({
+        'id': nova.id,
+        'titulo': nova.titulo,
+        'status': nova.status,
+        'message': 'Produção duplicada como rascunho com sucesso.'
+    }, status=201)
 
 
 @api_view(['GET'])
@@ -1598,9 +2126,9 @@ def extrair_bloco_markdown(etapa: str, materia: str, termo_busca: str) -> str:
     """
     if not etapa or not materia:
         return ""
-        
+
     caminho = os.path.join(settings.BASE_DIR, 'bncc_fatiada', str(etapa).lower(), f"{str(materia).lower()}.md")
-    
+
     try:
         with open(caminho, 'r', encoding='utf-8') as f:
             conteudo = f.read()
@@ -1609,73 +2137,61 @@ def extrair_bloco_markdown(etapa: str, materia: str, termo_busca: str) -> str:
 
     secoes = re.split(r'(?=\n#{2,4} )', conteudo)
     termo = str(termo_busca).upper() if termo_busca else ""
-    
+
     blocos_relevantes = [secao for secao in secoes if termo in secao.upper()]
-    
+
     if blocos_relevantes:
         return "".join(blocos_relevantes)[:4000]
-    
+
     return conteudo[:4000]
 
-def gerar_aula_qwen(prompt_livre: str, contexto_bncc: str) -> dict:
-    """
-    Comunica-se com o Qwen3:8b via Ollama forçando a devolução de um JSON 
-    estruturado e sem marcações Markdown para o frontend.
-    """
-    system_prompt = f"""Você é um assistente educacional de planejamento. 
-Sua tarefa é criar um plano de aula detalhado com base nas diretrizes da BNCC abaixo.
 
-DIRETRIZES DA BNCC:
-{contexto_bncc}
+def gerar_plano_aula_ia(prompt_livre: str, contexto_bncc: str = "") -> dict:
+    """
+    Gera plano de aula usando o provedor LLM configurado (Local/UnB/Gemini).
+    Retorna JSON estruturado validado (backend-driven UI).
 
-REGRAS OBRIGATÓRIAS:
-1. Você DEVE responder APENAS com um objeto JSON válido.
-2. Não inclua texto fora do JSON. Não use blocos ```json.
-3. Não use asteriscos (**) ou marcações Markdown dentro dos valores do JSON, escreva em texto limpo.
-4. CÓDIGOS BNCC: NUNCA invente ou abrevie códigos (como "H11" ou "G12"). Você deve obrigatoriamente extrair e utilizar o código alfanumérico oficial COMPLETO que está no texto (ex: EF06HI07, EM13CHS101, EF08MA02).
-5. O JSON deve seguir exatamente esta estrutura de chaves:
-{{
-  "titulo": "Título criativo da aula",
-  "bncc": "Lista de habilidades com o CÓDIGO OFICIAL COMPLETO e a descrição",
-  "metodologia": "Nome da metodologia (ex: Aula Expositiva Dialogada)",
-  "duracao": "Tempo estimado (ex: 2 aulas de 50 min)",
-  "recursos": ["Item 1", "Item 2"],
-  "relato_experiencia": "Texto corrido descrevendo a aula passo a passo de forma limpa",
-  "resultados": "Como será a avaliação"
-}}"""
-    
-    payload = {
-        "model": "qwen3:8b", 
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": prompt_livre}
-        ],
-        "stream": False,
-        "temperature": 0.3
+    Novo contrato de saída:
+    {
+        "titulo": str,
+        "nivel": str,
+        "categoria": str,
+        "bncc": [{"codigo": str, "descricao": str}],
+        "bncc_computacao": [{"codigo": str, "descricao": str}],
+        "metodologia": str,
+        "duracao": str,
+        "recursos": [str],
+        "passo_a_passo": [str],      # Substitui relato_experiencia
+        "avaliacao": str,
+        "prompts_ia": str
     }
-    
+    """
     try:
-        resposta = requests.post("http://localhost:11434/api/chat", json=payload)
-        
-        if resposta.status_code != 200:
-            print(f"❌ Erro Ollama: {resposta.text}")
-            return {"titulo": "Erro", "relato_experiencia": f"Erro no servidor: {resposta.status_code}"}
-            
-        conteudo_bruto = resposta.json().get('message', {}).get('content', '')
-        conteudo_limpo = re.sub(r'^```json\s*|\s*```$', '', conteudo_bruto.strip(), flags=re.MULTILINE)
-        
-        return json.loads(conteudo_limpo)
-        
-    except json.JSONDecodeError as e:
-        print(f"❌ Qwen não devolveu JSON puro: {e}")
-        texto_limpo = conteudo_bruto.replace("**", "").replace("*", "")
-        return {
-            "titulo": "Plano de Aula Gerado",
-            "relato_experiencia": texto_limpo
-        }
+        provider = get_llm_provider()
+        return provider.catalog_production(prompt_livre, contexto_bncc)
     except Exception as e:
-        print(f"❌ Erro de conexão com Ollama: {e}")
-        return {"titulo": "Erro", "relato_experiencia": "Falha de conexão com a IA."}
+        print(f"\n❌ Erro no provedor LLM ({type(provider).__name__}): {e}")
+        # Fallback gracioso - estrutura esperada pelo frontend
+        return {
+            "titulo": "Plano de Aula (Erro na IA)",
+            "nivel": "Fundamental 2",
+            "categoria": "Plano de Aula",
+            "bncc": [],
+            "bncc_computacao": [],
+            "metodologia": "A definir pelo professor",
+            "duracao": "1 aula de 50 min",
+            "recursos": [],
+            "passo_a_passo": [
+                "A IA não pôde gerar o plano completo.",
+                "Revise o tema e tente novamente.",
+                "Estruture manualmente sua aula."
+            ],
+            "avaliacao": "A definir pelo professor",
+            "prompts_ia": prompt_livre,
+            "modelo_ia": "IA DA UNB",
+            "_error": str(e)
+        }
+
 
 class GeradorPlanoAulaView(APIView):
     permission_classes = [IsAuthenticated]
@@ -1693,36 +2209,33 @@ class GeradorPlanoAulaView(APIView):
         # 1. Filtros UI assumem precedência
         if etapa_ui and materia_ui and ano_ui:
             etapa_final, materia_final, ano_final = etapa_ui, materia_ui, ano_ui
-        
-        # 2. Agente Classificador (Roteamento)
+
+        # 2. Agente Classificador (Roteamento) - usa modelo do settings
         else:
             system_classificador = (
                 "Você é um roteador educacional. Analise o tema e devolva APENAS "
                 "um JSON válido com a etapa, materia e ano escolar mais adequados segundo a BNCC. "
                 "Exemplo: {\"etapa\": \"fundamental\", \"materia\": \"historia\", \"ano\": \"6º ANO\"}"
             )
-            
-            payload_classificador = {
-                "model": "qwen3:8b", # NOME DO MODELO CORRIGIDO AQUI TAMBÉM
-                "messages": [
-                    {"role": "system", "content": system_classificador},
-                    {"role": "user", "content": prompt_livre}
-                ],
-                "stream": False,
-                "temperature": 0.1
-            }
-            
+
+            # Usa o provedor LLM configurado para classificação também
             try:
-                resposta_raw = requests.post("http://localhost:11434/api/chat", json=payload_classificador)
-                
-                if resposta_raw.status_code != 200:
-                    print(f"❌ Erro da API Ollama: {resposta_raw.text}")
-                    raise ValueError(f"Ollama retornou erro {resposta_raw.status_code}")
-                
-                conteudo_json = resposta_raw.json().get('message', {}).get('content', '')
+                from .services.llm import get_llm_provider
+                provider = get_llm_provider()
+                # Chamada simples para classificação
+                response = provider.client.chat.completions.create(
+                    model=provider.model_name,
+                    messages=[
+                        {"role": "system", "content": system_classificador},
+                        {"role": "user", "content": prompt_livre}
+                    ],
+                    temperature=0.1,
+                    response_format={"type": "json_object"},
+                )
+                conteudo_json = response.choices[0].message.content
                 conteudo_json = re.sub(r'```json|```', '', conteudo_json).strip()
                 classificacao = json.loads(conteudo_json)
-                
+
                 etapa_final = classificacao.get('etapa', 'fundamental')
                 materia_final = classificacao.get('materia', 'geral')
                 ano_final = classificacao.get('ano', '')
@@ -1732,10 +2245,10 @@ class GeradorPlanoAulaView(APIView):
 
         # 3. Extração do contexto específico baseado na Rota
         contexto_bncc = extrair_bloco_markdown(etapa_final, materia_final, ano_final)
-        
-        # 4. Aciona o Agente Gerador Principal (retorna um Dict)
-        plano_aula_dit = gerar_aula_qwen(prompt_livre, contexto_bncc)
-        
+
+        # 4. Aciona o Agente Gerador Principal (usa provedor configurado)
+        plano_aula_dit = gerar_plano_aula_ia(prompt_livre, contexto_bncc)
+
         return Response({
             'plano_aula': plano_aula_dit,
             'filtros_utilizados': {

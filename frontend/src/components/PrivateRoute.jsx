@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import { Loader2 } from 'lucide-react';
 
 /**
  * Rota privada com validação no servidor (defense in depth).
- * Verifica se o token JWT é válido chamando /api/user/me/ antes de renderizar.
+ * Usa AuthContext para estado de autenticação (access_token em memória).
  * Também suporta verificação de roles para rotas administrativas.
  */
 const PrivateRoute = ({ requireAdmin = false, requireSuperuser = false }) => {
@@ -13,14 +14,19 @@ const PrivateRoute = ({ requireAdmin = false, requireSuperuser = false }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userData, setUserData] = useState(null);
   const location = useLocation();
+  const { isAuthenticated: contextAuthenticated, isInitialized, user, accessToken } = useAuth();
 
   useEffect(() => {
     let mounted = true;
 
-    const validateToken = async () => {
-      const token = localStorage.getItem('access_token');
+    const validateAccess = async () => {
+      // Aguardar inicialização do AuthContext
+      if (!isInitialized) {
+        return;
+      }
 
-      if (!token) {
+      // Se não há token em memória, não autenticado
+      if (!accessToken) {
         if (mounted) {
           setIsValidating(false);
           setIsAuthenticated(false);
@@ -28,18 +34,60 @@ const PrivateRoute = ({ requireAdmin = false, requireSuperuser = false }) => {
         return;
       }
 
+      // Se AuthContext já tem usuário validado, usar isso
+      if (contextAuthenticated && user) {
+        const userToCheck = user;
+
+        // Verificar se usuário está aprovado (conforme backend)
+        if (userToCheck.status_conta && userToCheck.status_conta !== 'Aprovado') {
+          if (mounted) {
+            setIsAuthenticated(false);
+            setIsValidating(false);
+          }
+          return;
+        }
+
+        // Verificar requisitos de role
+        const isAdmin = userToCheck.is_staff === true || userToCheck.is_superuser === true;
+        const isSuperuser = userToCheck.is_superuser === true;
+
+        if (requireSuperuser && !isSuperuser) {
+          if (mounted) {
+            setIsAuthenticated(false);
+            setIsValidating(false);
+          }
+          return;
+        }
+
+        if (requireAdmin && !isAdmin) {
+          if (mounted) {
+            setIsAuthenticated(false);
+            setIsValidating(false);
+          }
+          return;
+        }
+
+        // Token válido e permissões OK
+        if (mounted) {
+          setUserData(userToCheck);
+          setIsAuthenticated(true);
+          setIsValidating(false);
+        }
+        return;
+      }
+
+      // Fallback: validar no servidor se AuthContext não tem usuário mas tem token
       try {
-        // Validar token no servidor
         const response = await api.get('api/user/me/');
         const user = response.data;
 
         if (!mounted) return;
 
-        // Verificar se usuário está aprovado (conforme backend)
+        // Verificar se usuário está aprovado
         if (user.status_conta && user.status_conta !== 'Aprovado') {
-          // Conta não aprovada - limpar tokens e redirecionar
-          localStorage.clear();
-          setIsAuthenticated(false);
+          if (mounted) {
+            setIsAuthenticated(false);
+          }
           return;
         }
 
@@ -69,8 +117,6 @@ const PrivateRoute = ({ requireAdmin = false, requireSuperuser = false }) => {
       } catch (error) {
         // Token inválido, expirado ou erro de rede
         if (mounted) {
-          // Se for 401, o interceptor do api.js já tenta refresh
-          // Se falhar, localStorage já foi limpo
           setIsAuthenticated(false);
         }
       } finally {
@@ -80,12 +126,12 @@ const PrivateRoute = ({ requireAdmin = false, requireSuperuser = false }) => {
       }
     };
 
-    validateToken();
+    validateAccess();
 
     return () => {
       mounted = false;
     };
-  }, [requireAdmin, requireSuperuser, location.pathname]);
+  }, [requireAdmin, requireSuperuser, location.pathname, isInitialized, accessToken, contextAuthenticated, user]);
 
   // Mostrar loading durante validação
   if (isValidating) {

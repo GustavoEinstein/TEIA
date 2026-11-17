@@ -4,29 +4,42 @@ import api, { setAccessTokenGetter } from '../services/api';
 const AuthContext = createContext(null);
 
 /**
- * Armazenamento seguro de tokens em memória (não persiste no localStorage).
- * O access_token fica apenas em memória (React state).
- * O refresh_token fica no localStorage (para persistência entre reloads).
+ * Armazenamento seguro de tokens - HttpOnly Cookie + Memory
  *
- * ATENÇÃO: Ao recarregar a página, o access_token é perdido.
- * O interceptor do api.js fará refresh automático usando o refresh_token do localStorage.
+ * ACCESS TOKEN: Apenas em memória (React state) - nunca no localStorage
+ * REFRESH TOKEN: HttpOnly Cookie (definido pelo backend) - inacessível a JavaScript/XSS
+ *
+ * Fluxo de inicialização (initAuth):
+ * 1. Chama POST /api/token/refresh/ (cookie HttpOnly enviado automaticamente)
+ * 2. Se sucesso, recebe novo access_token
+ * 3. GET /api/user/me/ para dados do usuário
+ * 4. Define accessToken em memória e user no state
+ *
+ * Fluxo de Login:
+ * 1. POST /api/token/ com username/password
+ * 2. Backend define cookie HttpOnly com refresh_token
+ * 3. Resposta contém APENAS access_token (refresh não exposto ao JS)
+ * 4. Define accessToken em memória
+ * 5. GET /api/user/me/ para dados do usuário
  */
 export const AuthProvider = ({ children }) => {
   const [accessToken, setAccessToken] = useState(null);
   const [user, setUser] = useState(null);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // Registrar getter de token no api service
+  // Registrar getter de token no api service (sempre atualizado)
   useEffect(() => {
     setAccessTokenGetter(() => accessToken);
   }, [accessToken]);
 
-  // Ouvir eventos de token refrescado pelo interceptor
+  // Ouvir eventos de token refrescado pelo interceptor do api.js
   useEffect(() => {
     const handleTokenRefreshed = (event) => {
       const newToken = event.detail?.accessToken;
       if (newToken) {
         setAccessToken(newToken);
+        // Atualizar getter imediatamente para próximas requests
+        setAccessTokenGetter(() => newToken);
       }
     };
 
@@ -34,67 +47,104 @@ export const AuthProvider = ({ children }) => {
     return () => window.removeEventListener('tokenRefreshed', handleTokenRefreshed);
   }, []);
 
-  // Inicialização: tentar restaurar sessão do localStorage (apenas refresh_token)
+  // Inicialização: restaurar sessão via cookie HttpOnly
   useEffect(() => {
-    const initAuth = async () => {
-      const storedRefresh = localStorage.getItem('refresh_token');
-      const storedAccess = localStorage.getItem('access_token');
+    let mounted = true;
 
-      if (storedRefresh && storedAccess) {
-        // Tentar validar access_token existente
-        try {
-          const response = await api.get('api/user/me/');
-          setAccessToken(storedAccess);
-          setUser(response.data);
-        } catch (error) {
-          // Access token expirado - o interceptor fará refresh na próxima request
-          // Mantemos o refresh_token para o interceptor usar
+    const initAuth = async () => {
+      try {
+        // 1. Obter novo access_token via refresh_token (cookie HttpOnly)
+        // withCredentials: true no api.js garante que o cookie seja enviado
+        const refreshResponse = await api.post('api/token/refresh/');
+
+        const newAccessToken = refreshResponse.data.access;
+        if (!mounted) return;
+
+        // 2. Definir access_token em memória
+        setAccessToken(newAccessToken);
+
+        // Atualizar getter do token IMEDIATAMENTE para a próxima request
+        setAccessTokenGetter(() => newAccessToken);
+
+        // 3. Buscar dados do usuário com o novo token
+        const userResponse = await api.get('api/user/me/');
+        if (!mounted) return;
+
+        // 4. Verificar se conta está aprovada (regra do backend)
+        const userData = userResponse.data;
+        if (userData.status_conta && userData.status_conta !== 'Aprovado') {
+          // Conta não aprovada - limpar estado
+          setAccessToken(null);
+          setUser(null);
+        } else {
+          setUser(userData);
+        }
+      } catch (error) {
+        // Refresh token inválido/expirado/ausente - sem sessão válida
+        console.warn('[AuthContext] Sessão não restaurada:', error.message);
+        if (mounted) {
           setAccessToken(null);
           setUser(null);
         }
+      } finally {
+        if (mounted) setIsInitialized(true);
       }
-      setIsInitialized(true);
     };
 
     initAuth();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const login = useCallback(async (username, password) => {
     const response = await api.post('api/token/', { username, password });
-    const { access, refresh } = response.data;
 
-    // Armazenar refresh_token no localStorage (para persistência entre reloads)
-    // Access token fica apenas em memória
-    localStorage.setItem('refresh_token', refresh);
-    // NÃO armazenamos access_token no localStorage - apenas em memória
+    // Backend retorna APENAS access_token no body
+    // O refresh_token foi definido em cookie HttpOnly pelo backend
+    const { access } = response.data;
 
     setAccessToken(access);
 
+    // Atualizar getter do token IMEDIATAMENTE para a próxima request
+    setAccessTokenGetter(() => access);
+
     // Buscar dados do usuário
     const userResponse = await api.get('api/user/me/');
-    setUser(userResponse.data);
+    const userData = userResponse.data;
 
-    // Disparar evento para componentes que ouvem mudança de auth
+    // Verificar aprovação da conta
+    if (userData.status_conta && userData.status_conta !== 'Aprovado') {
+      setAccessToken(null);
+      setUser(null);
+      throw new Error('Conta não aprovada. Aguarde aprovação do administrador.');
+    }
+
+    setUser(userData);
+
+    // Notificar mudança de auth
     window.dispatchEvent(new CustomEvent('authChanged', { detail: { isLoggedIn: true } }));
 
     return response.data;
   }, []);
 
-  const logout = useCallback(() => {
-    // Limpar TUDO - defense in depth
+  const logout = useCallback(async () => {
+    try {
+      // Chamar endpoint de logout no backend para limpar cookie HttpOnly
+      await api.post('api/logout/');
+    } catch (error) {
+      console.warn('[AuthContext] Erro ao fazer logout no backend:', error.message);
+    }
+
+    // Limpar estado local (access_token em memória)
     setAccessToken(null);
     setUser(null);
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('user_name');
-    localStorage.removeItem('user_disciplina');
-    localStorage.removeItem('user_avatar');
-    localStorage.removeItem('is_superuser');
 
     // Notificar outros componentes
     window.dispatchEvent(new CustomEvent('authChanged', { detail: { isLoggedIn: false } }));
 
-    // Forçar reload para limpar qualquer estado residual
+    // Forçar reload para limpar estado residual
     window.location.href = '/';
   }, []);
 

@@ -17,20 +17,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     && rm -rf /var/lib/apt/lists/*
 
-# Criar usuário não-root para build
-RUN useradd --no-create-home --uid 1000 --shell /bin/bash appuser
-
 WORKDIR /app
 
 # Copiar apenas requirements primeiro (cache de layer)
 COPY requirements.txt .
 
-# Instalar dependências Python e gunicorn em diretório isolado
-RUN pip install --no-cache-dir --user -r requirements.txt && \
-    pip install --no-cache-dir --user gunicorn
+# Instalar dependências Python e gunicorn GLOBALMENTE (sem --user)
+# Evita problemas de PATH entre root (builder) e appuser (runtime)
+RUN pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir gunicorn
 
 # Copiar código da aplicação
-COPY --chown=appuser:appuser . .
+COPY . .
 
 # -----------------------------------------------------------------------------
 # STAGE 2: Runtime
@@ -59,20 +57,21 @@ RUN groupadd --gid 1000 appgroup && \
 
 WORKDIR /app
 
-# Copiar dependências Python do builder com permissão correta para o appuser
-COPY --from=builder --chown=appuser:appgroup /root/.local /home/appuser/.local
+# Copiar dependências Python instaladas globalmente do builder
+# (site-packages e binários em /usr/local são acessíveis a todos usuários)
+COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
 
 # Copiar código da aplicação
-COPY --from=builder --chown=appuser:appgroup /app /app
+COPY --from=builder /app /app
 
 # Criar diretórios necessários com permissões corretas
 RUN mkdir -p /app/staticfiles /app/kipo_playground/media /app/database && \
     chown -R appuser:appgroup /app /home/appuser
 
-# Variáveis de ambiente para Python (apontando para a home real do appuser)
+# Variáveis de ambiente para Python
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PATH="/home/appuser/.local/bin:${PATH}" \
     HOME=/home/appuser
 
 # Mudar para usuário não-root
@@ -82,7 +81,7 @@ USER appuser
 EXPOSE 8000
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=15s --start-period=60s --retries=5 \
     CMD curl -f http://localhost:8000/api/health/ || exit 1
 
 # Comando de inicialização via módulo Python (garante execução sem erro de PATH)

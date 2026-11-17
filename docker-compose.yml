@@ -42,9 +42,9 @@ services:
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/api/health/"]
       interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+      timeout: 15s
+      retries: 5
+      start_period: 60s
     deploy:
       resources:
         limits:
@@ -69,6 +69,9 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       target: runtime
+      # Build args para produção
+      args:
+        - NODE_OPTIONS=--max-old-space-size=1024
     env_file:
       - .env.frontend
     ports:
@@ -80,17 +83,17 @@ services:
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 15s
     deploy:
       resources:
         limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
           cpus: '0.5'
           memory: 256M
-        reservations:
-          cpus: '0.25'
-          memory: 128M
     security_opt:
       - no-new-privileges:true
     read_only: true

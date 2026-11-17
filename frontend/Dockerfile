@@ -21,10 +21,14 @@ COPY package*.json ./
 # Instalar dependências (incluindo devDependencies para build)
 RUN npm ci --prefer-offline --no-audit
 
+# Copiar arquivos de ambiente de produção ANTES do código fonte
+# para que o build use as variáveis corretas
+COPY .env.production .env
+
 # Copiar código fonte
 COPY . .
 
-# Build da aplicação (produção)
+# Build da aplicação (produção) - usa VITE_API_URL=/api/ do .env.production
 RUN npm run build
 
 # -----------------------------------------------------------------------------

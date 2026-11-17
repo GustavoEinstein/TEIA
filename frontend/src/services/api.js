@@ -1,10 +1,16 @@
 import axios from "axios"
 
-// Fallback para desenvolvimento se VITE_API_URL não estiver definido
+/**
+ * Determina a base URL da API.
+ * - Se VITE_API_URL começar com "/" → usa URL relativa (nginx proxy em produção)
+ * - Se VITE_API_URL for URL absoluta → usa como está (desenvolvimento)
+ * - Fallback → localhost:8000 (dev local)
+ */
 const getApiBaseUrl = () => {
-  // Vite expõe variáveis com prefixo VITE_ em import.meta.env
-  // Em desenvolvimento, fallback para localhost:8000
-  return import.meta.env.VITE_API_URL || "http://localhost:8000/"
+  const envUrl = import.meta.env.VITE_API_URL
+  if (!envUrl) return "http://localhost:8000/"
+  if (envUrl.startsWith("/")) return envUrl // URL relativa (ex: "/api/") - produção Docker
+  return envUrl // URL absoluta (ex: "http://localhost:8000/") - desenvolvimento
 }
 
 // Cria uma instância padrão do Axios
@@ -65,12 +71,10 @@ api.interceptors.response.use(
 
             if (refreshToken) {
               // Tenta renovar o token silenciosamente no background
-              const refreshResponse = await axios.post(
-                `${import.meta.env.VITE_API_URL}api/token/refresh/`,
-                {
-                  refresh: refreshToken,
-                },
-              )
+              // Usa a própria instância api (que já tem a baseURL correta)
+              const refreshResponse = await api.post("api/token/refresh/", {
+                refresh: refreshToken,
+              })
 
               // Sucesso! O novo access token será obtido via getAccessTokenFn na próxima request
               // Notificamos o AuthContext para atualizar seu estado

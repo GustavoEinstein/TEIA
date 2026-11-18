@@ -6,7 +6,6 @@ from dotenv import load_dotenv
 from django.conf import settings
 from openai import OpenAI
 
-# Garante que o arquivo .env seja lido
 load_dotenv()
 
 def _clean_env(value: str, default: str = "") -> str:
@@ -22,22 +21,20 @@ class BaseLLMProvider(ABC):
     Força saída JSON estrita com validação de BNCC.
     """
 
-    # Schema esperado da resposta da IA (backend-driven UI)
     EXPECTED_KEYS = {
         "titulo": str,
         "nivel": str,
         "categoria": str,
-        "bncc": list,           # Array de objetos: {"codigo": "", "descricao": ""}
+        "bncc": list,
         "bncc_computacao": list,
         "metodologia": str,
         "duracao": str,
-        "recursos": list,       # Array de strings
-        "passo_a_passo": list,  # Array de strings (substitui experiencia)
+        "recursos": list,
+        "passo_a_passo": list,
         "avaliacao": str,
         "prompts_ia": str,
     }
 
-    # Valores permitidos para campos controlados
     NIVEIS_VALIDOS = [
         "Fundamental 1", "Fundamental 2", "Ensino Médio", "Ensino Superior"
     ]
@@ -48,61 +45,85 @@ class BaseLLMProvider(ABC):
         "Simulação / Roleplay", "Prompt para Alunos"
     ]
 
+    # JSON Schema estrito para travar a geração no Ollama / OpenAI compatible
+    RESPONSE_JSON_SCHEMA = {
+        "name": "plano_aula_schema",
+        "strict": True,
+        "schema": {
+            "type": "object",
+            "properties": {
+                "titulo": {"type": "string"},
+                "nivel": {"type": "string", "enum": NIVEIS_VALIDOS},
+                "categoria": {"type": "string", "enum": CATEGORIAS_VALIDAS},
+                "bncc": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "codigo": {"type": "string"},
+                            "descricao": {"type": "string"}
+                        },
+                        "required": ["codigo", "descricao"],
+                        "additionalProperties": False
+                    }
+                },
+                "bncc_computacao": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "codigo": {"type": "string"},
+                            "descricao": {"type": "string"}
+                        },
+                        "required": ["codigo", "descricao"],
+                        "additionalProperties": False
+                    }
+                },
+                "metodologia": {"type": "string"},
+                "duracao": {"type": "string"},
+                "recursos": {"type": "array", "items": {"type": "string"}},
+                "passo_a_passo": {"type": "array", "items": {"type": "string"}},
+                "avaliacao": {"type": "string"}
+            },
+            "required": [
+                "titulo", "nivel", "categoria", "bncc", "bncc_computacao",
+                "metodologia", "duracao", "recursos", "passo_a_passo", "avaliacao"
+            ],
+            "additionalProperties": False
+        }
+    }
+
     def build_prompt(self, raw_text: str, contexto_bncc: str = "") -> str:
         """
-        Constrói prompt que força JSON estruturado.
-        Backend define o contrato, frontend apenas renderiza.
+        Prompt enxuto para acelerar o prefill na CPU.
+        Não pede 'prompts_ia' para economizar tokens de saída.
         """
-        bncc_section = f"\nCONTEXTO BNCC (use APENAS códigos deste texto):\n{contexto_bncc}\n" if contexto_bncc else ""
+        bncc_section = (
+            f"\nCONTEXTO BNCC (use APENAS códigos presentes abaixo):\n{contexto_bncc}\n"
+            if contexto_bncc else ""
+        )
 
-        return f"""Você é um Assistente Pedagógico especialista em BNCC.
-Sua tarefa: expandir a ideia do professor em um plano de aula ESTRUTURADO EM JSON.
+        return f"""Expanda a ideia do professor em um planejamento pedagógico estruturado em JSON.
 
 Ideia do professor:
-"{raw_text}"
+"{raw_text.strip()}"
 {bncc_section}
-
-REGRAS OBRIGATÓRIAS (VIOLAÇÃO = RESPOSTA INVÁLIDA):
-1. RESPONDA APENAS com um objeto JSON válido. NENHUM texto fora das chaves {{}}.
-2. NÃO use markdown (```json```), NÃO use **bold**, NÃO use *itálico*.
-3. BNCC: Use APENAS códigos oficiais completos (ex: EF06HI07, EM13CHS101).
-   PROIBIDO abreviar (H11, G12) ou inventar.
-4. Campo "bncc" e "bncc_computacao" devem ser ARRAYS de objetos:
-   {{"codigo": "EF06HI07", "descricao": "Descrição completa da habilidade"}}
-5. Campo "passo_a_passo" deve ser ARRAY de strings (cada passo = uma etapa).
-6. "nivel" EXATAMENTE: {", ".join(self.NIVEIS_VALIDOS)}
-7. "categoria" EXATAMENTE: {", ".join(self.CATEGORIAS_VALIDAS)}
-
-ESTRUTURA JSON OBRIGATÓRIA:
-{{
-  "titulo": "Título engajador da aula",
-  "nivel": "Fundamental 2",
-  "categoria": "Plano de Aula",
-  "bncc": [
-    {{"codigo": "EF06HI07", "descricao": "Analisar transformações..."}},
-    {{"codigo": "EF06HI08", "descricao": "Identificar relações..."}}
-  ],
-  "bncc_computacao": [
-    {{"codigo": "EF06CP01", "descricao": "Resolver problemas..."}}
-  ],
-  "metodologia": "Aula Expositiva Dialogada com Estudo de Caso",
-  "duracao": "2 aulas de 50 min",
-  "recursos": ["Quadro branco", "Projetor", "Textos impressos"],
-  "passo_a_passo": [
-    "1. Acolhida e contextualização do tema (10 min)",
-    "2. Apresentação do estudo de caso (15 min)",
-    "3. Debate em grupos sobre impactos sociais (20 min)",
-    "4. Sistematização no quadro e fechamento (5 min)"
-  ],
-  "avaliacao": "Rubrica com critérios: participação, argumentação, registro escrito",
-  "prompts_ia": "{raw_text.strip()}"
-}}"""
+REGRAS:
+1. Responda APENAS com JSON válido, sem markdown.
+2. BNCC: use APENAS códigos oficiais completos (ex: EF06HI07, EM13CHS101, EF06CO01). Nunca abrevie nem invente códigos.
+3. "nivel" permitido: {", ".join(self.NIVEIS_VALIDOS)}.
+4. "categoria" permitida: {", ".join(self.CATEGORIAS_VALIDAS)}.
+5. "passo_a_passo": lista de strings numeradas com tempo estimado por etapa."""
 
     def _validate_bncc_code(self, codigo: str) -> bool:
-        """Valida formato básico de código BNCC (EFXXYYZZ ou EMXXYYZZ)."""
+        """
+        Valida formato oficial BNCC:
+        - EF (ex: EF06HI07, EF15AR01, EF69LP01, EF06CO01)
+        - EM (ex: EM13CHS101, EM13LGG101, EM13LP01, EM13CO01)
+        """
         if not codigo or not isinstance(codigo, str):
             return False
-        pattern = r'^(EF|EM)\d{2}[A-Z]{2}\d{2,3}$'
+        pattern = r'^(EF|EM)\d{2}[A-Z]{2,3}\d{2,3}\$'
         return bool(re.match(pattern, codigo.strip().upper()))
 
     def _sanitize_bncc_array(self, bncc_raw) -> list:
@@ -111,59 +132,48 @@ ESTRUTURA JSON OBRIGATÓRIA:
             return []
 
         sanitized = []
+        seen_codes = set()
         for item in bncc_raw:
             if not isinstance(item, dict):
                 continue
             codigo = str(item.get("codigo", "")).strip().upper()
             descricao = str(item.get("descricao", "")).strip()
 
-            if not codigo or not descricao:
+            if not codigo or not descricao or codigo in seen_codes:
                 continue
 
-            # Valida formato do código
             if not self._validate_bncc_code(codigo):
                 print(f"⚠️ BNCC inválido removido: {codigo}")
                 continue
 
+            seen_codes.add(codigo)
             sanitized.append({"codigo": codigo, "descricao": descricao})
 
         return sanitized
 
     def _validate_and_sanitize(self, data: dict, original_prompt: str) -> dict:
-        """
-        Validação rigorosa + sanitização da resposta da IA.
-        Garante contrato backend-driven UI.
-        """
-        # Força campos obrigatórios
+        """Validação rigorosa + sanitização da resposta da IA."""
         for key, expected_type in self.EXPECTED_KEYS.items():
             if key not in data:
-                if expected_type == list:
-                    data[key] = []
-                elif expected_type == str:
-                    data[key] = ""
+                data[key] = [] if expected_type == list else ""
 
-        # Validações de enum
         if data.get("nivel") not in self.NIVEIS_VALIDOS:
-            data["nivel"] = "Fundamental 2"  # fallback seguro
+            data["nivel"] = "Fundamental 2"
 
         if data.get("categoria") not in self.CATEGORIAS_VALIDAS:
             data["categoria"] = "Plano de Aula"
 
-        # Sanitização BNCC (crítico para anti-alucinação)
         data["bncc"] = self._sanitize_bncc_array(data.get("bncc"))
         data["bncc_computacao"] = self._sanitize_bncc_array(data.get("bncc_computacao"))
 
-        # Garante arrays limpos
         data["recursos"] = [str(r).strip() for r in data.get("recursos", []) if str(r).strip()]
         data["passo_a_passo"] = [str(p).strip() for p in data.get("passo_a_passo", []) if str(p).strip()]
 
-        # Campos de texto
         data["titulo"] = str(data.get("titulo", "Plano de Aula")).strip()[:200]
         data["metodologia"] = str(data.get("metodologia", "")).strip()[:500]
         data["duracao"] = str(data.get("duracao", "1 aula de 50 min")).strip()[:100]
         data["avaliacao"] = str(data.get("avaliacao", "")).strip()[:500]
 
-        # Metadados
         data["modelo_ia"] = "IA DA UNB"
         data["prompts_ia"] = original_prompt.strip() if original_prompt else ""
 
@@ -171,12 +181,8 @@ ESTRUTURA JSON OBRIGATÓRIA:
 
     def parse_json_response(self, raw_response: str, original_prompt: str = "") -> dict:
         """Extrai JSON da resposta e aplica validação completa."""
-        # Remove markdown fences
-        clean_text = re.sub(r'^```json\s*', '', raw_response.strip(), flags=re.MULTILINE)
-        clean_text = re.sub(r'^```\s*', '', clean_text, flags=re.MULTILINE)
-        clean_text = re.sub(r'\s*```$', '', clean_text, flags=re.MULTILINE).strip()
+        clean_text = re.sub(r'^```json\s*|^```\s*|\s*```$', '', raw_response.strip(), flags=re.MULTILINE).strip()
 
-        # Extrai primeiro objeto JSON completo
         json_match = re.search(r'\{.*\}', clean_text, flags=re.DOTALL)
         if json_match:
             clean_text = json_match.group(0)
@@ -196,21 +202,19 @@ ESTRUTURA JSON OBRIGATÓRIA:
 
 
 class LocalOllamaProvider(BaseLLMProvider):
-    """Provedor Ollama local - lê modelo de settings."""
+    """Provedor Ollama local otimizado para inferência em CPU."""
 
     def __init__(self):
         raw_url = getattr(settings, 'LOCAL_LLM_URL', None) or os.getenv('LOCAL_LLM_URL', 'http://localhost:11434/v1')
-        # Lê modelo do settings/.env - SEM HARDCODE
-        raw_model = getattr(settings, 'LOCAL_LLM_MODEL', None) or os.getenv('LOCAL_LLM_MODEL', 'qwen3:8b')
+        raw_model = getattr(settings, 'LOCAL_LLM_MODEL', None) or os.getenv('LOCAL_LLM_MODEL', 'qwen2.5:7b')
 
         self.base_url = _clean_env(raw_url)
         self.model_name = _clean_env(raw_model)
-        self.api_key = "ollama"
 
         self.client = OpenAI(
-            api_key=self.api_key,
+            api_key="ollama",
             base_url=self.base_url,
-            timeout=120.0,
+            timeout=180.0,  # Margem segura para picos de CPU em modelos 7B
         )
 
     def catalog_production(self, raw_text: str, contexto_bncc: str = "") -> dict:
@@ -223,16 +227,24 @@ class LocalOllamaProvider(BaseLLMProvider):
                     {
                         "role": "system",
                         "content": (
-                            "Você é um consultor pedagógico rigoroso. "
-                            "REGRAS: 1) JSON apenas. 2) BNCC só códigos oficiais completos. "
-                            "3) bncc e bncc_computacao = array de objetos {{codigo, descricao}}. "
-                            "4) passo_a_passo = array de strings. 5) Sem markdown."
+                            "Você é um assistente pedagógico especialista em BNCC. "
+                            "Responda estritamente no schema JSON solicitado."
                         ),
                     },
                     {"role": "user", "content": prompt},
                 ],
-                temperature=0.2,  # Mais determinístico
-                response_format={"type": "json_object"},  # Força JSON no Ollama compatível
+                temperature=0.1,
+                response_format={
+                    "type": "json_schema",
+                    "json_schema": self.RESPONSE_JSON_SCHEMA,
+                },
+                extra_body={
+                    "keep_alive": -1,  # Mantém o modelo carregado na RAM do servidor permanentemente
+                    "options": {
+                        "num_ctx": 4096,     # Reduz uso de RAM e acelera alocação de KV cache
+                        "num_predict": 1024, # Limita saída máxima para evitar travamentos na CPU
+                    }
+                }
             )
             raw_response = response.choices[0].message.content
             return self.parse_json_response(raw_response, original_prompt=raw_text)
@@ -247,7 +259,7 @@ class UnbAIProvider(BaseLLMProvider):
     """Provedor LiteLLM UnB."""
 
     def __init__(self):
-        raw_url = getattr(settings, 'UNB_LLM_URL', None) or os.getenv('UNB_LLM_URL', 'https://ia-router.unb.br/v1/')
+        raw_url = getattr(settings, 'UNB_LLM_URL', None) or os.getenv('UNB_LLM_URL', '[https://ia-router.unb.br/v1/](https://ia-router.unb.br/v1/)')
         raw_model = getattr(settings, 'UNB_LLM_MODEL', None) or os.getenv('UNB_LLM_MODEL', 'UnB-Llama-3.3-70B-Instruct')
         raw_key = getattr(settings, 'UNB_API_KEY', None) or os.getenv('UNB_API_KEY', '')
 
@@ -277,8 +289,8 @@ class UnbAIProvider(BaseLLMProvider):
                         "role": "system",
                         "content": (
                             "Consultor pedagógico rigoroso. "
-                            "Saída: JSON estrito. BNCC: apenas códigos oficiais completos. "
-                            "Campos array: bncc, bncc_computacao, recursos, passo_a_passo."
+                            "Saída: JSON estrito com chaves titulo, nivel, categoria, "
+                            "bncc, bncc_computacao, metodologia, duracao, recursos, passo_a_passo, avaliacao."
                         ),
                     },
                     {"role": "user", "content": prompt},
@@ -311,7 +323,6 @@ class GeminiProvider(BaseLLMProvider):
         self.model = genai.GenerativeModel('gemini-1.5-flash-latest')
 
     def catalog_production(self, raw_text: str, contexto_bncc: str = "") -> dict:
-        import google.generativeai as genai
         prompt = self.build_prompt(raw_text, contexto_bncc)
 
         try:
@@ -327,15 +338,24 @@ class GeminiProvider(BaseLLMProvider):
             raise RuntimeError(f"Erro na API Gemini: {str(err)}")
 
 
+_PROVIDER_INSTANCE = None
+
 def get_llm_provider() -> BaseLLMProvider:
+    """Retorna instância reutilizável do provedor para manter pool HTTP."""
+    global _PROVIDER_INSTANCE
+    if _PROVIDER_INSTANCE is not None:
+        return _PROVIDER_INSTANCE
+
     raw_provider = getattr(settings, 'LLM_PROVIDER', None) or os.getenv('LLM_PROVIDER', 'local')
     provider = _clean_env(raw_provider).lower()
 
     if provider == 'local':
-        return LocalOllamaProvider()
+        _PROVIDER_INSTANCE = LocalOllamaProvider()
     elif provider == 'unb':
-        return UnbAIProvider()
+        _PROVIDER_INSTANCE = UnbAIProvider()
     elif provider == 'gemini':
-        return GeminiProvider()
+        _PROVIDER_INSTANCE = GeminiProvider()
+    else:
+        raise ValueError(f"Provedor LLM inválido: {provider}")
 
-    raise ValueError(f"Provedor LLM inválido: {provider}")
+    return _PROVIDER_INSTANCE

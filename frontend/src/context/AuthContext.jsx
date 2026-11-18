@@ -12,10 +12,11 @@ const AuthContext = createContext(null)
 /**
  * Armazenamento seguro de tokens em memória (não persiste no localStorage).
  * O access_token fica apenas em memória (React state).
- * O refresh_token fica no localStorage (para persistência entre reloads).
+ * O refresh_token fica em cookie HttpOnly (definido pelo backend, inacessível a JS/XSS).
  *
  * ATENÇÃO: Ao recarregar a página, o access_token é perdido.
- * O interceptor do api.js fará refresh automático usando o refresh_token do localStorage.
+ * O interceptor do api.js fará refresh automático usando o refresh_token do cookie HttpOnly
+ * (requer withCredentials: true na instância axios para cross-origin localhost:5173 → localhost:8000).
  */
 export const AuthProvider = ({ children }) => {
   const [accessToken, setAccessToken] = useState(null)
@@ -41,21 +42,21 @@ export const AuthProvider = ({ children }) => {
       window.removeEventListener("tokenRefreshed", handleTokenRefreshed)
   }, [])
 
-  // Inicialização: tentar restaurar sessão do localStorage (apenas refresh_token)
+  // Inicialização: tentar restaurar sessão do localStorage (apenas access_token)
+  // O refresh_token fica em cookie HttpOnly (não acessível via JS)
   useEffect(() => {
     const initAuth = async () => {
-      const storedRefresh = localStorage.getItem("refresh_token")
       const storedAccess = localStorage.getItem("access_token")
 
-      if (storedRefresh && storedAccess) {
+      if (storedAccess) {
         // Tentar validar access_token existente
         try {
           const response = await api.get("api/user/me/")
           setAccessToken(storedAccess)
           setUser(response.data)
         } catch (error) {
-          // Access token expirado - o interceptor fará refresh na próxima request
-          // Mantemos o refresh_token para o interceptor usar
+          // Access token expirado - o interceptor fará refresh automático
+          // usando o refresh_token do cookie HttpOnly (withCredentials: true)
           setAccessToken(null)
           setUser(null)
         }
@@ -68,13 +69,10 @@ export const AuthProvider = ({ children }) => {
 
   const login = useCallback(async (username, password) => {
     const response = await api.post("api/token/", { username, password })
-    const { access, refresh } = response.data
+    const { access } = response.data // Backend retorna apenas access no body; refresh vai em cookie HttpOnly
 
-    // Armazenar refresh_token no localStorage (para persistência entre reloads)
-    // Access token fica apenas em memória
-    localStorage.setItem("refresh_token", refresh)
-    // NÃO armazenamos access_token no localStorage - apenas em memória
-
+    // NÃO armazenamos refresh_token no localStorage - ele fica em cookie HttpOnly (segurança)
+    // Access token fica apenas em memória (React state)
     setAccessToken(access)
 
     // Buscar dados do usuário
@@ -89,12 +87,19 @@ export const AuthProvider = ({ children }) => {
     return response.data
   }, [])
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
     // Limpar TUDO - defense in depth
+    // Primeiro chamar backend para limpar cookie HttpOnly do refresh_token
+    try {
+      await api.post("api/logout/")
+    } catch (e) {
+      // Ignorar erros de rede - limpeza local ainda ocorre
+      console.warn("Erro ao chamar logout no backend:", e)
+    }
+
     setAccessToken(null)
     setUser(null)
     localStorage.removeItem("access_token")
-    localStorage.removeItem("refresh_token")
     localStorage.removeItem("user_name")
     localStorage.removeItem("user_disciplina")
     localStorage.removeItem("user_avatar")

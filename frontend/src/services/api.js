@@ -16,6 +16,7 @@ const getApiBaseUrl = () => {
 // Cria uma instância padrão do Axios
 const api = axios.create({
   baseURL: getApiBaseUrl(),
+  withCredentials: true, // Habilita envio de cookies HttpOnly cross-origin (localhost:5173 → localhost:8000)
 })
 
 // Referência para função que obtém o access token (será definida pelo AuthProvider)
@@ -67,27 +68,21 @@ api.interceptors.response.use(
           originalRequest._retry = true
 
           try {
-            const refreshToken = localStorage.getItem("refresh_token")
+            // Backend lê refresh_token do cookie HttpOnly (path=/api/token/refresh/)
+            // Não precisamos enviar no body - withCredentials: true envia o cookie automaticamente
+            const refreshResponse = await api.post("api/token/refresh/")
 
-            if (refreshToken) {
-              // Tenta renovar o token silenciosamente no background
-              // Usa a própria instância api (que já tem a baseURL correta)
-              const refreshResponse = await api.post("api/token/refresh/", {
-                refresh: refreshToken,
-              })
+            // Sucesso! O novo access token será obtido via getAccessTokenFn na próxima request
+            // Notificamos o AuthContext para atualizar seu estado
+            window.dispatchEvent(
+              new CustomEvent("tokenRefreshed", {
+                detail: { accessToken: refreshResponse.data.access },
+              }),
+            )
 
-              // Sucesso! O novo access token será obtido via getAccessTokenFn na próxima request
-              // Notificamos o AuthContext para atualizar seu estado
-              window.dispatchEvent(
-                new CustomEvent("tokenRefreshed", {
-                  detail: { accessToken: refreshResponse.data.access },
-                }),
-              )
-
-              // Refaz a requisição original que havia falhado com o novo token
-              originalRequest.headers.Authorization = `Bearer ${refreshResponse.data.access}`
-              return api(originalRequest)
-            }
+            // Refaz a requisição original que havia falhado com o novo token
+            originalRequest.headers.Authorization = `Bearer ${refreshResponse.data.access}`
+            return api(originalRequest)
           } catch (refreshError) {
             // Se o refresh_token também falhar, aí sim a sessão morreu de verdade
             localStorage.clear()

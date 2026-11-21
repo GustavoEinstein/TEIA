@@ -160,6 +160,8 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
+    authentication_classes = []
+    permission_classes = [AllowAny]
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = 'login_attempts'
 
@@ -169,38 +171,29 @@ class CustomTokenObtainPairView(TokenObtainPairView):
         if response.status_code == 200:
             refresh_token = response.data.get('refresh')
             if refresh_token:
-                # Definir refresh_token em cookie HttpOnly (seguro contra XSS)
-                # Não retornar refresh_token no body da resposta
                 response.set_cookie(
                     'refresh_token',
                     refresh_token,
                     httponly=True,
-                    secure=not settings.DEBUG,      # True em produção (HTTPS)
+                    secure=not settings.DEBUG,
                     samesite='Lax' if settings.DEBUG else 'Strict',
-                    path='/api/token/refresh/',     # Só enviado no endpoint de refresh
-                    max_age=60 * 60 * 24 * 7        # 7 dias
+                    path='/api/token/refresh/',
+                    max_age=60 * 60 * 24 * 7
                 )
-                # Remover refresh_token do body da resposta (não expô-lo ao JS)
                 del response.data['refresh']
 
         return response
 
 
-# ============================================================================
-# REFRESH TOKEN VIA HTTPONLY COOKIE (Segurança máxima)
-# ============================================================================
 class CookieTokenRefreshView(TokenRefreshView):
     """
     View personalizada para refresh de token via HttpOnly Cookie.
-    O refresh_token é lido do cookie (inacessível a JavaScript/XSS),
-    não do corpo da requisição.
-    O novo refresh_token rotacionado é definido no cookie HttpOnly,
-    NÃO exposto no body da resposta.
     """
     serializer_class = TokenRefreshSerializer
+    authentication_classes = []
+    permission_classes = [AllowAny]
 
     def post(self, request, *args, **kwargs):
-        # Ler refresh_token do cookie HttpOnly
         refresh_token = request.COOKIES.get('refresh_token')
 
         if not refresh_token:
@@ -209,32 +202,28 @@ class CookieTokenRefreshView(TokenRefreshView):
                 status=status.HTTP_401_UNAUTHORIZED
             )
 
-        # Adicionar o token ao request.data para o serializer
-        request.data['refresh'] = refresh_token
+        serializer = self.get_serializer(data={'refresh': refresh_token})
 
-        # Processar refresh normal
         try:
-            response = super().post(request, *args, **kwargs)
+            serializer.is_valid(raise_exception=True)
+            data = dict(serializer.validated_data)
+            new_refresh = data.pop('refresh', None)
 
-            if response.status_code == 200:
-                new_refresh = response.data.get('refresh')
-                if new_refresh:
-                    # Definir NOVO refresh_token rotacionado no cookie HttpOnly
-                    response.set_cookie(
-                        'refresh_token',
-                        new_refresh,
-                        httponly=True,
-                        secure=not settings.DEBUG,
-                        samesite='Lax' if settings.DEBUG else 'Strict',
-                        path='/api/token/refresh/',
-                        max_age=60 * 60 * 24 * 7  # 7 dias
-                    )
-                    # Remover refresh_token do body (não expô-lo ao JS)
-                    del response.data['refresh']
+            response = Response(data, status=status.HTTP_200_OK)
+
+            if new_refresh:
+                response.set_cookie(
+                    'refresh_token',
+                    new_refresh,
+                    httponly=True,
+                    secure=not settings.DEBUG,
+                    samesite='Lax' if settings.DEBUG else 'Strict',
+                    path='/api/token/refresh/',
+                    max_age=60 * 60 * 24 * 7
+                )
 
             return response
         except TokenError as e:
-            # Se token inválido/expirado, limpar cookie
             response = Response(
                 {'detail': str(e)},
                 status=status.HTTP_401_UNAUTHORIZED

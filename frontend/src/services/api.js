@@ -9,24 +9,23 @@ import axios from "axios"
 const getApiBaseUrl = () => {
   const envUrl = import.meta.env.VITE_API_URL
   if (!envUrl) return "http://localhost:8000/"
-  if (envUrl.startsWith("/")) return envUrl // URL relativa (ex: "/api/") - produção Docker
-  return envUrl // URL absoluta (ex: "http://localhost:8000/") - desenvolvimento
+  if (envUrl.startsWith("/")) return envUrl
+  return envUrl
 }
 
-// Cria uma instância padrão do Axios
 const api = axios.create({
   baseURL: getApiBaseUrl(),
-  withCredentials: true, // Habilita envio de cookies HttpOnly cross-origin (localhost:5173 → localhost:8000)
+  withCredentials: true, // Envia e recebe cookies HttpOnly
 })
 
-// Referência para função que obtém o access token (será definida pelo AuthProvider)
-let getAccessTokenFn = () => localStorage.getItem("access_token")
+// Token em memória sincronizado imediatamente (evita race condition do React state)
+let inMemoryAccessToken = null
+let getAccessTokenFn = () => inMemoryAccessToken
 
-/**
- * Define a função para obter o access token.
- * Chamada pelo AuthProvider na inicialização.
- * @param {Function} fn - Função que retorna o access token atual
- */
+export const setInMemoryAccessToken = (token) => {
+  inMemoryAccessToken = token || null
+}
+
 export const setAccessTokenGetter = (fn) => {
   getAccessTokenFn = fn
 }
@@ -34,70 +33,74 @@ export const setAccessTokenGetter = (fn) => {
 // 1. INTERCEPTOR DE REQUISIÇÃO (Envia o Token automaticamente)
 api.interceptors.request.use(
   (config) => {
-    const token = getAccessTokenFn()
-    if (token) {
+    const token =
+      inMemoryAccessToken || (getAccessTokenFn ? getAccessTokenFn() : null)
+    const isAuthEndpoint =
+      config.url?.includes("api/token/") ||
+      config.url?.includes("api/register/")
+
+    // Não envia Authorization antigo em rotas públicas de login/refresh/registro
+    if (token && !isAuthEndpoint) {
       config.headers.Authorization = `Bearer ${token}`
     }
     return config
   },
-  (error) => {
-    return Promise.reject(error)
-  },
+  (error) => Promise.reject(error),
 )
 
-// 2. INTERCEPTOR DE RESPOSTA (Trata o erro 401 de forma inteligente)
+// 2. INTERCEPTOR DE RESPOSTA (Renova token via cookie HttpOnly se expirar)
 api.interceptors.response.use(
-  (response) => {
-    return response
-  },
+  (response) => response,
   async (error) => {
     const originalRequest = error.config
 
-    if (error.response && error.response.status === 401) {
+    if (error.response && error.response.status === 401 && originalRequest) {
       const currentPath = window.location.pathname
+      const isPublicAuthPage =
+        currentPath === "/" ||
+        currentPath.includes("/login") ||
+        currentPath.includes("/register")
+      const isRefreshRequest =
+        originalRequest.url?.includes("api/token/refresh/")
 
-      // Só atua se NÃO estivermos na tela de login ou registro
-      if (currentPath !== "/" && !currentPath.includes("/register")) {
-        // Verifica se é realmente um erro de token expirado vindo do SimpleJWT
-        // Isso evita que falsos 401 (como erros de CORS ou redirects sem barra) desloguem você
+      if (!isPublicAuthPage && !isRefreshRequest) {
         const isTokenError =
           error.response.data && error.response.data.code === "token_not_valid"
 
-        // Se o erro foi por token inválido e ainda não tentamos renovar
         if (isTokenError && !originalRequest._retry) {
           originalRequest._retry = true
 
           try {
-            // Backend lê refresh_token do cookie HttpOnly (path=/api/token/refresh/)
-            // Não precisamos enviar no body - withCredentials: true envia o cookie automaticamente
             const refreshResponse = await api.post("api/token/refresh/")
+            const newAccess = refreshResponse.data.access
 
-            // Sucesso! O novo access token será obtido via getAccessTokenFn na próxima request
-            // Notificamos o AuthContext para atualizar seu estado
+            // Atualiza imediatamente em memória antes de refazer a requisição
+            setInMemoryAccessToken(newAccess)
+
             window.dispatchEvent(
               new CustomEvent("tokenRefreshed", {
-                detail: { accessToken: refreshResponse.data.access },
+                detail: { accessToken: newAccess },
               }),
             )
 
-            // Refaz a requisição original que havia falhado com o novo token
-            originalRequest.headers.Authorization = `Bearer ${refreshResponse.data.access}`
+            originalRequest.headers.Authorization = `Bearer ${newAccess}`
             return api(originalRequest)
           } catch (refreshError) {
-            // Se o refresh_token também falhar, aí sim a sessão morreu de verdade
+            setInMemoryAccessToken(null)
             localStorage.clear()
             window.location.href = "/?expired=true"
             return Promise.reject(refreshError)
           }
         }
 
-        // Se já tentou renovar, se não havia refresh token, ou se o token era inválido
         if (isTokenError) {
+          setInMemoryAccessToken(null)
           localStorage.clear()
           window.location.href = "/?expired=true"
         }
       }
     }
+
     return Promise.reject(error)
   },
 )

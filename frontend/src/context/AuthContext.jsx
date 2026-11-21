@@ -5,34 +5,35 @@ import React, {
   useCallback,
   useEffect,
 } from "react"
-import api, { setAccessTokenGetter } from "../services/api"
+import api, {
+  setAccessTokenGetter,
+  setInMemoryAccessToken,
+} from "../services/api"
 
 const AuthContext = createContext(null)
 
 /**
- * Armazenamento seguro de tokens em memória (não persiste no localStorage).
- * O access_token fica apenas em memória (React state).
- * O refresh_token fica em cookie HttpOnly (definido pelo backend, inacessível a JS/XSS).
- *
- * ATENÇÃO: Ao recarregar a página, o access_token é perdido.
- * O interceptor do api.js fará refresh automático usando o refresh_token do cookie HttpOnly
- * (requer withCredentials: true na instância axios para cross-origin localhost:5173 → localhost:8000).
+ * Armazenamento seguro de tokens:
+ * - access_token fica apenas em memória (React state + variável síncrona no api.js).
+ * - refresh_token fica em cookie HttpOnly (gerenciado pelo backend).
  */
 export const AuthProvider = ({ children }) => {
   const [accessToken, setAccessToken] = useState(null)
   const [user, setUser] = useState(null)
   const [isInitialized, setIsInitialized] = useState(false)
 
-  // Registrar getter de token no api service
+  // Mantém o getter sincronizado com o estado do React
   useEffect(() => {
+    setInMemoryAccessToken(accessToken)
     setAccessTokenGetter(() => accessToken)
   }, [accessToken])
 
-  // Ouvir eventos de token refrescado pelo interceptor
+  // Ouve eventos de token renovado pelo interceptor
   useEffect(() => {
     const handleTokenRefreshed = (event) => {
       const newToken = event.detail?.accessToken
       if (newToken) {
+        setInMemoryAccessToken(newToken)
         setAccessToken(newToken)
       }
     }
@@ -42,26 +43,31 @@ export const AuthProvider = ({ children }) => {
       window.removeEventListener("tokenRefreshed", handleTokenRefreshed)
   }, [])
 
-  // Inicialização: tentar restaurar sessão do localStorage (apenas access_token)
-  // O refresh_token fica em cookie HttpOnly (não acessível via JS)
+  // Inicialização: tenta restaurar a sessão silenciosamente usando o cookie HttpOnly
   useEffect(() => {
     const initAuth = async () => {
-      const storedAccess = localStorage.getItem("access_token")
+      try {
+        const refreshResponse = await api.post("api/token/refresh/")
+        const newAccess = refreshResponse.data?.access
 
-      if (storedAccess) {
-        // Tentar validar access_token existente
-        try {
-          const response = await api.get("api/user/me/")
-          setAccessToken(storedAccess)
-          setUser(response.data)
-        } catch (error) {
-          // Access token expirado - o interceptor fará refresh automático
-          // usando o refresh_token do cookie HttpOnly (withCredentials: true)
-          setAccessToken(null)
-          setUser(null)
+        if (newAccess) {
+          // Atualiza de forma SÍNCRONA antes de chamar /api/user/me/
+          setInMemoryAccessToken(newAccess)
+          setAccessToken(newAccess)
+
+          const userResponse = await api.get("api/user/me/", {
+            headers: { Authorization: `Bearer ${newAccess}` },
+          })
+          setUser(userResponse.data)
         }
+      } catch {
+        // Sem cookie válido (usuário deslogado) — segue fluxo normal
+        setInMemoryAccessToken(null)
+        setAccessToken(null)
+        setUser(null)
+      } finally {
+        setIsInitialized(true)
       }
-      setIsInitialized(true)
     }
 
     initAuth()
@@ -69,17 +75,22 @@ export const AuthProvider = ({ children }) => {
 
   const login = useCallback(async (username, password) => {
     const response = await api.post("api/token/", { username, password })
-    const { access } = response.data // Backend retorna apenas access no body; refresh vai em cookie HttpOnly
+    const { access } = response.data
 
-    // NÃO armazenamos refresh_token no localStorage - ele fica em cookie HttpOnly (segurança)
-    // Access token fica apenas em memória (React state)
+    if (!access) {
+      throw new Error("Token de acesso não retornado pelo servidor.")
+    }
+
+    // Atualiza o token de forma SÍNCRONA no api.js antes da próxima requisição
+    setInMemoryAccessToken(access)
     setAccessToken(access)
 
-    // Buscar dados do usuário
-    const userResponse = await api.get("api/user/me/")
+    // Busca dados do usuário já enviando o Bearer token explicitamente
+    const userResponse = await api.get("api/user/me/", {
+      headers: { Authorization: `Bearer ${access}` },
+    })
     setUser(userResponse.data)
 
-    // Disparar evento para componentes que ouvem mudança de auth
     window.dispatchEvent(
       new CustomEvent("authChanged", { detail: { isLoggedIn: true } }),
     )
@@ -88,15 +99,13 @@ export const AuthProvider = ({ children }) => {
   }, [])
 
   const logout = useCallback(async () => {
-    // Limpar TUDO - defense in depth
-    // Primeiro chamar backend para limpar cookie HttpOnly do refresh_token
     try {
       await api.post("api/logout/")
     } catch (e) {
-      // Ignorar erros de rede - limpeza local ainda ocorre
       console.warn("Erro ao chamar logout no backend:", e)
     }
 
+    setInMemoryAccessToken(null)
     setAccessToken(null)
     setUser(null)
     localStorage.removeItem("access_token")
@@ -105,12 +114,10 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem("user_avatar")
     localStorage.removeItem("is_superuser")
 
-    // Notificar outros componentes
     window.dispatchEvent(
       new CustomEvent("authChanged", { detail: { isLoggedIn: false } }),
     )
 
-    // Forçar reload para limpar qualquer estado residual
     window.location.href = "/"
   }, [])
 
